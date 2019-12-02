@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../widgets/play_pause_button.dart';
 
 class ProgramScreen extends StatefulWidget {
   @override
@@ -62,6 +63,20 @@ class _ProgramScreenState extends State<ProgramScreen> {
                   position = pos;
                 });
               },
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                IconButton(
+                  icon: const Icon(Icons.skip_previous),
+                  onPressed: () {},
+                ),
+                PlayPauseButton(),
+                IconButton(
+                  icon: const Icon(Icons.skip_next),
+                  onPressed: () {},
+                ),
+              ],
             ),
           ],
         ),
