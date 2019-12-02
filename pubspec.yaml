@@ -1,0 +1,25 @@
+name: musicus
+version: 0.1.0
+description: The classical music player and organizer.
+author: Elias Projahn <johrpan@gmail.com>
+homepage: https://musicus.org
+repository: https://github.com/johrpan/musicus
+
+environment:
+  sdk: ">=2.3.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  rxdart:
+
+flutter:
+  uses-material-design: true
+  fonts:
+  - family: Libertinus Sans
+    fonts:
+    - asset: fonts/libertinussans_regular.otf
+    - asset: fonts/libertinussans_bold.otf
+      weight: 700
+    - asset: fonts/libertinussans_italic.otf
+      style: italic
