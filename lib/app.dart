@@ -45,6 +45,10 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
         cursorColor: Colors.amber,
         textSelectionHandleColor: Colors.amber,
         toggleableActiveColor: Colors.amber,
+        // Added for sliders. Not everything seems to obey this.
+        colorScheme: ColorScheme.dark(
+          primary: Colors.amber,
+        ),
         fontFamily: 'Libertinus Sans',
       ),
       // The nested Navigator is for every screen from which the player bar at
