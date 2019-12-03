@@ -4,6 +4,13 @@ The classical music player and organizer.
 
 https://musicus.org
 
+## Hacking
+
+You can use the following command to automatically update generated code while
+working on Musicus:
+
+`flutter pub run build_runner watch`
+
 ## License
 
 Musicus is free and open source software: you can redistribute it and/or modify

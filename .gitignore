@@ -19,6 +19,7 @@
 .vscode/
 
 # Flutter/Dart/Pub related
+**/*.g.dart
 **/doc/api/
 .dart_tool/
 pubspec.lock

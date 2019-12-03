@@ -1,0 +1,54 @@
+CREATE TABLE persons (
+    id INTEGER NOT NULL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL
+);
+
+CREATE TABLE instruments (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE works (
+    id INTEGER NOT NULL PRIMARY KEY,
+    composer INTEGER REFERENCES persons(id),
+    title TEXT NOT NULL,
+    part_of INTEGER REFERENCES works(id) ON DELETE CASCADE,
+    part_index INTEGER
+);
+
+CREATE TABLE instrumentations (
+    work INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
+);
+
+allPersons:
+SELECT * FROM persons ORDER BY last_name;
+
+personById:
+SELECT * FROM persons WHERE id = :id LIMIT 1;
+
+allInstruments:
+SELECT * FROM instruments ORDER BY name;
+
+instrumentById:
+SELECT * FROM instruments WHERE id = :id LIMIT 1;
+
+workById:
+SELECT * FROM works WHERE id = :id LIMIT 1;
+
+worksByComposer:
+WITH RECURSIVE work_parts(id, part_of) AS (
+    SELECT id, part_of FROM works WHERE composer = :composerId
+    UNION ALL
+    SELECT works.id, works.part_of FROM works
+        JOIN work_parts ON works.id = work_parts.part_of
+)
+SELECT works.* FROM works
+    JOIN work_parts ON works.id = work_parts.id
+    WHERE work_parts.part_of IS NULL;
+
+instrumentsByWork:
+SELECT instruments.* FROM instrumentations
+    JOIN instruments ON instrumentations.instrument=instruments.id
+    WHERE instrumentations.work = :workId;
