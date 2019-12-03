@@ -65,8 +65,12 @@ class _ProgramScreenState extends State<ProgramScreen> {
               },
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
+                Padding(
+                  padding: const EdgeInsets.only(left: 24.0),
+                  child: Text('4:00'),
+                ),
+                Spacer(),
                 IconButton(
                   icon: const Icon(Icons.skip_previous),
                   onPressed: () {},
@@ -75,6 +79,11 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 IconButton(
                   icon: const Icon(Icons.skip_next),
                   onPressed: () {},
+                ),
+                Spacer(),
+                Padding(
+                  padding: const EdgeInsets.only(right: 20.0),
+                  child: Text('10:30'),
                 ),
               ],
             ),
