@@ -1,6 +1,11 @@
+import 'dart:math';
+
 import 'package:moor_flutter/moor_flutter.dart';
 
 part 'database.g.dart';
+
+final _random = Random(DateTime.now().millisecondsSinceEpoch);
+int generateId() => _random.nextInt(0xFFFFFFFF);
 
 @UseMoor(
   include: {
