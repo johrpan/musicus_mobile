@@ -33,6 +33,7 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
 
     backend = Backend.of(context);
+    playerBarAnimation.value = backend.playerActive.value ? 1.0 : 0.0;
 
     if (playerActiveSubscription != null) {
       playerActiveSubscription.cancel();

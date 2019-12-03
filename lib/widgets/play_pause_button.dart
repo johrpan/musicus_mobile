@@ -19,8 +19,10 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
   void initState() {
     super.initState();
 
-    playPauseAnimation =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+    playPauseAnimation = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 300),
+    );
   }
 
   @override
@@ -28,6 +30,7 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
     super.didChangeDependencies();
 
     backend = Backend.of(context);
+    playPauseAnimation.value = backend.playing.value ? 1.0 : 0.0;
 
     if (playingSubscription != null) {
       playingSubscription.cancel();
