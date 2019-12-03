@@ -1,11 +1,15 @@
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 
+import 'database.dart';
+
 class Backend extends InheritedWidget {
   static Backend of(BuildContext context) =>
       context.inheritFromWidgetOfExactType(Backend);
 
   final Widget child;
+
+  final db = Database('musicus.sqlite');
 
   final playerActive = BehaviorSubject.seeded(false);
   final playing = BehaviorSubject.seeded(false);
