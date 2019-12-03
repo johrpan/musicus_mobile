@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
@@ -11,6 +13,7 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
     with SingleTickerProviderStateMixin {
   AnimationController playPauseAnimation;
   Backend backend;
+  StreamSubscription<bool> playingSubscription;
 
   @override
   void initState() {
@@ -25,7 +28,12 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
     super.didChangeDependencies();
 
     backend = Backend.of(context);
-    backend.playing.listen((playing) =>
+
+    if (playingSubscription != null) {
+      playingSubscription.cancel();
+    }
+
+    playingSubscription = backend.playing.listen((playing) =>
         playing ? playPauseAnimation.forward() : playPauseAnimation.reverse());
   }
 
@@ -38,5 +46,11 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
       ),
       onPressed: backend.playPause,
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    playingSubscription.cancel();
   }
 }

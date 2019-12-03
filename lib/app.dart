@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'backend.dart';
@@ -14,6 +16,7 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
 
   AnimationController playerBarAnimation;
   Backend backend;
+  StreamSubscription<bool> playerActiveSubscription;
 
   @override
   void initState() {
@@ -30,7 +33,12 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
 
     backend = Backend.of(context);
-    backend.playerActive.listen((active) =>
+
+    if (playerActiveSubscription != null) {
+      playerActiveSubscription.cancel();
+    }
+
+    playerActiveSubscription = backend.playerActive.listen((active) =>
         active ? playerBarAnimation.forward() : playerBarAnimation.reverse());
   }
 
@@ -78,5 +86,11 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    playerActiveSubscription.cancel();
   }
 }
