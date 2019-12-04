@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../selectors/person.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -21,6 +22,15 @@ class HomeScreen extends StatelessWidget {
           ListTile(
             title: Text('Play/Pause'),
             onTap: backend.playPause,
+          ),
+          ListTile(
+            title: Text('Select person'),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PersonsSelector(),
+                  fullscreenDialog: true,
+                )),
           ),
         ],
       ),
