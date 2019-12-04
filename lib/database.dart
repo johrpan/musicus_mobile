@@ -17,7 +17,7 @@ class Database extends _$Database {
       : super(FlutterQueryExecutor.inDatabaseFolder(path: fileName));
 
   @override
-  int get schemaVersion => 0;
+  int get schemaVersion => 1;
 
   Future<void> updatePerson(Person person) async {
     await into(persons).insert(person);
