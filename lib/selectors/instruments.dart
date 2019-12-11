@@ -38,6 +38,7 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
                 return CheckboxListTile(
                   title: Text(instrument.name),
                   value: selection.contains(instrument),
+                  checkColor: Colors.black,
                   onChanged: (selected) {
                     setState(() {
                       if (selected) {
