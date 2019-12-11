@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../editors/work.dart';
 import '../selectors/person.dart';
 import '../selectors/instruments.dart';
 
@@ -39,6 +40,15 @@ class HomeScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => InstrumentsSelector(),
+                  fullscreenDialog: true,
+                )),
+          ),
+          ListTile(
+            title: Text('Add work'),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => WorkEditor(),
                   fullscreenDialog: true,
                 )),
           ),
