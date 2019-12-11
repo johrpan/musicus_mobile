@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../editors/work.dart';
-import '../selectors/person.dart';
-import '../selectors/instruments.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -24,24 +22,6 @@ class HomeScreen extends StatelessWidget {
           ListTile(
             title: Text('Play/Pause'),
             onTap: backend.playPause,
-          ),
-          ListTile(
-            title: Text('Select person'),
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PersonsSelector(),
-                  fullscreenDialog: true,
-                )),
-          ),
-          ListTile(
-            title: Text('Select instrument'),
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => InstrumentsSelector(),
-                  fullscreenDialog: true,
-                )),
           ),
           ListTile(
             title: Text('Add work'),
