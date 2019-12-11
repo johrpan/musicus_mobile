@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../database.dart';
+import '../selectors/instruments.dart';
 import '../selectors/person.dart';
 
 class WorkEditor extends StatefulWidget {
@@ -20,6 +21,7 @@ class _WorkEditorState extends State<WorkEditor> {
 
   Backend backend;
   Person composer;
+  List<Instrument> instruments = [];
 
   @override
   void initState() {
@@ -36,15 +38,29 @@ class _WorkEditorState extends State<WorkEditor> {
 
     backend = Backend.of(context);
 
-    if (widget.work != null && widget.work.composer != null) {
-      () async {
-        final person =
-            await backend.db.personById(widget.work.composer).getSingle();
+    if (widget.work != null) {
+      if (widget.work.composer != null) {
+        () async {
+          final person =
+              await backend.db.personById(widget.work.composer).getSingle();
 
-        // We don't want to override a newly selected composer.
-        if (composer != null) {
+          // We don't want to override a newly selected composer.
+          if (composer != null) {
+            setState(() {
+              composer = person;
+            });
+          }
+        }();
+      }
+
+      () async {
+        final selection =
+            await backend.db.instrumentsByWork(widget.work.id).get();
+
+        // We don't want to override already selected instruments.
+        if (instruments.isEmpty) {
           setState(() {
-            composer = person;
+            instruments = selection;
           });
         }
       }();
@@ -90,6 +106,26 @@ class _WorkEditorState extends State<WorkEditor> {
               if (person != null) {
                 setState(() {
                   composer = person;
+                });
+              }
+            },
+          ),
+          ListTile(
+            title: Text('Instruments'),
+            subtitle: Text(instruments.isNotEmpty
+                ? instruments.map((i) => i.name).join(', ')
+                : 'Select instruments'),
+            onTap: () async {
+              final List<Instrument> selection = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => InstrumentsSelector(),
+                    fullscreenDialog: true,
+                  ));
+
+              if (selection != null) {
+                setState(() {
+                  instruments = selection;
                 });
               }
             },
