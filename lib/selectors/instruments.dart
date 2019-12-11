@@ -5,12 +5,27 @@ import '../database.dart';
 import '../editors/instrument.dart';
 
 class InstrumentsSelector extends StatefulWidget {
+  final List<Instrument> selection;
+
+  InstrumentsSelector({
+    this.selection,
+  });
+
   @override
   _InstrumentsSelectorState createState() => _InstrumentsSelectorState();
 }
 
 class _InstrumentsSelectorState extends State<InstrumentsSelector> {
   Set<Instrument> selection = {};
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.selection != null) {
+      selection = widget.selection.toSet();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +80,7 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
                 builder: (context) => InstrumentEditor(),
                 fullscreenDialog: true,
               ));
-          
+
           if (instrument != null) {
             setState(() {
               selection.add(instrument);

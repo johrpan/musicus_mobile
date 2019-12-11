@@ -119,7 +119,9 @@ class _WorkEditorState extends State<WorkEditor> {
               final List<Instrument> selection = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => InstrumentsSelector(),
+                    builder: (context) => InstrumentsSelector(
+                      selection: instruments,
+                    ),
                     fullscreenDialog: true,
                   ));
 
