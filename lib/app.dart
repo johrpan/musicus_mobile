@@ -54,9 +54,10 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
         cursorColor: Colors.amber,
         textSelectionHandleColor: Colors.amber,
         toggleableActiveColor: Colors.amber,
-        // Added for sliders. Not everything seems to obey this.
+        // Added for sliders and FABs. Not everything seems to obey this.
         colorScheme: ColorScheme.dark(
           primary: Colors.amber,
+          secondary: Colors.amber,
         ),
         fontFamily: 'Libertinus Sans',
       ),
