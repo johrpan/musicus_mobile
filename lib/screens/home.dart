@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../selectors/person.dart';
+import '../selectors/instruments.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -29,6 +30,15 @@ class HomeScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => PersonsSelector(),
+                  fullscreenDialog: true,
+                )),
+          ),
+          ListTile(
+            title: Text('Select instrument'),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => InstrumentsSelector(),
                   fullscreenDialog: true,
                 )),
           ),
