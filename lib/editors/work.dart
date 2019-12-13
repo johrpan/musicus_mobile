@@ -5,11 +5,14 @@ import '../database.dart';
 import '../selectors/instruments.dart';
 import '../selectors/person.dart';
 
-class WorkData {
-  String title = '';
+class PartData {
+  final titleController = TextEditingController();
+
+  int level;
   Person composer;
   List<Instrument> instruments = [];
-  List<WorkData> parts = [];
+
+  PartData(this.level);
 }
 
 class WorkProperties extends StatelessWidget {
@@ -83,6 +86,97 @@ class WorkProperties extends StatelessWidget {
   }
 }
 
+class PartTile extends StatefulWidget {
+  final PartData part;
+  final void Function() onMore;
+  final void Function() onAdd;
+  final void Function() onDelete;
+  final void Function(int levels) onMove;
+
+  PartTile({
+    Key key,
+    @required this.part,
+    @required this.onMore,
+    @required this.onAdd,
+    @required this.onDelete,
+    @required this.onMove,
+  }) : super(key: key);
+
+  @override
+  _PartTileState createState() => _PartTileState();
+}
+
+class _PartTileState extends State<PartTile> {
+  static const unit = 16.0;
+  static const iconShrink = 4.0;
+
+  double dragStart;
+  double dragDelta = 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = widget.part.level * unit + dragDelta;
+    final iconSize = 24 - widget.part.level * iconShrink;
+
+    return GestureDetector(
+      child: Padding(
+        padding: EdgeInsets.only(left: padding > 0.0 ? padding : 0.0),
+        child: Row(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0, right: 8.0),
+              child: Icon(
+                Icons.drag_handle,
+                size: iconSize,
+              ),
+            ),
+            Expanded(
+              child: TextField(
+                controller: widget.part.titleController,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: 'Part title',
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_horiz),
+              iconSize: iconSize,
+              onPressed: widget.onMore,
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              iconSize: iconSize,
+              onPressed: widget.onAdd,
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete),
+              iconSize: iconSize,
+              onPressed: widget.onDelete,
+            ),
+          ],
+        ),
+      ),
+      onHorizontalDragStart: (details) {
+        dragStart = details.localPosition.dx;
+      },
+      onHorizontalDragUpdate: (details) {
+        setState(() {
+          dragDelta = details.localPosition.dx - dragStart;
+        });
+      },
+      onHorizontalDragEnd: (details) {
+        if (dragDelta.abs() >= unit) {
+          widget.onMove((dragDelta / unit).round());
+        }
+        setState(() {
+          dragDelta = 0.0;
+        });
+      },
+    );
+  }
+}
+
 class WorkEditor extends StatefulWidget {
   final Work work;
 
@@ -98,7 +192,11 @@ class _WorkEditorState extends State<WorkEditor> {
   final titleController = TextEditingController();
 
   Backend backend;
-  final WorkData data = WorkData();
+
+  String title = '';
+  Person composer;
+  List<Instrument> instruments = [];
+  List<PartData> parts = [];
 
   @override
   void initState() {
@@ -115,6 +213,7 @@ class _WorkEditorState extends State<WorkEditor> {
 
     backend = Backend.of(context);
 
+    // TODO: Initialize parts
     if (widget.work != null) {
       if (widget.work.composer != null) {
         () async {
@@ -122,9 +221,9 @@ class _WorkEditorState extends State<WorkEditor> {
               await backend.db.personById(widget.work.composer).getSingle();
 
           // We don't want to override a newly selected composer.
-          if (data.composer != null) {
+          if (composer != null) {
             setState(() {
-              data.composer = person;
+              composer = person;
             });
           }
         }();
@@ -135,17 +234,63 @@ class _WorkEditorState extends State<WorkEditor> {
             await backend.db.instrumentsByWork(widget.work.id).get();
 
         // We don't want to override already selected instruments.
-        if (data.instruments.isEmpty) {
+        if (instruments.isEmpty) {
           setState(() {
-            data.instruments = selection;
+            instruments = selection;
           });
         }
       }();
     }
   }
 
+  void cleanLevels() {
+    var previousLevel = -1;
+    for (var i = 0; i < parts.length; i++) {
+      final part = parts[i];
+      if (part.level > previousLevel + 1) {
+        part.level = previousLevel + 1;
+      }
+      previousLevel = part.level;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final List<Widget> partTiles = [];
+    for (var i = 0; i < parts.length; i++) {
+      final part = parts[i];
+
+      partTiles.add(PartTile(
+        key: Key(part.hashCode.toString()),
+        part: part,
+        // TODO: Make part details editable
+        onMore: () {},
+        onAdd: () {
+          setState(() {
+            parts.insert(i + 1, PartData(part.level + 1));
+          });
+        },
+        onDelete: () {
+          setState(() {
+            parts.removeAt(i);
+            cleanLevels();
+          });
+        },
+        onMove: (levels) {
+          if (levels > 0 && i > 0 && parts[i - 1].level >= part.level) {
+            setState(() {
+              part.level++;
+            });
+          } else if (levels < 0) {
+            final newLevel = part.level + levels;
+            setState(() {
+              part.level = newLevel > 0 ? newLevel : 0;
+            });
+          }
+        },
+      ));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Work'),
@@ -156,24 +301,55 @@ class _WorkEditorState extends State<WorkEditor> {
           ),
         ],
       ),
-      body: ListView(
-        children: <Widget>[
-          WorkProperties(
-            titleController: titleController,
-            composer: data.composer,
-            instruments: data.instruments,
-            onComposerChanged: (composer) {
-              setState(() {
-                data.composer = composer;
-              });
-            },
-            onInstrumentsChanged: (instruments) {
-              setState(() {
-                data.instruments = instruments;
-              });
-            },
-          ),
-        ],
+      body: ReorderableListView(
+        header: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            WorkProperties(
+              titleController: titleController,
+              composer: composer,
+              instruments: instruments,
+              onComposerChanged: (newComposer) {
+                setState(() {
+                  composer = newComposer;
+                });
+              },
+              onInstrumentsChanged: (newInstruments) {
+                setState(() {
+                  instruments = newInstruments;
+                });
+              },
+            ),
+            if (parts.length > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0, top: 16.0),
+                child: Text(
+                  'Parts',
+                  style: Theme.of(context).textTheme.subhead,
+                ),
+              ),
+          ],
+        ),
+        children: partTiles,
+        onReorder: (i1, i2) {
+          setState(() {
+            final part = parts.removeAt(i1);
+            final newIndex = i2 > i1 ? i2 - 1 : i2;
+
+            parts.insert(newIndex, part);
+
+            cleanLevels();
+          });
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        icon: const Icon(Icons.add),
+        label: Text('Add part'),
+        onPressed: () {
+          setState(() {
+            parts.add(PartData(0));
+          });
+        },
       ),
     );
   }
