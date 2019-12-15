@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../database.dart';
 import '../editors/work.dart';
+import 'person.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -52,6 +53,14 @@ class HomeScreen extends StatelessWidget {
                 final person = snapshot.data[index];
                 return ListTile(
                   title: Text('${person.lastName}, ${person.firstName}'),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PersonScreen(
+                        person: person,
+                      ),
+                    ),
+                  ),
                 );
               },
             );
