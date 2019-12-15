@@ -5,7 +5,7 @@ import 'database.dart';
 
 class Backend extends InheritedWidget {
   static Backend of(BuildContext context) =>
-      context.inheritFromWidgetOfExactType(Backend);
+      context.dependOnInheritedWidgetOfExactType<Backend>();
 
   final Widget child;
 
