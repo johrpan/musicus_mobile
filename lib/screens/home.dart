@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../database.dart';
 import '../editors/work.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -41,7 +42,24 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       // For debugging purposes
-      body: Container(),
+      body: StreamBuilder<List<Person>>(
+        stream: backend.db.allPersons().watch(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return ListView.builder(
+              itemCount: snapshot.data.length,
+              itemBuilder: (context, index) {
+                final person = snapshot.data[index];
+                return ListTile(
+                  title: Text('${person.lastName}, ${person.firstName}'),
+                );
+              },
+            );
+          } else {
+            return Container();
+          }
+        },
+      ),
     );
   }
 }
