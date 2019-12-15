@@ -11,29 +11,37 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Musicus'),
-      ),
-      // For debugging purposes
-      body: ListView(
-        children: <Widget>[
-          ListTile(
-            title: Text('Start player'),
-            onTap: backend.startPlayer,
-          ),
-          ListTile(
-            title: Text('Play/Pause'),
-            onTap: backend.playPause,
-          ),
-          ListTile(
-            title: Text('Add work'),
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => WorkEditor(),
-                  fullscreenDialog: true,
-                )),
+        actions: <Widget>[
+          PopupMenuButton(
+            icon: const Icon(Icons.more_vert),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 0,
+                child: Text('Start player'),
+              ),
+              PopupMenuItem(
+                value: 1,
+                child: Text('Add work'),
+              ),
+            ],
+            onSelected: (selected) {
+              if (selected == 0) {
+                backend.startPlayer();
+              } else if (selected == 1) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => WorkEditor(),
+                    fullscreenDialog: true,
+                  ),
+                );
+              }
+            },
           ),
         ],
       ),
+      // For debugging purposes
+      body: Container(),
     );
   }
 }
