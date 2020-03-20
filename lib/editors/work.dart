@@ -285,6 +285,7 @@ class _WorkEditorState extends State<WorkEditor> {
             final newLevel = part.level + levels;
             setState(() {
               part.level = newLevel > 0 ? newLevel : 0;
+              cleanLevels();
             });
           }
         },
