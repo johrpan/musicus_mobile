@@ -10,9 +10,16 @@ class PartData {
 
   int level;
   Person composer;
-  List<Instrument> instruments = [];
+  List<Instrument> instruments;
 
-  PartData(this.level);
+  PartData({
+    String title,
+    this.level = 0,
+    this.composer,
+    this.instruments = const [],
+  }) {
+    titleController.text = title ?? '';
+  }
 }
 
 class WorkProperties extends StatelessWidget {
@@ -213,7 +220,6 @@ class _WorkEditorState extends State<WorkEditor> {
 
     backend = Backend.of(context);
 
-    // TODO: Initialize parts
     if (widget.work != null) {
       if (widget.work.composer != null) {
         () async {
@@ -237,6 +243,30 @@ class _WorkEditorState extends State<WorkEditor> {
         if (instruments.isEmpty) {
           setState(() {
             instruments = selection;
+          });
+        }
+      }();
+
+      () async {
+        final dbParts = await backend.db.workParts(widget.work.id).get();
+        for (final dbPart in dbParts) {
+          final partInstruments =
+              await backend.db.instrumentsByWork(dbPart.id).get();
+
+          Person partComposer;
+
+          if (dbPart.composer != null) {
+            partComposer =
+                await backend.db.personById(widget.work.composer).getSingle();
+          }
+
+          setState(() {
+            parts.add(PartData(
+              title: dbPart.title,
+              composer: partComposer,
+              level: dbPart.partLevel,
+              instruments: partInstruments,
+            ));
           });
         }
       }();
@@ -267,7 +297,7 @@ class _WorkEditorState extends State<WorkEditor> {
         onMore: () {},
         onAdd: () {
           setState(() {
-            parts.insert(i + 1, PartData(part.level + 1));
+            parts.insert(i + 1, PartData(level: part.level + 1));
           });
         },
         onDelete: () {
@@ -378,7 +408,7 @@ class _WorkEditorState extends State<WorkEditor> {
         label: Text('Add part'),
         onPressed: () {
           setState(() {
-            parts.add(PartData(0));
+            parts.add(PartData(level: 0));
           });
         },
       ),
