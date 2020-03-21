@@ -221,7 +221,7 @@ class _WorkEditorState extends State<WorkEditor> {
               await backend.db.personById(widget.work.composer).getSingle();
 
           // We don't want to override a newly selected composer.
-          if (composer != null) {
+          if (composer == null) {
             setState(() {
               composer = person;
             });
