@@ -298,7 +298,37 @@ class _WorkEditorState extends State<WorkEditor> {
         actions: <Widget>[
           FlatButton(
             child: Text('DONE'),
-            onPressed: () {},
+            onPressed: () async {
+              final workId = widget.work?.id ?? generateId();
+
+              final model = WorkModel(
+                work: Work(
+                  id: workId,
+                  title: titleController.text,
+                  composer: composer.id,
+                ),
+                instrumentIds: instruments.map((i) => i.id).toList(),
+              );
+
+              final List<WorkModel> partModels = [];
+              for (var i = 0; i < parts.length; i++) {
+                final part = parts[i];
+                partModels.add(WorkModel(
+                  work: Work(
+                    id: generateId(),
+                    title: part.titleController.text,
+                    composer: part.composer?.id,
+                    partOf: workId,
+                    partIndex: i,
+                    partLevel: part.level,
+                  ),
+                  instrumentIds: part.instruments.map((i) => i.id).toList(),
+                ));
+              }
+
+              await backend.db.updateWork(model, partModels);
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
