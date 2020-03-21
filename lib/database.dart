@@ -38,11 +38,11 @@ class Database extends _$Database {
   }
 
   Future<void> updatePerson(Person person) async {
-    await into(persons).insert(person);
+    await into(persons).insert(person, orReplace: true);
   }
 
   Future<void> updateInstrument(Instrument instrument) async {
-    await into(instruments).insert(instrument);
+    await into(instruments).insert(instrument, orReplace: true);
   }
 
   Future<void> updateWork(WorkModel model, List<WorkModel> parts) async {
