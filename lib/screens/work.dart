@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../database.dart';
 
-import 'work.dart';
+class WorkScreen extends StatelessWidget {
+  final Work work;
 
-class PersonScreen extends StatelessWidget {
-  final Person person;
-
-  PersonScreen({
-    this.person,
+  WorkScreen({
+    this.work,
   });
 
   @override
@@ -18,26 +16,18 @@ class PersonScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${person.firstName} ${person.lastName}'),
+        title: Text(work.title),
       ),
       body: StreamBuilder<List<Work>>(
-        stream: backend.db.worksByComposer(person.id).watch(),
+        stream: backend.db.workParts(work.id).watch(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
               itemCount: snapshot.data.length,
               itemBuilder: (context, index) {
-                final work = snapshot.data[index];
+                final part = snapshot.data[index];
                 return ListTile(
-                  title: Text(work.title),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WorkScreen(
-                        work: work,
-                      ),
-                    ),
-                  ),
+                  title: Text(part.title),
                 );
               },
             );
