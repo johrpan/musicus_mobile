@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../database.dart';
 import '../editors/work.dart';
+
 import 'person.dart';
+import 'settings.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -25,6 +27,10 @@ class HomeScreen extends StatelessWidget {
                 value: 1,
                 child: Text('Add work'),
               ),
+              PopupMenuItem(
+                value: 2,
+                child: Text('Settings'),
+              ),
             ],
             onSelected: (selected) {
               if (selected == 0) {
@@ -35,6 +41,13 @@ class HomeScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => WorkEditor(),
                     fullscreenDialog: true,
+                  ),
+                );
+              } else if (selected == 2) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsScreen(),
                   ),
                 );
               }
