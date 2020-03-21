@@ -29,6 +29,13 @@ class Database extends _$Database {
   @override
   int get schemaVersion => 1;
 
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    }
+  );
+
   // TODO: Remove this once https://github.com/simolus3/moor/issues/453 is fixed.
   Selectable<Work> worksByComposer(int id) {
     return customSelectQuery(
