@@ -55,6 +55,12 @@ class WorkProperties extends StatelessWidget {
           subtitle: Text(composer != null
               ? '${composer.firstName} ${composer.lastName}'
               : 'Select composer'),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () {
+              onComposerChanged(null);
+            },
+          ),
           onTap: () async {
             final Person person = await Navigator.push(
                 context,
@@ -73,6 +79,11 @@ class WorkProperties extends StatelessWidget {
           subtitle: Text(instruments.isNotEmpty
               ? instruments.map((i) => i.name).join(', ')
               : 'Select instruments'),
+          trailing: IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                onInstrumentsChanged([]);
+              }),
           onTap: () async {
             final List<Instrument> selection = await Navigator.push(
                 context,
