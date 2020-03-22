@@ -373,7 +373,7 @@ class _WorkEditorState extends State<WorkEditor> {
                 work: Work(
                   id: workId,
                   title: titleController.text,
-                  composer: composer.id,
+                  composer: composer?.id,
                 ),
                 instrumentIds: instruments.map((i) => i.id).toList(),
               );
