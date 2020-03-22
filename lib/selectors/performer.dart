@@ -14,6 +14,7 @@ class PerformerSelector extends StatefulWidget {
 
 class _PerformerSelectorState extends State<PerformerSelector> {
   Role role;
+  Person person;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +23,18 @@ class _PerformerSelectorState extends State<PerformerSelector> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Select performer'),
+        actions: <Widget>[
+          FlatButton(
+            child: Text('DONE'),
+            onPressed: () => Navigator.pop(
+              context,
+              PerformanceModel(
+                person: person,
+                role: role,
+              ),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: <Widget>[
@@ -65,13 +78,17 @@ class _PerformerSelectorState extends State<PerformerSelector> {
                     itemBuilder: (context, index) {
                       final person = snapshot.data[index];
 
-                      return ListTile(
-                        title: Text('${person.lastName}, ${person.firstName}'),
-                        onTap: () => Navigator.pop(context, PerformanceModel(
-                          person: person,
-                          role: role,
-                        )),
-                      );
+                      return RadioListTile<Person>(
+                          controlAffinity: ListTileControlAffinity.trailing,
+                          title:
+                              Text('${person.lastName}, ${person.firstName}'),
+                          value: person,
+                          groupValue: this.person,
+                          onChanged: (newPerson) {
+                            setState(() {
+                              this.person = newPerson;
+                            });
+                          });
                     },
                   );
                 } else {
@@ -93,7 +110,9 @@ class _PerformerSelectorState extends State<PerformerSelector> {
               ));
 
           if (person != null) {
-            Navigator.pop(context, person);
+            setState(() {
+              this.person = person;
+            });
           }
         },
       ),
