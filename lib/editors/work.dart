@@ -268,7 +268,7 @@ class _WorkEditorState extends State<WorkEditor> {
 
           if (dbPart.composer != null) {
             partComposer =
-                await backend.db.personById(widget.work.composer).getSingle();
+                await backend.db.personById(dbPart.composer).getSingle();
           }
 
           setState(() {
