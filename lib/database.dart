@@ -17,6 +17,18 @@ class WorkModel {
   });
 }
 
+class PerformanceModel {
+  final Person person;
+  final Ensemble ensemble;
+  final Role role;
+
+  PerformanceModel({
+    this.person,
+    this.ensemble,
+    this.role,
+  });
+}
+
 @UseMoor(
   include: {
     'database.moor',
@@ -75,14 +87,19 @@ class Database extends _$Database {
   }
 
   Future<void> updateRecording(
-      Recording recording, List<Performance> perfs) async {
+      Recording recording, List<PerformanceModel> models) async {
     await transaction(() async {
       await (delete(performances)
             ..where((p) => p.recording.equals(recording.id)))
           .go();
       await into(recordings).insert(recording, orReplace: true);
-      for (final perf in perfs) {
-        await into(performances).insert(perf);
+      for (final model in models) {
+        await into(performances).insert(Performance(
+          recording: recording.id,
+          person: model.person.id,
+          ensemble: model.ensemble.id,
+          role: model.role.id,
+        ));
       }
     });
   }

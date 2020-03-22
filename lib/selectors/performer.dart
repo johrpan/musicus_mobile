@@ -5,16 +5,6 @@ import '../database.dart';
 import '../editors/person.dart';
 import '../selectors/role.dart';
 
-class PerformanceModel {
-  final Person person;
-  final Role role;
-
-  PerformanceModel({
-    this.person,
-    this.role,
-  });
-}
-
 // TODO: Allow selecting and adding ensembles.
 // TODO: Allow selecting instruments as roles.
 class PerformerSelector extends StatefulWidget {
