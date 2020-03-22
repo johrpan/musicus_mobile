@@ -4,7 +4,7 @@ import '../backend.dart';
 import '../database.dart';
 import '../editors/role.dart';
 
-class RolesSelector extends StatelessWidget {
+class RoleSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backend = Backend.of(context);
