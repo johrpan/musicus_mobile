@@ -68,6 +68,11 @@ SELECT * FROM works WHERE part_of = :id ORDER BY part_index;
 -- SELECT DISTINCT A.* FROM works A, works B ON A.id = B.part_of
 --     WHERE A.composer = :id OR B.composer = :id;
 
+composersByWork:
+SELECT DISTINCT persons.* FROM persons
+    JOIN works ON works.composer = persons.id
+    WHERE works.id = :id OR works.part_of = :id;
+
 instrumentsByWork:
 SELECT instruments.* FROM instrumentations
     JOIN instruments ON instrumentations.instrument=instruments.id
