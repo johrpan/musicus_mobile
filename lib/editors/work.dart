@@ -293,8 +293,35 @@ class _WorkEditorState extends State<WorkEditor> {
       partTiles.add(PartTile(
         key: Key(part.hashCode.toString()),
         part: part,
-        // TODO: Make part details editable
-        onMore: () {},
+        onMore: () {
+          showDialog(
+            context: context,
+            builder: (context) => StatefulBuilder(
+              builder: (context, setState) => Dialog(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: <Widget>[
+                    WorkProperties(
+                      titleController: part.titleController,
+                      composer: part.composer,
+                      instruments: part.instruments,
+                      onComposerChanged: (composer) {
+                        setState(() {
+                          part.composer = composer;
+                        });
+                      },
+                      onInstrumentsChanged: (instruments) {
+                        setState(() {
+                          part.instruments = instruments;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
         onAdd: () {
           setState(() {
             parts.insert(i + 1, PartData(level: part.level + 1));
