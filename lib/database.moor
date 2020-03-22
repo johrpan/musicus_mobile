@@ -63,10 +63,10 @@ SELECT * FROM works WHERE id = :id LIMIT 1;
 workParts:
 SELECT * FROM works WHERE part_of = :id ORDER BY part_index;
 
--- TODO: Uncomment this once https://github.com/simolus3/moor/issues/453 is fixed.
--- worksByComposer(:id AS INTEGER):
--- SELECT DISTINCT A.* FROM works A, works B ON A.id = B.part_of
---     WHERE A.composer = :id OR B.composer = :id;
+-- TODO: Maybe optimize.
+worksByComposer:
+SELECT DISTINCT A.* FROM works A LEFT JOIN works B ON A.id = B.part_of
+    WHERE A.part_of IS NULL AND A.composer = :id OR B.composer = :id;
 
 composersByWork:
 SELECT DISTINCT persons.* FROM persons

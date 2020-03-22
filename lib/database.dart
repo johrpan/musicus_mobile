@@ -35,14 +35,6 @@ class Database extends _$Database {
         await customStatement('PRAGMA foreign_keys = ON');
       });
 
-  // TODO: Remove this once https://github.com/simolus3/moor/issues/453 is fixed.
-  Selectable<Work> worksByComposer(int id) {
-    return customSelectQuery(
-        'SELECT DISTINCT A.* FROM works A, works B ON A.id = B.part_of WHERE A.composer = :id OR B.composer = :id',
-        variables: [Variable.withInt(id)],
-        readsFrom: {works}).map(_rowToWork);
-  }
-
   Future<void> updatePerson(Person person) async {
     await into(persons).insert(person, orReplace: true);
   }
@@ -85,7 +77,9 @@ class Database extends _$Database {
   Future<void> updateRecording(
       Recording recording, List<Performance> perfs) async {
     await transaction(() async {
-      await (delete(performances)..where((p) => p.recording.equals(recording.id))).go();
+      await (delete(performances)
+            ..where((p) => p.recording.equals(recording.id)))
+          .go();
       await into(recordings).insert(recording, orReplace: true);
       for (final perf in perfs) {
         await into(performances).insert(perf);
