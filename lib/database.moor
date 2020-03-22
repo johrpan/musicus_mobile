@@ -23,6 +23,28 @@ CREATE TABLE instrumentations (
     instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
 );
 
+CREATE TABLE ensembles (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE roles (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE recordings (
+    id INTEGER NOT NULL PRIMARY KEY,
+    work INTEGER REFERENCES works(id)
+);
+
+CREATE TABLE performances (
+    recording INTEGER NOT NULL REFERENCES recordings(id) ON DELETE CASCADE,
+    person INTEGER REFERENCES persons(id) ON DELETE CASCADE,
+    ensemble INTEGER REFERENCES ensembles(id) ON DELETE CASCADE,
+    role INTEGER REFERENCES roles(id)
+);
+
 allPersons:
 SELECT * FROM persons ORDER BY last_name;
 
@@ -50,3 +72,24 @@ instrumentsByWork:
 SELECT instruments.* FROM instrumentations
     JOIN instruments ON instrumentations.instrument=instruments.id
     WHERE instrumentations.work = :workId;
+
+allEnsembles:
+SELECT * FROM ensembles ORDER BY name;
+
+ensembleById:
+SELECT * FROM ensembles WHERE id = :id LIMIT 1;
+
+allRoles:
+SELECT * FROM roles ORDER BY name;
+
+roleById:
+SELECT * FROM roles WHERE id = :id LIMIT 1;
+
+recordingById:
+SELECT * FROM recordings WHERE id = :id;
+
+recordingsByWork:
+SELECT * FROM recordings WHERE work = :id;
+
+performancesByRecording:
+SELECT * FROM performances WHERE recording = :id;

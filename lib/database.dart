@@ -30,11 +30,10 @@ class Database extends _$Database {
   int get schemaVersion => 1;
 
   @override
-  MigrationStrategy get migration => MigrationStrategy(
-    beforeOpen: (details) async {
-      await customStatement('PRAGMA foreign_keys = ON');
-    }
-  );
+  MigrationStrategy get migration =>
+      MigrationStrategy(beforeOpen: (details) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      });
 
   // TODO: Remove this once https://github.com/simolus3/moor/issues/453 is fixed.
   Selectable<Work> worksByComposer(int id) {
@@ -71,6 +70,25 @@ class Database extends _$Database {
       await insertWork(model);
       for (final part in parts) {
         await insertWork(part);
+      }
+    });
+  }
+
+  Future<void> updateEnsemble(Ensemble ensemble) async {
+    await into(ensembles).insert(ensemble, orReplace: true);
+  }
+
+  Future<void> updateRole(Role role) async {
+    await into(roles).insert(role, orReplace: true);
+  }
+
+  Future<void> updateRecording(
+      Recording recording, List<Performance> perfs) async {
+    await transaction(() async {
+      await (delete(performances)..where((p) => p.recording.equals(recording.id))).go();
+      await into(recordings).insert(recording, orReplace: true);
+      for (final perf in perfs) {
+        await into(performances).insert(perf);
       }
     });
   }
