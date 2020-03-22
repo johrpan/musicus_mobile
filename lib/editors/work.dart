@@ -395,7 +395,7 @@ class _WorkEditorState extends State<WorkEditor> {
               }
 
               await backend.db.updateWork(model, partModels);
-              Navigator.pop(context);
+              Navigator.pop(context, model.work);
             },
           ),
         ],
