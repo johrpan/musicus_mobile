@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   moor_flutter:
+  path:
   rxdart:
 
 dev_dependencies:
