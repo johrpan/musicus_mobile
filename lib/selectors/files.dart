@@ -4,7 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as path;
 
+enum FilesSelectorMode {
+  files,
+  directory,
+}
+
 class FilesSelector extends StatefulWidget {
+  final FilesSelectorMode mode;
+
+  FilesSelector({
+    this.mode = FilesSelectorMode.files,
+  });
+
   @override
   _FilesSelectorState createState() => _FilesSelectorState();
 }
@@ -71,7 +82,8 @@ class _FilesSelectorState extends State<FilesSelector> {
                 },
               );
             } else if (fse is File) {
-              result = CheckboxListTile(
+              if (widget.mode == FilesSelectorMode.files) {
+                result = CheckboxListTile(
                 value: selectedPaths.contains(fse.path),
                 secondary: Icon(Icons.insert_drive_file),
                 title: Text(path.basename(fse.path)),
@@ -85,6 +97,12 @@ class _FilesSelectorState extends State<FilesSelector> {
                   });
                 },
               );
+              } else {
+                result = ListTile(
+                  leading: const Icon(Icons.insert_drive_file),
+                  title: Text(path.basename(fse.path)),
+                );
+              }
             }
 
             return result;
@@ -101,9 +119,14 @@ class _FilesSelectorState extends State<FilesSelector> {
           title: Text('Choose files'),
           actions: <Widget>[
             FlatButton(
-              child: Text('DONE'),
+              child: Text(
+                  widget.mode == FilesSelectorMode.files ? 'DONE' : 'SELECT'),
               onPressed: () {
-                Navigator.pop(context, selectedPaths);
+                Navigator.pop(
+                    context,
+                    widget.mode == FilesSelectorMode.files
+                        ? selectedPaths
+                        : directories.last?.path);
               },
             ),
           ],
@@ -113,10 +136,12 @@ class _FilesSelectorState extends State<FilesSelector> {
             Material(
               elevation: 2.0,
               child: ListTile(
-                leading: directories.isNotEmpty ? IconButton(
-                  icon: const Icon(Icons.arrow_upward),
-                  onPressed: up,
-                ) : null,
+                leading: directories.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.arrow_upward),
+                        onPressed: up,
+                      )
+                    : null,
                 title: Text(directories.isEmpty
                     ? 'Storage devices'
                     : directories.last.path),
