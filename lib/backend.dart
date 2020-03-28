@@ -89,5 +89,5 @@ class _InheritedBackend extends InheritedWidget {
   }) : super(child: child);
 
   @override
-  bool updateShouldNotify(_InheritedBackend old) => state != old.state;
+  bool updateShouldNotify(_InheritedBackend old) => true;
 }
