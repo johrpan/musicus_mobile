@@ -11,7 +11,7 @@ class ProgramScreen extends StatefulWidget {
 }
 
 class _ProgramScreenState extends State<ProgramScreen> {
-  Backend backend;
+  BackendState backend;
   StreamSubscription<double> positionSubscription;
   double position = 0.0;
   bool seeking = false;

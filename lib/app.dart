@@ -15,7 +15,7 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
   final nestedNavigator = GlobalKey<NavigatorState>();
 
   AnimationController playerBarAnimation;
-  Backend backend;
+  BackendState backend;
   StreamSubscription<bool> playerActiveSubscription;
 
   @override

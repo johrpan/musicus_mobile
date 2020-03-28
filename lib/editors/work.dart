@@ -209,7 +209,7 @@ class WorkEditor extends StatefulWidget {
 class _WorkEditorState extends State<WorkEditor> {
   final titleController = TextEditingController();
 
-  Backend backend;
+  BackendState backend;
 
   String title = '';
   Person composer;

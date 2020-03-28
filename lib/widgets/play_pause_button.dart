@@ -12,7 +12,7 @@ class PlayPauseButton extends StatefulWidget {
 class _PlayPauseButtonState extends State<PlayPauseButton>
     with SingleTickerProviderStateMixin {
   AnimationController playPauseAnimation;
-  Backend backend;
+  BackendState backend;
   StreamSubscription<bool> playingSubscription;
 
   @override

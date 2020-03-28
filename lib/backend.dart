@@ -3,21 +3,34 @@ import 'package:rxdart/rxdart.dart';
 
 import 'database.dart';
 
-class Backend extends InheritedWidget {
-  static Backend of(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<Backend>();
-
+class Backend extends StatefulWidget {
   final Widget child;
 
+  Backend({
+    @required this.child,
+  });
+
+  @override
+  BackendState createState() => BackendState();
+
+  static BackendState of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_InheritedBackend>().state;
+}
+
+class BackendState extends State<Backend> {
   final db = Database('musicus.sqlite');
 
   final playerActive = BehaviorSubject.seeded(false);
   final playing = BehaviorSubject.seeded(false);
   final position = BehaviorSubject.seeded(0.0);
 
-  Backend({
-    @required this.child,
-  }) : super(child: child);
+  @override
+  Widget build(BuildContext context) {
+    return _InheritedBackend(
+      child: widget.child,
+      state: this,
+    );
+  }
 
   void startPlayer() {
     playerActive.add(true);
@@ -44,10 +57,17 @@ class Backend extends InheritedWidget {
       }
     }
   }
+}
+
+class _InheritedBackend extends InheritedWidget {
+  final Widget child;
+  final BackendState state;
+
+  _InheritedBackend({
+    @required this.child,
+    @required this.state,
+  }) : super(child: child);
 
   @override
-  bool updateShouldNotify(Backend old) =>
-      playerActive != old.playerActive ||
-      playing != old.playing ||
-      position != old.position;
+  bool updateShouldNotify(_InheritedBackend old) => state != old.state;
 }
