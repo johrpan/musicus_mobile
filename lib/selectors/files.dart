@@ -127,6 +127,12 @@ class _FilesSelectorState extends State<FilesSelector> {
       child: Scaffold(
         appBar: AppBar(
           title: Text('Choose files'),
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
           actions: <Widget>[
             FlatButton(
               child: Text(
