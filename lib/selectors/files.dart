@@ -11,9 +11,11 @@ enum FilesSelectorMode {
 
 class FilesSelector extends StatefulWidget {
   final FilesSelectorMode mode;
+  final String baseDirectory;
 
   FilesSelector({
     this.mode = FilesSelectorMode.files,
+    this.baseDirectory,
   });
 
   @override
@@ -23,7 +25,8 @@ class FilesSelector extends StatefulWidget {
 class _FilesSelectorState extends State<FilesSelector> {
   static const platform = MethodChannel('de.johrpan.musicus/platform');
 
-  List<Directory> storageRoots = [];
+  Directory baseDirectory;
+  List<Directory> storageRoots;
   List<Directory> directories = [];
   List<FileSystemEntity> contents = [];
   Set<String> selectedPaths = {};
@@ -32,58 +35,66 @@ class _FilesSelectorState extends State<FilesSelector> {
   void initState() {
     super.initState();
 
-    platform.invokeListMethod<String>('getStorageRoots').then((sr) {
-      setState(() {
-        storageRoots = sr.map((path) => Directory(path)).toList();
+    if (widget.baseDirectory == null) {
+      platform.invokeListMethod<String>('getStorageRoots').then((sr) {
+        setState(() {
+          storageRoots = sr.map((path) => Directory(path)).toList();
+        });
       });
-    });
+    } else {
+      baseDirectory = Directory(widget.baseDirectory);
+      openDirectory(baseDirectory);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    String titleText;
     Widget body;
 
-    if (directories.isEmpty) {
-      if (storageRoots != null) {
-        body = ListView(
-          children: storageRoots
-              .map((dir) => ListTile(
-                    leading: const Icon(Icons.storage),
-                    title: Text(dir.path),
-                    onTap: () {
-                      setState(() {
-                        directories.add(dir);
-                      });
+    if (directories.isEmpty && storageRoots != null) {
+      titleText = 'Storage devices';
+      body = ListView(
+        children: storageRoots
+            .map((dir) => ListTile(
+                  leading: const Icon(Icons.storage),
+                  title: Text(dir.path),
+                  onTap: () {
+                    setState(() {
+                      directories.add(dir);
+                    });
 
-                      openDirectory(dir);
-                    },
-                  ))
-              .toList(),
-        );
+                    openDirectory(dir);
+                  },
+                ))
+            .toList(),
+      );
+    } else if (contents != null) {
+      if (directories.isEmpty) {
+        titleText = 'Base directory';
       } else {
-        body = Container();
+        titleText = path.basename(directories.last.path);
       }
-    } else {
-      if (contents != null) {
-        body = ListView(
-          children: contents.map((fse) {
-            Widget result;
 
-            if (fse is Directory) {
-              result = ListTile(
-                leading: const Icon(Icons.folder),
-                title: Text(path.basename(fse.path)),
-                onTap: () {
-                  setState(() {
-                    directories.add(fse);
-                  });
+      body = ListView(
+        children: contents.map((fse) {
+          Widget result;
 
-                  openDirectory(fse);
-                },
-              );
-            } else if (fse is File) {
-              if (widget.mode == FilesSelectorMode.files) {
-                result = CheckboxListTile(
+          if (fse is Directory) {
+            result = ListTile(
+              leading: const Icon(Icons.folder),
+              title: Text(path.basename(fse.path)),
+              onTap: () {
+                setState(() {
+                  directories.add(fse);
+                });
+
+                openDirectory(fse);
+              },
+            );
+          } else if (fse is File) {
+            if (widget.mode == FilesSelectorMode.files) {
+              result = CheckboxListTile(
                 value: selectedPaths.contains(fse.path),
                 secondary: Icon(Icons.insert_drive_file),
                 title: Text(path.basename(fse.path)),
@@ -97,20 +108,19 @@ class _FilesSelectorState extends State<FilesSelector> {
                   });
                 },
               );
-              } else {
-                result = ListTile(
-                  leading: const Icon(Icons.insert_drive_file),
-                  title: Text(path.basename(fse.path)),
-                );
-              }
+            } else {
+              result = ListTile(
+                leading: const Icon(Icons.insert_drive_file),
+                title: Text(path.basename(fse.path)),
+              );
             }
+          }
 
-            return result;
-          }).toList(),
-        );
-      } else {
-        body = Container();
-      }
+          return result;
+        }).toList(),
+      );
+    } else {
+      body = Container();
     }
 
     return WillPopScope(
@@ -142,9 +152,7 @@ class _FilesSelectorState extends State<FilesSelector> {
                         onPressed: up,
                       )
                     : null,
-                title: Text(directories.isEmpty
-                    ? 'Storage devices'
-                    : directories.last.path),
+                title: Text(titleText),
               ),
             ),
             Expanded(
@@ -200,6 +208,8 @@ class _FilesSelectorState extends State<FilesSelector> {
 
       if (directories.isNotEmpty) {
         openDirectory(directories.last);
+      } else if (baseDirectory != null) {
+        openDirectory(baseDirectory);
       }
     }
   }
