@@ -3,6 +3,11 @@ import 'package:rxdart/rxdart.dart';
 
 import 'database.dart';
 
+enum BackendStatus {
+  loading,
+  ready,
+}
+
 class Backend extends StatefulWidget {
   final Widget child;
 
@@ -18,11 +23,18 @@ class Backend extends StatefulWidget {
 }
 
 class BackendState extends State<Backend> {
-  final db = Database('musicus.sqlite');
-
   final playerActive = BehaviorSubject.seeded(false);
   final playing = BehaviorSubject.seeded(false);
   final position = BehaviorSubject.seeded(0.0);
+
+  Database db;
+  BackendStatus status = BackendStatus.loading;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +42,14 @@ class BackendState extends State<Backend> {
       child: widget.child,
       state: this,
     );
+  }
+
+  Future<void> _load() async {
+    db = Database('musicus.sqlite');
+
+    setState(() {
+      status = BackendStatus.ready;
+    });
   }
 
   void startPlayer() {
