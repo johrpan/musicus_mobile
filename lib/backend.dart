@@ -1,12 +1,14 @@
 import 'package:flutter/widgets.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'database.dart';
 
 enum BackendStatus {
   loading,
   needsPermissions,
+  setup,
   ready,
 }
 
@@ -33,6 +35,9 @@ class BackendState extends State<Backend> {
 
   Database db;
   BackendStatus status = BackendStatus.loading;
+  String musicLibraryPath;
+
+  SharedPreferences _shPref;
 
   @override
   void initState() {
@@ -49,6 +54,9 @@ class BackendState extends State<Backend> {
   }
 
   Future<void> _load() async {
+    _shPref = await SharedPreferences.getInstance();
+    musicLibraryPath = _shPref.getString('musicLibraryPath');
+
     db = Database('musicus.sqlite');
 
     final permissionStatus =
@@ -57,6 +65,16 @@ class BackendState extends State<Backend> {
     if (permissionStatus != PermissionStatus.granted) {
       setState(() {
         status = BackendStatus.needsPermissions;
+      });
+    } else {
+      await _loadMusicLibrary();
+    }
+  }
+
+  Future<void> _loadMusicLibrary() async {
+    if (musicLibraryPath == null) {
+      setState(() {
+        status = BackendStatus.setup;
       });
     } else {
       setState(() {
@@ -68,7 +86,7 @@ class BackendState extends State<Backend> {
   Future<void> requestPermissions() async {
     final result =
         await _permissionHandler.requestPermissions([PermissionGroup.storage]);
-    
+
     if (result[PermissionGroup.storage] == PermissionStatus.granted) {
       setState(() {
         status = BackendStatus.ready;
@@ -77,6 +95,15 @@ class BackendState extends State<Backend> {
   }
 
   Future<void> openAppSettings() => _permissionHandler.openAppSettings();
+
+  Future<void> setMusicLibraryPath(String path) async {
+    musicLibraryPath = path;
+    await _shPref.setString('musicLibraryPath', path);
+    setState(() {
+      status = BackendStatus.loading;
+    });
+    await _loadMusicLibrary();
+  }
 
   void startPlayer() {
     playerActive.add(true);

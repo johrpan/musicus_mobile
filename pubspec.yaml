@@ -15,6 +15,7 @@ dependencies:
   path:
   permission_handler:
   rxdart:
+  shared_preferences:
 
 dev_dependencies:
   build_runner:

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'backend.dart';
 import 'screens/home.dart';
+import 'selectors/files.dart';
 import 'widgets/player_bar.dart';
 
 class App extends StatelessWidget {
@@ -59,6 +60,42 @@ class App extends StatelessWidget {
                     title: Text('Open system\'s app settings'),
                     onTap: () {
                       backend.openAppSettings();
+                    },
+                  ),
+                ],
+              ),
+            );
+          } else if (backend.status == BackendStatus.setup) {
+            return Material(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    'Choose the base path for\nyour music library.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headline6,
+                  ),
+                  SizedBox(
+                    height: 16.0,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.folder_open),
+                    title: Text('Choose path'),
+                    onTap: () async {
+                      final path = await Navigator.push<String>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FilesSelector(
+                            mode: FilesSelectorMode.directory,
+                          ),
+                          fullscreenDialog: true,
+                        ),
+                      );
+
+                      if (path != null) {
+                        backend.setMusicLibraryPath(path);
+                      }
                     },
                   ),
                 ],
