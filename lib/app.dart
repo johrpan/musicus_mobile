@@ -30,8 +30,39 @@ class App extends StatelessWidget {
       home: Builder(
         builder: (context) {
           if (backend.status == BackendStatus.loading) {
-            return Container(
+            return Material(
               color: Theme.of(context).scaffoldBackgroundColor,
+            );
+          } else if (backend.status == BackendStatus.needsPermissions) {
+            return Material(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    'Musicus needs permissions\nto access your files.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headline6,
+                  ),
+                  SizedBox(
+                    height: 16.0,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.done),
+                    title: Text('Grant permissions'),
+                    onTap: () {
+                      backend.requestPermissions();
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings),
+                    title: Text('Open system\'s app settings'),
+                    onTap: () {
+                      backend.openAppSettings();
+                    },
+                  ),
+                ],
+              ),
             );
           } else {
             return Content();

@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'database.dart';
 
 enum BackendStatus {
   loading,
+  needsPermissions,
   ready,
 }
 
@@ -23,6 +25,8 @@ class Backend extends StatefulWidget {
 }
 
 class BackendState extends State<Backend> {
+  final _permissionHandler = PermissionHandler();
+
   final playerActive = BehaviorSubject.seeded(false);
   final playing = BehaviorSubject.seeded(false);
   final position = BehaviorSubject.seeded(0.0);
@@ -47,10 +51,32 @@ class BackendState extends State<Backend> {
   Future<void> _load() async {
     db = Database('musicus.sqlite');
 
-    setState(() {
-      status = BackendStatus.ready;
-    });
+    final permissionStatus =
+        await _permissionHandler.checkPermissionStatus(PermissionGroup.storage);
+
+    if (permissionStatus != PermissionStatus.granted) {
+      setState(() {
+        status = BackendStatus.needsPermissions;
+      });
+    } else {
+      setState(() {
+        status = BackendStatus.ready;
+      });
+    }
   }
+
+  Future<void> requestPermissions() async {
+    final result =
+        await _permissionHandler.requestPermissions([PermissionGroup.storage]);
+    
+    if (result[PermissionGroup.storage] == PermissionStatus.granted) {
+      setState(() {
+        status = BackendStatus.ready;
+      });
+    }
+  }
+
+  Future<void> openAppSettings() => _permissionHandler.openAppSettings();
 
   void startPlayer() {
     playerActive.add(true);
