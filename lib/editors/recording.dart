@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as pth;
 
 import '../backend.dart';
 import '../database.dart';
+import '../selectors/files.dart';
 import '../selectors/performer.dart';
 import '../selectors/work.dart';
+
+class TrackModel {
+  final String path;
+
+  TrackModel({
+    this.path,
+  });
+}
 
 class RecordingEditor extends StatefulWidget {
   final Recording recording;
@@ -19,6 +29,7 @@ class RecordingEditor extends StatefulWidget {
 class _RecordingEditorState extends State<RecordingEditor> {
   Work work;
   List<PerformanceModel> performances = [];
+  List<TrackModel> tracks = [];
 
   @override
   void initState() {
@@ -134,9 +145,43 @@ class _RecordingEditorState extends State<RecordingEditor> {
             title: Text('Tracks'),
             trailing: IconButton(
               icon: const Icon(Icons.add),
-              onPressed: () {},
+              onPressed: () async {
+                final paths = await Navigator.push<Set<String>>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FilesSelector(
+                      baseDirectory: backend.musicLibraryPath,
+                    ),
+                    fullscreenDialog: true,
+                  ),
+                );
+
+                if (paths != null) {
+                  setState(() {
+                    for (final path in paths) {
+                      final relPath =
+                          pth.relative(path, from: backend.musicLibraryPath);
+                      tracks.add(TrackModel(
+                        path: relPath,
+                      ));
+                    }
+                  });
+                }
+              },
             ),
           ),
+          for (final track in tracks)
+            ListTile(
+              title: Text(track.path),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+                  setState(() {
+                    tracks.remove(track);
+                  });
+                },
+              ),
+            ),
         ],
       ),
     );
