@@ -96,9 +96,9 @@ class Database extends _$Database {
       for (final model in models) {
         await into(performances).insert(Performance(
           recording: recording.id,
-          person: model.person.id,
-          ensemble: model.ensemble.id,
-          role: model.role.id,
+          person: model.person?.id,
+          ensemble: model.ensemble?.id,
+          role: model.role?.id,
         ));
       }
     });
