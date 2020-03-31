@@ -89,6 +89,7 @@ class WorkProperties extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => InstrumentsSelector(
+                    multiple: true,
                     selection: instruments,
                   ),
                   fullscreenDialog: true,

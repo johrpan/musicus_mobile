@@ -5,9 +5,11 @@ import '../database.dart';
 import '../editors/instrument.dart';
 
 class InstrumentsSelector extends StatefulWidget {
+  final bool multiple;
   final List<Instrument> selection;
 
   InstrumentsSelector({
+    this.multiple = false,
     this.selection,
   });
 
@@ -33,13 +35,15 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Select instruments'),
-        actions: <Widget>[
-          FlatButton(
-            child: Text('DONE'),
-            onPressed: () => Navigator.pop(context, selection.toList()),
-          ),
-        ],
+        title: Text(widget.multiple ? 'Select instruments/roles' : 'Select instrument/role'),
+        actions: widget.multiple
+            ? <Widget>[
+                FlatButton(
+                  child: Text('DONE'),
+                  onPressed: () => Navigator.pop(context, selection.toList()),
+                ),
+              ]
+            : null,
       ),
       body: StreamBuilder(
         stream: backend.db.allInstruments().watch(),
@@ -50,20 +54,27 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
               itemBuilder: (context, index) {
                 final instrument = snapshot.data[index];
 
-                return CheckboxListTile(
-                  title: Text(instrument.name),
-                  value: selection.contains(instrument),
-                  checkColor: Colors.black,
-                  onChanged: (selected) {
-                    setState(() {
-                      if (selected) {
-                        selection.add(instrument);
-                      } else {
-                        selection.remove(instrument);
-                      }
-                    });
-                  },
-                );
+                if (widget.multiple) {
+                  return CheckboxListTile(
+                    title: Text(instrument.name),
+                    value: selection.contains(instrument),
+                    checkColor: Colors.black,
+                    onChanged: (selected) {
+                      setState(() {
+                        if (selected) {
+                          selection.add(instrument);
+                        } else {
+                          selection.remove(instrument);
+                        }
+                      });
+                    },
+                  );
+                } else {
+                  return ListTile(
+                    title: Text(instrument.name),
+                    onTap: () => Navigator.pop(context, instrument),
+                  );
+                }
               },
             );
           } else {
@@ -82,9 +93,13 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
               ));
 
           if (instrument != null) {
-            setState(() {
-              selection.add(instrument);
-            });
+            if (widget.multiple) {
+              setState(() {
+                selection.add(instrument);
+              });
+            } else {
+              Navigator.pop(context, instrument);
+            }
           }
         },
       ),

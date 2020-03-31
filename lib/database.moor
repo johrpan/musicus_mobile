@@ -4,6 +4,8 @@ CREATE TABLE persons (
     last_name TEXT NOT NULL
 );
 
+-- This represents real instruments as well as other roles that can be played
+-- in a recording.
 CREATE TABLE instruments (
     id INTEGER NOT NULL PRIMARY KEY,
     name TEXT NOT NULL
@@ -28,11 +30,6 @@ CREATE TABLE ensembles (
     name TEXT NOT NULL
 );
 
-CREATE TABLE roles (
-    id INTEGER NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL
-);
-
 CREATE TABLE recordings (
     id INTEGER NOT NULL PRIMARY KEY,
     work INTEGER REFERENCES works(id)
@@ -42,7 +39,7 @@ CREATE TABLE performances (
     recording INTEGER NOT NULL REFERENCES recordings(id) ON DELETE CASCADE,
     person INTEGER REFERENCES persons(id) ON DELETE CASCADE,
     ensemble INTEGER REFERENCES ensembles(id) ON DELETE CASCADE,
-    role INTEGER REFERENCES roles(id)
+    role INTEGER REFERENCES instruments(id)
 );
 
 allPersons:
@@ -83,12 +80,6 @@ SELECT * FROM ensembles ORDER BY name;
 
 ensembleById:
 SELECT * FROM ensembles WHERE id = :id LIMIT 1;
-
-allRoles:
-SELECT * FROM roles ORDER BY name;
-
-roleById:
-SELECT * FROM roles WHERE id = :id LIMIT 1;
 
 recordingById:
 SELECT * FROM recordings WHERE id = :id;

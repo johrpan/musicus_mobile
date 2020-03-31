@@ -32,7 +32,7 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Instrument'),
+        title: Text('Instrument/Role'),
         actions: <Widget>[
           FlatButton(
             child: Text('DONE'),

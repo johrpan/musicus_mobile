@@ -20,7 +20,7 @@ class WorkModel {
 class PerformanceModel {
   final Person person;
   final Ensemble ensemble;
-  final Role role;
+  final Instrument role;
 
   PerformanceModel({
     this.person,
@@ -42,10 +42,11 @@ class Database extends _$Database {
   int get schemaVersion => 1;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(beforeOpen: (details) async {
-        await customStatement('PRAGMA foreign_keys = ON');
-      });
+  MigrationStrategy get migration => MigrationStrategy(
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
+      );
 
   Future<void> updatePerson(Person person) async {
     await into(persons).insert(person, orReplace: true);
@@ -80,10 +81,6 @@ class Database extends _$Database {
 
   Future<void> updateEnsemble(Ensemble ensemble) async {
     await into(ensembles).insert(ensemble, orReplace: true);
-  }
-
-  Future<void> updateRole(Role role) async {
-    await into(roles).insert(role, orReplace: true);
   }
 
   Future<void> updateRecording(

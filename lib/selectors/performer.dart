@@ -3,17 +3,17 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../database.dart';
 import '../editors/person.dart';
-import '../selectors/role.dart';
+
+import 'instruments.dart';
 
 // TODO: Allow selecting and adding ensembles.
-// TODO: Allow selecting instruments as roles.
 class PerformerSelector extends StatefulWidget {
   @override
   _PerformerSelectorState createState() => _PerformerSelectorState();
 }
 
 class _PerformerSelectorState extends State<PerformerSelector> {
-  Role role;
+  Instrument role;
   Person person;
 
   @override
@@ -41,9 +41,9 @@ class _PerformerSelectorState extends State<PerformerSelector> {
           Material(
             elevation: 2.0,
             child: ListTile(
-              title: Text('Role'),
+              title: Text('Instrument/Role'),
               subtitle:
-                  Text(role != null ? role.name : 'Select role or instrument'),
+                  Text(role != null ? role.name : 'Select instrument/role'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () {
@@ -53,10 +53,10 @@ class _PerformerSelectorState extends State<PerformerSelector> {
                 },
               ),
               onTap: () async {
-                final Role newRole = await Navigator.push(
+                final Instrument newRole = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RoleSelector(),
+                      builder: (context) => InstrumentsSelector(),
                       fullscreenDialog: true,
                     ));
 
