@@ -88,9 +88,7 @@ class BackendState extends State<Backend> {
         await _permissionHandler.requestPermissions([PermissionGroup.storage]);
 
     if (result[PermissionGroup.storage] == PermissionStatus.granted) {
-      setState(() {
-        status = BackendStatus.ready;
-      });
+      _loadMusicLibrary();
     }
   }
 
