@@ -2,19 +2,33 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../database.dart';
+import '../editors/ensemble.dart';
 import '../editors/person.dart';
 
 import 'instruments.dart';
 
-// TODO: Allow selecting and adding ensembles.
 class PerformerSelector extends StatefulWidget {
   @override
   _PerformerSelectorState createState() => _PerformerSelectorState();
 }
 
+class _Selection {
+  final bool isPerson;
+  final Person person;
+  final Ensemble ensemble;
+
+  _Selection.person(this.person)
+      : isPerson = true,
+        ensemble = null;
+
+  _Selection.ensemble(this.ensemble)
+      : isPerson = false,
+        person = null;
+}
+
 class _PerformerSelectorState extends State<PerformerSelector> {
   Instrument role;
-  Person person;
+  _Selection selection;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +43,8 @@ class _PerformerSelectorState extends State<PerformerSelector> {
             onPressed: () => Navigator.pop(
               context,
               PerformanceModel(
-                person: person,
+                person: selection?.person,
+                ensemble: selection?.ensemble,
                 role: role,
               ),
             ),
@@ -69,32 +84,60 @@ class _PerformerSelectorState extends State<PerformerSelector> {
             ),
           ),
           Expanded(
-            child: StreamBuilder(
-              stream: backend.db.allPersons().watch(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return ListView.builder(
-                    itemCount: snapshot.data.length,
-                    itemBuilder: (context, index) {
-                      final person = snapshot.data[index];
-
-                      return RadioListTile<Person>(
-                          controlAffinity: ListTileControlAffinity.trailing,
-                          title:
-                              Text('${person.lastName}, ${person.firstName}'),
-                          value: person,
-                          groupValue: this.person,
-                          onChanged: (newPerson) {
-                            setState(() {
-                              this.person = newPerson;
-                            });
-                          });
-                    },
-                  );
-                } else {
-                  return Container();
-                }
-              },
+            child: ListView(
+              children: <Widget>[
+                StreamBuilder<List<Person>>(
+                  stream: backend.db.allPersons().watch(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data.isNotEmpty) {
+                      return ExpansionTile(
+                        initiallyExpanded: true,
+                        title: Text('Persons'),
+                        children: snapshot.data
+                            .map((person) => RadioListTile<Person>(
+                                  title: Text(
+                                      '${person.lastName}, ${person.firstName}'),
+                                  value: person,
+                                  groupValue: selection?.person,
+                                  onChanged: (person) {
+                                    setState(() {
+                                      selection = _Selection.person(person);
+                                    });
+                                  },
+                                ))
+                            .toList(),
+                      );
+                    } else {
+                      return Container();
+                    }
+                  },
+                ),
+                StreamBuilder<List<Ensemble>>(
+                  stream: backend.db.allEnsembles().watch(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data.isNotEmpty) {
+                      return ExpansionTile(
+                        initiallyExpanded: true,
+                        title: Text('Ensembles'),
+                        children: snapshot.data
+                            .map((ensemble) => RadioListTile<Ensemble>(
+                                  title: Text(ensemble.name),
+                                  value: ensemble,
+                                  groupValue: selection?.ensemble,
+                                  onChanged: (ensemble) {
+                                    setState(() {
+                                      selection = _Selection.ensemble(ensemble);
+                                    });
+                                  },
+                                ))
+                            .toList(),
+                      );
+                    } else {
+                      return Container();
+                    }
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -102,18 +145,54 @@ class _PerformerSelectorState extends State<PerformerSelector> {
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
-          final Person person = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PersonEditor(),
-                fullscreenDialog: true,
-              ));
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                ListTile(
+                  leading: const Icon(Icons.add),
+                  title: Text('Add person'),
+                  onTap: () async {
+                    final Person person = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PersonEditor(),
+                          fullscreenDialog: true,
+                        ));
 
-          if (person != null) {
-            setState(() {
-              this.person = person;
-            });
-          }
+                    if (person != null) {
+                      setState(() {
+                        selection = _Selection.person(person);
+                      });
+                    }
+
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.add),
+                  title: Text('Add ensemble'),
+                  onTap: () async {
+                    final Ensemble ensemble = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EnsembleEditor(),
+                          fullscreenDialog: true,
+                        ));
+
+                    if (ensemble != null) {
+                      setState(() {
+                        selection = _Selection.ensemble(ensemble);
+                      });
+                    }
+
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          );
         },
       ),
     );
