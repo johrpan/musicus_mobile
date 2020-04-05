@@ -33,8 +33,19 @@ class WorkTile extends StatelessWidget {
                 : '...';
             return ListTile(
               leading: leading,
-              title: Text(titleText),
-              subtitle: Text(subtitleText),
+              title: DefaultTextStyle(
+                style: Theme.of(context).textTheme.bodyText2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      subtitleText,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(titleText),
+                  ],
+                ),
+              ),
               onTap: onTap ?? null,
             );
           },
