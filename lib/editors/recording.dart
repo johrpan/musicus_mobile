@@ -4,6 +4,7 @@ import '../backend.dart';
 import '../database.dart';
 import '../selectors/performer.dart';
 import '../selectors/work.dart';
+import '../widgets/work_tile.dart';
 
 class RecordingEditor extends StatefulWidget {
   final Recording recording;
@@ -69,25 +70,9 @@ class _RecordingEditorState extends State<RecordingEditor> {
       body: ListView(
         children: <Widget>[
           work != null
-              ? StreamBuilder<List<Person>>(
-                  stream: backend.db.composersByWork(work.id).watch(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return ListTile(
-                        title: Text(work.title),
-                        subtitle: Text(snapshot.data
-                            .map((p) => '${p.firstName} ${p.lastName}')
-                            .join(', ')),
-                        onTap: selectWork,
-                      );
-                    } else {
-                      return ListTile(
-                        title: Text(work.title),
-                        subtitle: Text('…'),
-                        onTap: selectWork,
-                      );
-                    }
-                  },
+              ? WorkTile(
+                  workId: work.id,
+                  onTap: selectWork,
                 )
               : ListTile(
                   title: Text('Work'),
