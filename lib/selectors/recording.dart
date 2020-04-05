@@ -1,10 +1,158 @@
 import 'package:flutter/material.dart';
+import 'package:musicus/widgets/person_text.dart';
 
 import '../backend.dart';
 import '../database.dart';
 import '../editors/recording.dart';
 import '../widgets/works_by_composer.dart';
+import '../widgets/work_tile.dart';
 import '../widgets/performance_row.dart';
+
+class PersonList extends StatelessWidget {
+  final void Function(int personId) onSelect;
+
+  PersonList({
+    this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final backend = Backend.of(context);
+
+    return Column(
+      children: <Widget>[
+        Material(
+          elevation: 2.0,
+          child: ListTile(
+            title: Text('Composers'),
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<Person>>(
+            stream: backend.db.allPersons().watch(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return ListView.builder(
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (context, index) {
+                    final person = snapshot.data[index];
+                    return ListTile(
+                      title: Text('${person.lastName}, ${person.firstName}'),
+                      onTap: () => onSelect(person.id),
+                    );
+                  },
+                );
+              } else {
+                return Container();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class WorkList extends StatelessWidget {
+  final int composerId;
+  final void Function(int workId) onSelect;
+
+  WorkList({
+    this.composerId,
+    this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Material(
+          elevation: 2.0,
+          child: ListTile(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: PersonText(composerId),
+          ),
+        ),
+        Expanded(
+          child: WorksByComposer(
+            personId: composerId,
+            onTap: (selectedWork) => onSelect(selectedWork.id),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class RecordingList extends StatelessWidget {
+  final int workId;
+  final void Function(Recording recording) onSelect;
+
+  RecordingList({
+    this.workId,
+    this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final backend = Backend.of(context);
+    return Column(
+      children: <Widget>[
+        Material(
+          elevation: 2.0,
+          child: WorkTile(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => Navigator.pop(context),
+            ),
+            workId: workId,
+          ),
+        ),
+        Expanded(
+          child: StreamBuilder<List<Recording>>(
+            stream: backend.db.recordingsByWork(workId).watch(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return ListView.builder(
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (context, index) {
+                    final recording = snapshot.data[index];
+                    return ListTile(
+                      title: StreamBuilder<List<Performance>>(
+                        stream: backend.db
+                            .performancesByRecording(recording.id)
+                            .watch(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                for (final performance in snapshot.data)
+                                  PerformanceRow(performance),
+                              ],
+                            );
+                          } else {
+                            return Container();
+                          }
+                        },
+                      ),
+                      onTap: () => onSelect(recording),
+                    );
+                  },
+                );
+              } else {
+                return Container();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class RecordingsSelector extends StatefulWidget {
   @override
@@ -12,97 +160,14 @@ class RecordingsSelector extends StatefulWidget {
 }
 
 class _RecordingsSelectorState extends State<RecordingsSelector> {
-  Person composer;
-  Work work;
-
+  final nestedNavigator = GlobalKey<NavigatorState>();
+  
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
-
-    bool showBackButton;
-    String titleText;
-    Widget content;
-
-    if (composer != null) {
-      showBackButton = true;
-      if (work != null) {
-        titleText = work.title;
-        content = StreamBuilder<List<Recording>>(
-          stream: backend.db.recordingsByWork(work.id).watch(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ListView.builder(
-                itemCount: snapshot.data.length,
-                itemBuilder: (context, index) {
-                  final recording = snapshot.data[index];
-                  return ListTile(
-                    title: StreamBuilder<List<Performance>>(
-                      stream: backend.db
-                          .performancesByRecording(recording.id)
-                          .watch(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          return Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              for (final performance in snapshot.data)
-                                PerformanceRow(performance),
-                            ],
-                          );
-                        } else {
-                          return Container();
-                        }
-                      },
-                    ),
-                    onTap: () {
-                      Navigator.pop(context, recording);
-                    },
-                  );
-                },
-              );
-            } else {
-              return Container();
-            }
-          },
-        );
-      } else {
-        titleText = '${composer.firstName} ${composer.lastName}';
-        content = WorksByComposer(
-          personId: composer.id,
-          onTap: (selectedWork) {
-            setState(() {
-              work = selectedWork;
-            });
-          },
-        );
-      }
-    } else {
-      showBackButton = false;
-      titleText = 'Composers';
-
-      content = StreamBuilder<List<Person>>(
-        stream: backend.db.allPersons().watch(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (context, index) {
-                final person = snapshot.data[index];
-                return ListTile(
-                  title: Text('${person.lastName}, ${person.firstName}'),
-                  onTap: () {
-                    setState(() {
-                      composer = person;
-                    });
-                  },
-                );
-              },
-            );
-          } else {
-            return Container();
-          }
-        },
-      );
+    // This exists to circumvent the nested navigator when selecting a
+    // recording.
+    void popUpperNavigator(Recording recording) {
+      Navigator.pop(context, recording);
     }
 
     return WillPopScope(
@@ -114,22 +179,31 @@ class _RecordingsSelectorState extends State<RecordingsSelector> {
           ),
           title: Text('Select recording'),
         ),
-        body: Column(
-          children: <Widget>[
-            Material(
-              elevation: 2.0,
-              child: ListTile(
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: showBackButton ? goBack : null,
-                ),
-                title: Text(titleText),
-              ),
-            ),
-            Expanded(
-              child: content,
-            ),
-          ],
+        body: Navigator(
+          key: nestedNavigator,
+          onGenerateRoute: (settings) => settings.name == '/'
+              ? MaterialPageRoute(
+                  builder: (context) => PersonList(
+                    onSelect: (personId) => nestedNavigator.currentState.push(
+                      MaterialPageRoute(
+                        builder: (context) => WorkList(
+                          composerId: personId,
+                          onSelect: (workId) =>
+                              nestedNavigator.currentState.push(
+                            MaterialPageRoute(
+                              builder: (context) => RecordingList(
+                                workId: workId,
+                                onSelect: (recording) => popUpperNavigator(recording),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : null,
+          initialRoute: '/',
         ),
         floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.add),
@@ -148,25 +222,7 @@ class _RecordingsSelectorState extends State<RecordingsSelector> {
           },
         ),
       ),
-      onWillPop: () => Future.value(goBack()),
+      onWillPop: () async => !(await nestedNavigator.currentState.maybePop()),
     );
-  }
-
-  bool goBack() {
-    if (work != null) {
-      setState(() {
-        work = null;
-      });
-
-      return false;
-    } else if (composer != null) {
-      setState(() {
-        composer = null;
-      });
-
-      return false;
-    } else {
-      return true;
-    }
   }
 }
