@@ -57,7 +57,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
             onPressed: () async {
               final recording = Recording(
                 id: widget.recording?.id ?? generateId(),
-                work: null,
+                work: work.id,
               );
 
               await backend.db.updateRecording(recording, performances);
