@@ -4,10 +4,12 @@ import '../backend.dart';
 import '../database.dart';
 
 class WorkTile extends StatelessWidget {
+  final Widget leading;
   final int workId;
   final void Function() onTap;
 
   WorkTile({
+    this.leading,
     this.workId,
     this.onTap,
   });
@@ -24,21 +26,17 @@ class WorkTile extends StatelessWidget {
         return StreamBuilder<List<Person>>(
           stream: backend.db.composersByWork(workId).watch(),
           builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ListTile(
-                title: Text(titleText),
-                subtitle: Text(snapshot.data
+            final subtitleText = snapshot.hasData
+                ? snapshot.data
                     .map((p) => '${p.firstName} ${p.lastName}')
-                    .join(', ')),
-                onTap: onTap ?? null,
-              );
-            } else {
-              return ListTile(
-                title: Text(titleText),
-                subtitle: Text('...'),
-                onTap: onTap ?? null,
-              );
-            }
+                    .join(', ')
+                : '...';
+            return ListTile(
+              leading: leading,
+              title: Text(titleText),
+              subtitle: Text(subtitleText),
+              onTap: onTap ?? null,
+            );
           },
         );
       },
