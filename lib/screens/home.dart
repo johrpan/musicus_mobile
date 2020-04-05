@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../database.dart';
-import '../editors/recording.dart';
+import '../selectors/recording.dart';
 
 import 'person.dart';
 import 'settings.dart';
@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
               ),
               PopupMenuItem(
                 value: 1,
-                child: Text('Add recording'),
+                child: Text('Select recording'),
               ),
               PopupMenuItem(
                 value: 2,
@@ -39,8 +39,7 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RecordingEditor(),
-                    fullscreenDialog: true,
+                    builder: (context) => RecordingsSelector(),
                   ),
                 );
               } else if (selected == 2) {
