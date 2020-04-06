@@ -5,7 +5,6 @@ import '../database.dart';
 import '../editors/recording.dart';
 import '../widgets/texts.dart';
 import '../widgets/works_by_composer.dart';
-import '../widgets/work_tile.dart';
 
 class PersonList extends StatelessWidget {
   final void Function(int personId) onSelect;
@@ -102,12 +101,13 @@ class RecordingList extends StatelessWidget {
       children: <Widget>[
         Material(
           elevation: 2.0,
-          child: WorkTile(
+          child: ListTile(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context),
             ),
-            workId: workId,
+            title: WorkText(workId),
+            subtitle: ComposersText(workId),
           ),
         ),
         Expanded(

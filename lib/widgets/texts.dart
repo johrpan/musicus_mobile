@@ -74,33 +74,36 @@ class _PerformancesTextState extends State<PerformancesText> {
         .performancesByRecording(widget.recordingId)
         .watch()
         .listen((performances) async {
-          final List<String> texts = [];
+      final List<String> texts = [];
 
-          for (final performance in performances) {
-            final buffer = StringBuffer();
+      for (final performance in performances) {
+        final buffer = StringBuffer();
 
-            if (performance.person != null) {
-              final person = await backend.db.personById(performance.person).getSingle();
-              buffer.write('${person.firstName} ${person.lastName}');
-            } else if (performance.ensemble != null) {
-              final ensemble = await backend.db.ensembleById(performance.ensemble).getSingle();
-              buffer.write(ensemble.name);
-            } else {
-              buffer.write('Unknown');
-            }
+        if (performance.person != null) {
+          final person =
+              await backend.db.personById(performance.person).getSingle();
+          buffer.write('${person.firstName} ${person.lastName}');
+        } else if (performance.ensemble != null) {
+          final ensemble =
+              await backend.db.ensembleById(performance.ensemble).getSingle();
+          buffer.write(ensemble.name);
+        } else {
+          buffer.write('Unknown');
+        }
 
-            if (performance.role != null) {
-              final role = await backend.db.instrumentById(performance.role).getSingle();
-              buffer.write(' (${role.name})');
-            }
+        if (performance.role != null) {
+          final role =
+              await backend.db.instrumentById(performance.role).getSingle();
+          buffer.write(' (${role.name})');
+        }
 
-            texts.add(buffer.toString());
-          }
+        texts.add(buffer.toString());
+      }
 
-          setState(() {
-            text = texts.join(', ');
-          });
-        });
+      setState(() {
+        text = texts.join(', ');
+      });
+    });
   }
 
   @override
@@ -112,5 +115,39 @@ class _PerformancesTextState extends State<PerformancesText> {
   void dispose() {
     super.dispose();
     performancesSubscription?.cancel();
+  }
+}
+
+class WorkText extends StatelessWidget {
+  final int workId;
+
+  WorkText(this.workId);
+
+  @override
+  Widget build(BuildContext context) {
+    final backend = Backend.of(context);
+
+    return StreamBuilder<Work>(
+      stream: backend.db.workById(workId).watchSingle(),
+      builder: (context, snapshot) => Text(snapshot.data?.title ?? '...'),
+    );
+  }
+}
+
+class ComposersText extends StatelessWidget {
+  final int workId;
+
+  ComposersText(this.workId);
+
+  @override
+  Widget build(BuildContext context) {
+    final backend = Backend.of(context);
+
+    return StreamBuilder<List<Person>>(
+      stream: backend.db.composersByWork(workId).watch(),
+      builder: (context, snapshot) => Text(snapshot.hasData
+          ? snapshot.data.map((p) => '${p.firstName} ${p.lastName}').join(', ')
+          : '...'),
+    );
   }
 }

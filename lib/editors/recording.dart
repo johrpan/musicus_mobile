@@ -4,7 +4,7 @@ import '../backend.dart';
 import '../database.dart';
 import '../selectors/performer.dart';
 import '../selectors/work.dart';
-import '../widgets/work_tile.dart';
+import '../widgets/texts.dart';
 
 class RecordingEditor extends StatefulWidget {
   final Recording recording;
@@ -70,10 +70,10 @@ class _RecordingEditorState extends State<RecordingEditor> {
       body: ListView(
         children: <Widget>[
           work != null
-              ? WorkTile(
-                  workId: work.id,
-                  onTap: selectWork,
-                )
+              ? ListTile(
+                title: WorkText(work.id),
+                subtitle: ComposersText(work.id),
+              )
               : ListTile(
                   title: Text('Work'),
                   subtitle: Text('Select work'),
