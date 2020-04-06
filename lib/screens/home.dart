@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../database.dart';
-import '../selectors/recording.dart';
+import '../editors/tracks.dart';
 
 import 'person.dart';
 import 'settings.dart';
@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
               ),
               PopupMenuItem(
                 value: 1,
-                child: Text('Select recording'),
+                child: Text('Add tracks'),
               ),
               PopupMenuItem(
                 value: 2,
@@ -39,7 +39,8 @@ class HomeScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RecordingsSelector(),
+                    builder: (context) => TracksEditor(),
+                    fullscreenDialog: true,
                   ),
                 );
               } else if (selected == 2) {
