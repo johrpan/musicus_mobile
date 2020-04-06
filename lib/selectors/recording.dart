@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:musicus/widgets/person_text.dart';
 
 import '../backend.dart';
 import '../database.dart';
 import '../editors/recording.dart';
+import '../widgets/texts.dart';
 import '../widgets/works_by_composer.dart';
 import '../widgets/work_tile.dart';
-import '../widgets/performance_row.dart';
 
 class PersonList extends StatelessWidget {
   final void Function(int personId) onSelect;
@@ -121,24 +120,7 @@ class RecordingList extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final recording = snapshot.data[index];
                     return ListTile(
-                      title: StreamBuilder<List<Performance>>(
-                        stream: backend.db
-                            .performancesByRecording(recording.id)
-                            .watch(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            return Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                for (final performance in snapshot.data)
-                                  PerformanceRow(performance),
-                              ],
-                            );
-                          } else {
-                            return Container();
-                          }
-                        },
-                      ),
+                      title: PerformancesText(recording.id),
                       onTap: () => onSelect(recording),
                     );
                   },
@@ -161,7 +143,7 @@ class RecordingsSelector extends StatefulWidget {
 
 class _RecordingsSelectorState extends State<RecordingsSelector> {
   final nestedNavigator = GlobalKey<NavigatorState>();
-  
+
   @override
   Widget build(BuildContext context) {
     // This exists to circumvent the nested navigator when selecting a
@@ -193,7 +175,8 @@ class _RecordingsSelectorState extends State<RecordingsSelector> {
                             MaterialPageRoute(
                               builder: (context) => RecordingList(
                                 workId: workId,
-                                onSelect: (recording) => popUpperNavigator(recording),
+                                onSelect: (recording) =>
+                                    popUpperNavigator(recording),
                               ),
                             ),
                           ),
