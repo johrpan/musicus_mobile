@@ -37,54 +37,65 @@ class _TracksEditorState extends State<TracksEditor> {
           ),
         ],
       ),
-      body: ListView(
-        children: <Widget>[
-          recordingId != null
-              ? RecordingTile(
-                  recordingId: recordingId,
-                  onTap: selectRecording,
-                )
-              : ListTile(
-                  title: Text('Select recording'),
-                  onTap: selectRecording,
-                ),
-          ListTile(
-            title: Text('Files'),
-            trailing: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () async {
-                final Set<String> paths = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FilesSelector(
-                      baseDirectory: backend.musicLibraryPath,
-                    ),
+      body: ReorderableListView(
+        header: Column(
+          children: <Widget>[
+            recordingId != null
+                ? RecordingTile(
+                    recordingId: recordingId,
+                    onTap: selectRecording,
+                  )
+                : ListTile(
+                    title: Text('Select recording'),
+                    onTap: selectRecording,
                   ),
-                );
-
-                if (paths != null) {
-                  setState(() {
-                    for (final path in paths) {
-                      tracks.add(TrackModel(path));
-                    }
-                  });
-                }
-              },
-            ),
-          ),
-          for (final track in tracks)
             ListTile(
-              title: Text(track.path),
+              title: Text('Files'),
               trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () {
-                  setState(() {
-                    tracks.remove(track);
-                  });
+                icon: const Icon(Icons.add),
+                onPressed: () async {
+                  final Set<String> paths = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FilesSelector(
+                        baseDirectory: backend.musicLibraryPath,
+                      ),
+                    ),
+                  );
+
+                  if (paths != null) {
+                    setState(() {
+                      for (final path in paths) {
+                        tracks.add(TrackModel(path));
+                      }
+                    });
+                  }
                 },
               ),
             ),
-        ],
+          ],
+        ),
+        children: tracks
+            .map((t) => ListTile(
+                  key: Key(t.hashCode.toString()),
+                  title: Text(t.path),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () {
+                      setState(() {
+                        tracks.remove(t);
+                      });
+                    },
+                  ),
+                ))
+            .toList(),
+        onReorder: (i1, i2) {
+          setState(() {
+            final track = tracks.removeAt(i1);
+            final newIndex = i2 > i1 ? i2 - 1 : i2;
+            tracks.insert(newIndex, track);
+          });
+        },
       ),
     );
   }
