@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 
 import '../backend.dart';
 import '../database.dart';
@@ -66,7 +67,10 @@ class _TracksEditorState extends State<TracksEditor> {
                   if (paths != null) {
                     setState(() {
                       for (final path in paths) {
-                        tracks.add(TrackModel(path));
+                        tracks.add(TrackModel(p.relative(
+                          path,
+                          from: backend.musicLibraryPath,
+                        )));
                       }
                     });
                   }
