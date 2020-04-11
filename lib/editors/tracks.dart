@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
 
 import '../backend.dart';
 import '../database.dart';
@@ -7,6 +6,7 @@ import '../selectors/files.dart';
 import '../selectors/recording.dart';
 import '../widgets/recording_tile.dart';
 
+// TODO: Update for storage access framework.
 class TrackModel {
   String path;
 
@@ -58,22 +58,9 @@ class _TracksEditorState extends State<TracksEditor> {
                   final Set<String> paths = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => FilesSelector(
-                        baseDirectory: backend.musicLibraryPath,
-                      ),
+                      builder: (context) => FilesSelector(),
                     ),
                   );
-
-                  if (paths != null) {
-                    setState(() {
-                      for (final path in paths) {
-                        tracks.add(TrackModel(p.relative(
-                          path,
-                          from: backend.musicLibraryPath,
-                        )));
-                      }
-                    });
-                  }
                 },
               ),
             ),

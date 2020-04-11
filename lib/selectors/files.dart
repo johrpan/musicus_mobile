@@ -1,23 +1,22 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path/path.dart' as path;
 
-enum FilesSelectorMode {
-  files,
-  directory,
+import '../backend.dart';
+
+class Document {
+  final String id;
+  final String name;
+  final String parent;
+  final bool isDirectory;
+
+  Document.fromMap(Map<dynamic, dynamic> map)
+      : id = map['id'],
+        name = map['name'],
+        parent = map['parent'],
+        isDirectory = map['isDirectory'];
 }
 
 class FilesSelector extends StatefulWidget {
-  final FilesSelectorMode mode;
-  final String baseDirectory;
-
-  FilesSelector({
-    this.mode = FilesSelectorMode.files,
-    this.baseDirectory,
-  });
-
   @override
   _FilesSelectorState createState() => _FilesSelectorState();
 }
@@ -25,104 +24,21 @@ class FilesSelector extends StatefulWidget {
 class _FilesSelectorState extends State<FilesSelector> {
   static const platform = MethodChannel('de.johrpan.musicus/platform');
 
-  Directory baseDirectory;
-  List<Directory> storageRoots;
-  List<Directory> directories = [];
-  List<FileSystemEntity> contents = [];
-  Set<String> selectedPaths = {};
+  BackendState backend;
+  List<Document> history = [];
+  List<Document> children = [];
+  Set<String> selectedIds = {};
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-    if (widget.baseDirectory == null) {
-      platform.invokeListMethod<String>('getStorageRoots').then((sr) {
-        setState(() {
-          storageRoots = sr.map((path) => Directory(path)).toList();
-        });
-      });
-    } else {
-      baseDirectory = Directory(widget.baseDirectory);
-      openDirectory(baseDirectory);
-    }
+    backend = Backend.of(context);
+    loadChildren();
   }
 
   @override
   Widget build(BuildContext context) {
-    String titleText;
-    Widget body;
-
-    if (directories.isEmpty && storageRoots != null) {
-      titleText = 'Storage devices';
-      body = ListView(
-        children: storageRoots
-            .map((dir) => ListTile(
-                  leading: const Icon(Icons.storage),
-                  title: Text(dir.path),
-                  onTap: () {
-                    setState(() {
-                      directories.add(dir);
-                    });
-
-                    openDirectory(dir);
-                  },
-                ))
-            .toList(),
-      );
-    } else if (contents != null) {
-      if (directories.isEmpty) {
-        titleText = 'Base directory';
-      } else {
-        titleText = path.basename(directories.last.path);
-      }
-
-      body = ListView(
-        children: contents.map((fse) {
-          Widget result;
-
-          if (fse is Directory) {
-            result = ListTile(
-              leading: const Icon(Icons.folder),
-              title: Text(path.basename(fse.path)),
-              onTap: () {
-                setState(() {
-                  directories.add(fse);
-                });
-
-                openDirectory(fse);
-              },
-            );
-          } else if (fse is File) {
-            if (widget.mode == FilesSelectorMode.files) {
-              result = CheckboxListTile(
-                value: selectedPaths.contains(fse.path),
-                secondary: Icon(Icons.insert_drive_file),
-                title: Text(path.basename(fse.path)),
-                onChanged: (selected) {
-                  setState(() {
-                    if (selected) {
-                      selectedPaths.add(fse.path);
-                    } else {
-                      selectedPaths.remove(fse.path);
-                    }
-                  });
-                },
-              );
-            } else {
-              result = ListTile(
-                leading: const Icon(Icons.insert_drive_file),
-                title: Text(path.basename(fse.path)),
-              );
-            }
-          }
-
-          return result;
-        }).toList(),
-      );
-    } else {
-      body = Container();
-    }
-
     return WillPopScope(
       child: Scaffold(
         appBar: AppBar(
@@ -135,14 +51,9 @@ class _FilesSelectorState extends State<FilesSelector> {
           ),
           actions: <Widget>[
             FlatButton(
-              child: Text(
-                  widget.mode == FilesSelectorMode.files ? 'DONE' : 'SELECT'),
+              child: Text('DONE'),
               onPressed: () {
-                Navigator.pop(
-                    context,
-                    widget.mode == FilesSelectorMode.files
-                        ? selectedPaths
-                        : directories.last?.path);
+                Navigator.pop(context, selectedIds);
               },
             ),
           ],
@@ -152,71 +63,96 @@ class _FilesSelectorState extends State<FilesSelector> {
             Material(
               elevation: 2.0,
               child: ListTile(
-                leading: directories.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.arrow_upward),
-                        onPressed: up,
-                      )
-                    : null,
-                title: Text(titleText),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_upward),
+                  onPressed: history.isNotEmpty ? up : null,
+                ),
+                title: Text(
+                    history.isNotEmpty ? history.last.name : 'Music library'),
               ),
             ),
             Expanded(
-              child: body,
+              child: ListView.builder(
+                itemCount: children.length,
+                itemBuilder: (context, index) {
+                  final document = children[index];
+
+                  if (document.isDirectory) {
+                    return ListTile(
+                      leading: const Icon(Icons.folder),
+                      title: Text(document.name),
+                      onTap: () {
+                        setState(() {
+                          history.add(document);
+                        });
+                        loadChildren();
+                      },
+                    );
+                  } else {
+                    return CheckboxListTile(
+                      controlAffinity: ListTileControlAffinity.trailing,
+                      secondary: const Icon(Icons.insert_drive_file),
+                      title: Text(document.name),
+                      value: selectedIds.contains(document.id),
+                      onChanged: (selected) {
+                        setState(() {
+                          if (selected) {
+                            selectedIds.add(document.id);
+                          } else {
+                            selectedIds.remove(document.id);
+                          }
+                        });
+                      },
+                    );
+                  }
+                },
+              ),
             ),
           ],
         ),
       ),
-      onWillPop: () {
-        if (directories.isNotEmpty) {
-          up();
-          return Future.value(false);
-        } else {
-          return Future.value(true);
-        }
-      },
+      onWillPop: () => Future.value(up()),
     );
   }
 
-  Future<void> openDirectory(Directory directory) async {
+  Future<void> loadChildren() async {
     setState(() {
-      contents.clear();
+      children = [];
     });
 
-    final fses = await directory.list().toList();
-    fses.sort((fse1, fse2) {
-      int compareBasenames() =>
-          path.basename(fse1.path).compareTo(path.basename(fse2.path));
+    final childrenMaps = await platform.invokeListMethod<Map<dynamic, dynamic>>(
+      'getChildren',
+      {
+        'treeUri': backend.musicLibraryUri,
+        'parentId': history.isNotEmpty ? history.last.id : null,
+      },
+    );
 
-      if (fse1 is Directory) {
-        if (fse2 is Directory) {
-          return compareBasenames();
-        } else {
-          return -1;
-        }
-      } else if (fse2 is Directory) {
-        return 1;
+    final newChildren = childrenMaps.map((m) => Document.fromMap(m)).toList();
+    newChildren.sort((d1, d2) {
+      if (d1.isDirectory != d2.isDirectory) {
+        return d1.isDirectory ? -1 : 1;
       } else {
-        return compareBasenames();
+        return d1.name.compareTo(d2.name);
       }
     });
 
     setState(() {
-      contents = fses;
+      children = newChildren;
     });
   }
 
-  void up() {
-    if (directories.isNotEmpty) {
+  bool up() {
+    if (history.isNotEmpty) {
       setState(() {
-        directories.removeLast();
+        history.removeLast();
       });
 
-      if (directories.isNotEmpty) {
-        openDirectory(directories.last);
-      } else if (baseDirectory != null) {
-        openDirectory(baseDirectory);
-      }
+      loadChildren();
+
+      return false;
+    } else {
+      return true;
     }
   }
 }
