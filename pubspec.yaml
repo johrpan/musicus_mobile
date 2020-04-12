@@ -11,8 +11,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  moor_flutter:
+  moor:
+  moor_ffi:
   path:
+  path_provider:
   rxdart:
   shared_preferences:
 

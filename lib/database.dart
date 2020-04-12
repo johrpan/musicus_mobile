@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'dart:math';
 
-import 'package:moor_flutter/moor_flutter.dart';
+import 'package:moor/moor.dart';
+import 'package:moor_ffi/moor_ffi.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as pp;
 
 part 'database.g.dart';
 
@@ -36,7 +40,11 @@ class PerformanceModel {
 )
 class Database extends _$Database {
   Database(String fileName)
-      : super(FlutterQueryExecutor.inDatabaseFolder(path: fileName));
+      : super(LazyDatabase(() async {
+          final dir = await pp.getApplicationDocumentsDirectory();
+          final file = File(p.join(dir.path, fileName));
+          return VmDatabase(file);
+        }));
 
   @override
   int get schemaVersion => 1;
