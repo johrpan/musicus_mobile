@@ -32,7 +32,8 @@ CREATE TABLE ensembles (
 
 CREATE TABLE recordings (
     id INTEGER NOT NULL PRIMARY KEY,
-    work INTEGER REFERENCES works(id)
+    work INTEGER REFERENCES works(id),
+    comment TEXT NOT NULL
 );
 
 CREATE TABLE performances (

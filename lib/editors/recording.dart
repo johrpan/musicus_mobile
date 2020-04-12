@@ -18,6 +18,8 @@ class RecordingEditor extends StatefulWidget {
 }
 
 class _RecordingEditorState extends State<RecordingEditor> {
+  final commentController = TextEditingController();
+
   Work work;
   List<PerformanceModel> performances = [];
 
@@ -59,6 +61,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
               final recording = Recording(
                 id: widget.recording?.id ?? generateId(),
                 work: work.id,
+                comment: commentController.text,
               );
 
               await backend.db.updateRecording(recording, performances);
@@ -79,6 +82,20 @@ class _RecordingEditorState extends State<RecordingEditor> {
                   subtitle: Text('Select work'),
                   onTap: selectWork,
                 ),
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 16.0,
+              right: 16.0,
+              top: 0.0,
+              bottom: 16.0,
+            ),
+            child: TextField(
+              controller: commentController,
+              decoration: InputDecoration(
+                labelText: 'Comment',
+              ),
+            ),
+          ),
           ListTile(
             title: Text('Performers'),
             trailing: IconButton(
