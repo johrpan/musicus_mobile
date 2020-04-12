@@ -76,6 +76,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
               ? ListTile(
                 title: WorkText(work.id),
                 subtitle: ComposersText(work.id),
+                onTap: selectWork,
               )
               : ListTile(
                   title: Text('Work'),
