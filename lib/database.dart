@@ -1,10 +1,6 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:moor/moor.dart';
-import 'package:moor_ffi/moor_ffi.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart' as pp;
 
 part 'database.g.dart';
 
@@ -38,13 +34,8 @@ class PerformanceModel {
     'database.moor',
   },
 )
-class Database extends _$Database {
-  Database(String fileName)
-      : super(LazyDatabase(() async {
-          final dir = await pp.getApplicationDocumentsDirectory();
-          final file = File(p.join(dir.path, fileName));
-          return VmDatabase(file);
-        }));
+class Database extends _$Database {  
+  Database.connect(DatabaseConnection connection) : super.connect(connection);
 
   @override
   int get schemaVersion => 1;

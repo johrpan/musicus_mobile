@@ -1,9 +1,62 @@
+import 'dart:io';
+import 'dart:isolate';
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:moor/isolate.dart';
+import 'package:moor/moor.dart';
+import 'package:moor_ffi/moor_ffi.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as pp;
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'database.dart';
+
+// The following code was taken from
+// https://moor.simonbinder.eu/docs/advanced-features/isolates/ and just
+// slightly modified.
+
+Future<MoorIsolate> _createMoorIsolate() async {
+  // This method is called from the main isolate. Since we can't use
+  // getApplicationDocumentsDirectory on a background isolate, we calculate
+  // the database path in the foreground isolate and then inform the
+  // background isolate about the path.
+  final dir = await pp.getApplicationDocumentsDirectory();
+  final path = p.join(dir.path, 'db.sqlite');
+  final receivePort = ReceivePort();
+
+  await Isolate.spawn(
+    _startBackground,
+    _IsolateStartRequest(receivePort.sendPort, path),
+  );
+
+  // _startBackground will send the MoorIsolate to this ReceivePort.
+  return (await receivePort.first as MoorIsolate);
+}
+
+void _startBackground(_IsolateStartRequest request) {
+  // This is the entrypoint from the background isolate! Let's create
+  // the database from the path we received.
+  final executor = VmDatabase(File(request.targetPath));
+  // We're using MoorIsolate.inCurrent here as this method already runs on a
+  // background isolate. If we used MoorIsolate.spawn, a third isolate would be
+  // started which is not what we want!
+  final moorIsolate = MoorIsolate.inCurrent(
+    () => DatabaseConnection.fromExecutor(executor),
+  );
+  // Inform the starting isolate about this, so that it can call .connect().
+  request.sendMoorIsolate.send(moorIsolate);
+}
+
+// Used to bundle the SendPort and the target path, since isolate entrypoint
+// functions can only take one parameter.
+class _IsolateStartRequest {
+  final SendPort sendMoorIsolate;
+  final String targetPath;
+
+  _IsolateStartRequest(this.sendMoorIsolate, this.targetPath);
+}
 
 enum BackendStatus {
   loading,
@@ -36,6 +89,7 @@ class BackendState extends State<Backend> {
   Database db;
   String musicLibraryUri;
 
+  MoorIsolate _moorIsolate;
   SharedPreferences _shPref;
 
   @override
@@ -53,7 +107,10 @@ class BackendState extends State<Backend> {
   }
 
   Future<void> _load() async {
-    db = Database('musicus.sqlite');
+    _moorIsolate = await _createMoorIsolate();
+    final dbConnection = await _moorIsolate.connect();
+    db = Database.connect(dbConnection);
+
     _shPref = await SharedPreferences.getInstance();
     musicLibraryUri = _shPref.getString('musicLibraryUri');
     
@@ -109,6 +166,12 @@ class BackendState extends State<Backend> {
         position.add(position.value + 0.01);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _moorIsolate.shutdownAll();
   }
 }
 
