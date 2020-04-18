@@ -26,7 +26,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
       positionSubscription.cancel();
     }
 
-    positionSubscription = backend.position.listen((pos) {
+    positionSubscription = backend.player.normalizedPosition.listen((pos) {
       if (!seeking) {
         setState(() {
           position = pos;
@@ -56,7 +56,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
               },
               onChangeEnd: (pos) {
                 seeking = false;
-                backend.seekTo(pos);
+                backend.player.seekTo(pos);
               },
               onChanged: (pos) {
                 setState(() {
@@ -68,7 +68,16 @@ class _ProgramScreenState extends State<ProgramScreen> {
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.only(left: 24.0),
-                  child: Text('4:00'),
+                  child: StreamBuilder<Duration>(
+                    stream: backend.player.position,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return DurationText(snapshot.data);
+                      } else {
+                        return Container();
+                      }
+                    },
+                  ),
                 ),
                 Spacer(),
                 IconButton(
@@ -83,7 +92,16 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 Spacer(),
                 Padding(
                   padding: const EdgeInsets.only(right: 20.0),
-                  child: Text('10:30'),
+                  child: StreamBuilder<Duration>(
+                    stream: backend.player.duration,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return DurationText(snapshot.data);
+                      } else {
+                        return Container();
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -97,5 +115,21 @@ class _ProgramScreenState extends State<ProgramScreen> {
   void dispose() {
     super.dispose();
     positionSubscription.cancel();
+  }
+}
+
+class DurationText extends StatelessWidget {
+  final Duration duration;
+
+  DurationText(this.duration);
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = duration.inMinutes;
+    final seconds = (duration - Duration(minutes: minutes)).inSeconds;
+
+    final secondsString = seconds >= 10 ? seconds.toString() : '0$seconds';
+
+    return Text('$minutes:$secondsString');
   }
 }

@@ -9,6 +9,7 @@ environment:
   sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
+  audio_service:
   flutter:
     sdk: flutter
   moor:

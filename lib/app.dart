@@ -93,13 +93,13 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
 
     backend = Backend.of(context);
-    playerBarAnimation.value = backend.playerActive.value ? 1.0 : 0.0;
+    playerBarAnimation.value = backend.player.active.value ? 1.0 : 0.0;
 
     if (playerActiveSubscription != null) {
       playerActiveSubscription.cancel();
     }
 
-    playerActiveSubscription = backend.playerActive.listen((active) =>
+    playerActiveSubscription = backend.player.active.listen((active) =>
         active ? playerBarAnimation.forward() : playerBarAnimation.reverse());
   }
 

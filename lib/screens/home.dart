@@ -34,7 +34,7 @@ class HomeScreen extends StatelessWidget {
             ],
             onSelected: (selected) {
               if (selected == 0) {
-                backend.startPlayer();
+                backend.player.start();
               } else if (selected == 1) {
                 Navigator.push(
                   context,

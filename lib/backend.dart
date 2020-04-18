@@ -8,10 +8,10 @@ import 'package:moor/moor.dart';
 import 'package:moor_ffi/moor_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as pp;
-import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'database.dart';
+import 'player.dart';
 
 // The following code was taken from
 // https://moor.simonbinder.eu/docs/advanced-features/isolates/ and just
@@ -81,9 +81,7 @@ class Backend extends StatefulWidget {
 class BackendState extends State<Backend> {
   static const _platform = MethodChannel('de.johrpan.musicus/platform');
 
-  final playerActive = BehaviorSubject.seeded(false);
-  final playing = BehaviorSubject.seeded(false);
-  final position = BehaviorSubject.seeded(0.0);
+  final player = Player();
 
   BackendStatus status = BackendStatus.loading;
   Database db;
@@ -109,11 +107,12 @@ class BackendState extends State<Backend> {
   Future<void> _load() async {
     _moorIsolate = await _createMoorIsolate();
     final dbConnection = await _moorIsolate.connect();
+    player.setup();
     db = Database.connect(dbConnection);
 
     _shPref = await SharedPreferences.getInstance();
     musicLibraryUri = _shPref.getString('musicLibraryUri');
-    
+
     _loadMusicLibrary();
   }
 
@@ -139,32 +138,6 @@ class BackendState extends State<Backend> {
         status = BackendStatus.loading;
       });
       await _loadMusicLibrary();
-    }
-  }
-
-  void startPlayer() {
-    playerActive.add(true);
-  }
-
-  void playPause() {
-    playing.add(!playing.value);
-    if (playing.value) {
-      simulatePlay();
-    }
-  }
-
-  void seekTo(double pos) {
-    position.add(pos);
-  }
-
-  Future<void> simulatePlay() async {
-    while (playing.value) {
-      await Future.delayed(Duration(milliseconds: 200));
-      if (position.value >= 0.99) {
-        position.add(0.0);
-      } else {
-        position.add(position.value + 0.01);
-      }
     }
   }
 

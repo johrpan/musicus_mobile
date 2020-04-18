@@ -30,13 +30,13 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
     super.didChangeDependencies();
 
     backend = Backend.of(context);
-    playPauseAnimation.value = backend.playing.value ? 1.0 : 0.0;
+    playPauseAnimation.value = backend.player.playing.value ? 1.0 : 0.0;
 
     if (playingSubscription != null) {
       playingSubscription.cancel();
     }
 
-    playingSubscription = backend.playing.listen((playing) =>
+    playingSubscription = backend.player.playing.listen((playing) =>
         playing ? playPauseAnimation.forward() : playPauseAnimation.reverse());
   }
 
@@ -47,7 +47,7 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
         icon: AnimatedIcons.play_pause,
         progress: playPauseAnimation,
       ),
-      onPressed: backend.playPause,
+      onPressed: backend.player.playPause,
     );
   }
 

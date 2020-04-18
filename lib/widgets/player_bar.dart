@@ -16,7 +16,7 @@ class PlayerBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             StreamBuilder(
-              stream: backend.position,
+              stream: backend.player.normalizedPosition,
               builder: (context, snapshot) => LinearProgressIndicator(
                 value: snapshot.data,
               ),
