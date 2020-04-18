@@ -55,12 +55,16 @@ class _TracksEditorState extends State<TracksEditor> {
               trailing: IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () async {
-                  final Set<String> paths = await Navigator.push(
+                  final FilesSelectorResult result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => FilesSelector(),
                     ),
                   );
+
+                  if (result != null) {
+                    // TODO: Add tracks.
+                  }
                 },
               ),
             ),

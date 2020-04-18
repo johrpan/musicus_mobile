@@ -3,6 +3,21 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../platform.dart';
 
+/// Result of the user's interaction with the files selector.
+/// 
+/// This will be given back when popping the navigator.
+class FilesSelectorResult {
+  /// Document ID of the parent directory of the selected files.
+  /// 
+  /// This will be null, if they are in the toplevel directory.
+  final String parentId;
+
+  /// Document IDs of the selected files.
+  final List<String> trackIds;
+
+  FilesSelectorResult(this.parentId, this.trackIds);
+}
+
 class FilesSelector extends StatefulWidget {
   @override
   _FilesSelectorState createState() => _FilesSelectorState();
@@ -38,7 +53,13 @@ class _FilesSelectorState extends State<FilesSelector> {
             FlatButton(
               child: Text('DONE'),
               onPressed: () {
-                Navigator.pop(context, selectedIds);
+                Navigator.pop(
+                  context,
+                  FilesSelectorResult(
+                    history.isNotEmpty ? history.last.id : null,
+                    selectedIds.toList(),
+                  ),
+                );
               },
             ),
           ],
