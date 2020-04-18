@@ -1,20 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../backend.dart';
-
-class Document {
-  final String id;
-  final String name;
-  final String parent;
-  final bool isDirectory;
-
-  Document.fromMap(Map<dynamic, dynamic> map)
-      : id = map['id'],
-        name = map['name'],
-        parent = map['parent'],
-        isDirectory = map['isDirectory'];
-}
+import '../platform.dart';
 
 class FilesSelector extends StatefulWidget {
   @override
@@ -22,8 +9,6 @@ class FilesSelector extends StatefulWidget {
 }
 
 class _FilesSelectorState extends State<FilesSelector> {
-  static const platform = MethodChannel('de.johrpan.musicus/platform');
-
   BackendState backend;
   List<Document> history = [];
   List<Document> children = [];
@@ -120,15 +105,9 @@ class _FilesSelectorState extends State<FilesSelector> {
       children = [];
     });
 
-    final childrenMaps = await platform.invokeListMethod<Map<dynamic, dynamic>>(
-      'getChildren',
-      {
-        'treeUri': backend.musicLibraryUri,
-        'parentId': history.isNotEmpty ? history.last.id : null,
-      },
-    );
+    final newChildren = await Platform.getChildren(
+        backend.musicLibraryUri, history.isNotEmpty ? history.last.id : null);
 
-    final newChildren = childrenMaps.map((m) => Document.fromMap(m)).toList();
     newChildren.sort((d1, d2) {
       if (d1.isDirectory != d2.isDirectory) {
         return d1.isDirectory ? -1 : 1;
