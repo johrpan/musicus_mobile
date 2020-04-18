@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart' as pp;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'database.dart';
+import 'music_library.dart';
 import 'player.dart';
 
 // The following code was taken from
@@ -86,6 +87,7 @@ class BackendState extends State<Backend> {
   BackendStatus status = BackendStatus.loading;
   Database db;
   String musicLibraryUri;
+  MusicLibrary ml;
 
   MoorIsolate _moorIsolate;
   SharedPreferences _shPref;
@@ -122,6 +124,8 @@ class BackendState extends State<Backend> {
         status = BackendStatus.setup;
       });
     } else {
+      ml = MusicLibrary(musicLibraryUri);
+      await ml.load();
       setState(() {
         status = BackendStatus.ready;
       });

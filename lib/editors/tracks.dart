@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../backend.dart';
 import '../database.dart';
+import '../music_library.dart';
 import '../selectors/files.dart';
 import '../selectors/recording.dart';
 import '../widgets/recording_tile.dart';
 
-// TODO: Update for storage access framework.
 class TrackModel {
-  String path;
+  String fileName;
 
-  TrackModel(this.path);
+  TrackModel(this.fileName);
 }
 
 class TracksEditor extends StatefulWidget {
@@ -20,7 +20,8 @@ class TracksEditor extends StatefulWidget {
 
 class _TracksEditorState extends State<TracksEditor> {
   int recordingId;
-  List<TrackModel> tracks = [];
+  String parentId;
+  List<TrackModel> trackModels = [];
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,22 @@ class _TracksEditorState extends State<TracksEditor> {
           FlatButton(
             child: Text('DONE'),
             onPressed: () async {
-              // TODO: Save tracks.
+              final List<Track> tracks = [];
+
+              for (var i = 0; i < trackModels.length; i++) {
+                final trackModel = trackModels[i];
+
+                tracks.add(Track(
+                  fileName: trackModel.fileName,
+                  recordingId: recordingId,
+                  index: i,
+                  partIds: [],
+                ));
+              }
+
+              backend.ml.addTracks(parentId, tracks);
+
+              Navigator.pop(context);
             },
           ),
         ],
@@ -63,22 +79,27 @@ class _TracksEditorState extends State<TracksEditor> {
                   );
 
                   if (result != null) {
-                    // TODO: Add tracks.
+                    setState(() {
+                      parentId = result.parentId;
+                      for (final document in result.selection) {
+                        trackModels.add(TrackModel(document.name));
+                      }
+                    });
                   }
                 },
               ),
             ),
           ],
         ),
-        children: tracks
+        children: trackModels
             .map((t) => ListTile(
                   key: Key(t.hashCode.toString()),
-                  title: Text(t.path),
+                  title: Text(t.fileName),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () {
                       setState(() {
-                        tracks.remove(t);
+                        trackModels.remove(t);
                       });
                     },
                   ),
@@ -86,9 +107,9 @@ class _TracksEditorState extends State<TracksEditor> {
             .toList(),
         onReorder: (i1, i2) {
           setState(() {
-            final track = tracks.removeAt(i1);
+            final track = trackModels.removeAt(i1);
             final newIndex = i2 > i1 ? i2 - 1 : i2;
-            tracks.insert(newIndex, track);
+            trackModels.insert(newIndex, track);
           });
         },
       ),

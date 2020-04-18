@@ -47,4 +47,51 @@ class Platform {
         .map((childJson) => Document.fromJson(childJson))
         .toList();
   }
+
+  /// Read contents of file.
+  ///
+  /// [treeId] is the base URI from the SAF, [id] is the document ID of the
+  /// file.
+  static Future<String> readFile(String treeUri, String id) async {
+    return await _platform.invokeMethod(
+      'readFile',
+      {
+        'treeUri': treeUri,
+        'id': id,
+      },
+    );
+  }
+
+  /// Read contents of file by name
+  ///
+  /// [treeId] is the base URI from the SAF, [parentId] is the document ID of
+  /// the parent directory.
+  static Future<String> readFileByName(
+      String treeUri, String parentId, String fileName) async {
+    return await _platform.invokeMethod(
+      'readFileByName',
+      {
+        'treeUri': treeUri,
+        'parentId': parentId,
+        'fileName': fileName,
+      },
+    );
+  }
+
+  /// Write to file by name
+  ///
+  /// [treeId] is the base URI from the SAF, [parentId] is the document ID of
+  /// the parent directory.
+  static Future<void> writeFileByName(
+      String treeUri, String parentId, String fileName, String content) async {
+    await _platform.invokeMethod(
+      'writeFileByName',
+      {
+        'treeUri': treeUri,
+        'parentId': parentId,
+        'fileName': fileName,
+        'content': content,
+      },
+    );
+  }
 }

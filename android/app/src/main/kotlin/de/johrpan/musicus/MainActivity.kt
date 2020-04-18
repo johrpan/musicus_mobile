@@ -40,6 +40,22 @@ class MainActivity : FlutterActivity() {
                 val parentId = call.argument<String>("parentId")
                 val children = getChildren(treeUri, parentId)
                 result.success(children.map { it.toMap() })
+            } else if (call.method == "readFile") {
+                val treeUri = Uri.parse(call.argument<String>("treeUri"))
+                val id = call.argument<String>("id")!!
+                result.success(readFile(treeUri, id))
+            } else if (call.method == "readFileByName") {
+                val treeUri = Uri.parse(call.argument<String>("treeUri"))
+                val parentId = call.argument<String>("parentId")!!
+                val fileName = call.argument<String>("fileName")!!
+                result.success(readFileByName(treeUri, parentId, fileName))
+            } else if (call.method == "writeFileByName") {
+                val treeUri = Uri.parse(call.argument<String>("treeUri"))
+                val parentId = call.argument<String>("parentId")!!
+                val fileName = call.argument<String>("fileName")!!
+                val content = call.argument<String>("content")!!
+                writeFileByName(treeUri, parentId, fileName, content)
+                result.success(null)
             } else {
                 result.notImplemented()
             }
@@ -113,5 +129,105 @@ class MainActivity : FlutterActivity() {
         }
 
         return children
+    }
+
+    /**
+     * Look for a file by name
+     *
+     * @param treeUri The treeUri from the ACTION_OPEN_DOCUMENT_TREE request
+     * @param parentId The directory in which the file is searched for
+     * @param fileName Name of the file
+     * @return The URI of the file or null
+     */
+    private fun getUriByName(treeUri: Uri, parentId: String, fileName: String): Uri? {
+        var uri: Uri? = null
+
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
+        val projection = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+        
+        // The file system provider doesn't support a select clause.
+        val cursor = contentResolver.query(childrenUri, projection, null, null, null)
+
+        if (cursor != null) {
+            while (cursor.moveToNext()) {
+                val id = cursor.getString(0)
+                val name = cursor.getString(1)
+
+                if (name == fileName) {
+                    uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, id)
+                    break
+                }
+            }
+
+            cursor.close()
+        }
+
+        return uri
+    }
+
+    /**
+     * Read content of a file
+     *
+     * @param treeUri The URI from ACTION_OPEN_DOCUMENT_TREE
+     * @param id The document ID of the file
+     * @return File content or null
+     */
+    private fun readFile(treeUri: Uri, id: String): String? {
+        val uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, id)
+
+        // TODO: Handle errors.
+        val input = contentResolver.openInputStream(uri)!!
+        val result = input.reader().readText()
+        input.close()
+
+        return result
+    }
+
+    /**
+     * Read content of a file by name
+     *
+     * @param treeUri The URI from ACTION_OPEN_DOCUMENT_TREE
+     * @param parentId Document ID of the parent directory
+     * @param fileName Name of the file
+     * @return File content or null
+     */
+    private fun readFileByName(treeUri: Uri, parentId: String, fileName: String): String? {
+        var uri = getUriByName(treeUri, parentId, fileName)
+
+        return if (uri != null) {
+            // TODO: Handle errors.
+            val input = contentResolver.openInputStream(uri)!!
+            val result = input.reader().readText()
+            input.close()
+
+            return result
+        } else {
+            null
+        }
+    }
+
+    /**
+     * Write to file by name
+     * 
+     * The file will always have the MIME type application/json.
+     *
+     * @param treeUri The URI from ACTION_OPEN_DOCUMENT_TREE
+     * @param parentId Document ID of the parent directory
+     * @param fileName Name of the file
+     * @param content Content to write
+     * @return File content or null
+     */
+    private fun writeFileByName(treeUri: Uri, parentId: String, fileName: String, content: String) {
+        var uri = getUriByName(treeUri, parentId, fileName);
+
+        if (uri == null) {
+            val parentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, parentId)
+            uri = DocumentsContract.createDocument(contentResolver, parentUri, "application/json", fileName)
+        }
+
+        // TODO: Handle errors.
+        val output = contentResolver.openOutputStream(uri!!)!!;
+        output.writer().write(content)
+        output.close()
     }
 }

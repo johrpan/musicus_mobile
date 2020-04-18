@@ -4,18 +4,18 @@ import '../backend.dart';
 import '../platform.dart';
 
 /// Result of the user's interaction with the files selector.
-/// 
+///
 /// This will be given back when popping the navigator.
 class FilesSelectorResult {
   /// Document ID of the parent directory of the selected files.
-  /// 
+  ///
   /// This will be null, if they are in the toplevel directory.
   final String parentId;
 
-  /// Document IDs of the selected files.
-  final List<String> trackIds;
+  /// Selected files.
+  final Set<Document> selection;
 
-  FilesSelectorResult(this.parentId, this.trackIds);
+  FilesSelectorResult(this.parentId, this.selection);
 }
 
 class FilesSelector extends StatefulWidget {
@@ -27,7 +27,7 @@ class _FilesSelectorState extends State<FilesSelector> {
   BackendState backend;
   List<Document> history = [];
   List<Document> children = [];
-  Set<String> selectedIds = {};
+  Set<Document> selection = {};
 
   @override
   void didChangeDependencies() {
@@ -57,7 +57,7 @@ class _FilesSelectorState extends State<FilesSelector> {
                   context,
                   FilesSelectorResult(
                     history.isNotEmpty ? history.last.id : null,
-                    selectedIds.toList(),
+                    selection,
                   ),
                 );
               },
@@ -99,13 +99,13 @@ class _FilesSelectorState extends State<FilesSelector> {
                       controlAffinity: ListTileControlAffinity.trailing,
                       secondary: const Icon(Icons.insert_drive_file),
                       title: Text(document.name),
-                      value: selectedIds.contains(document.id),
+                      value: selection.contains(document),
                       onChanged: (selected) {
                         setState(() {
                           if (selected) {
-                            selectedIds.add(document.id);
+                            selection.add(document);
                           } else {
-                            selectedIds.remove(document.id);
+                            selection.remove(document);
                           }
                         });
                       },
@@ -124,6 +124,10 @@ class _FilesSelectorState extends State<FilesSelector> {
   Future<void> loadChildren() async {
     setState(() {
       children = [];
+
+      // We reset the selection here, because the user should not be able to
+      // select files from multiple directories for now.
+      selection = {};
     });
 
     final newChildren = await Platform.getChildren(
