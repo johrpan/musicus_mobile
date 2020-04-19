@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../database.dart';
 import '../editors/work.dart';
+import '../widgets/texts.dart';
 
 class WorkScreen extends StatelessWidget {
   final Work work;
@@ -35,16 +36,19 @@ class WorkScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<List<Work>>(
-        stream: backend.db.workParts(work.id).watch(),
+      body: StreamBuilder<List<Recording>>(
+        stream: backend.db.recordingsByWork(work.id).watch(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
               itemCount: snapshot.data.length,
               itemBuilder: (context, index) {
-                final part = snapshot.data[index];
+                final recording = snapshot.data[index];
                 return ListTile(
-                  title: Text(part.title),
+                  title: PerformancesText(recording.id),
+                  onTap: () async {
+                    // TODO: Play recording.
+                  },
                 );
               },
             );
