@@ -44,6 +44,11 @@ class MainActivity : FlutterActivity() {
                 val treeUri = Uri.parse(call.argument<String>("treeUri"))
                 val id = call.argument<String>("id")!!
                 result.success(readFile(treeUri, id))
+            } else if (call.method == "getUriByName") {
+                val treeUri = Uri.parse(call.argument<String>("treeUri"))
+                val parentId = call.argument<String>("parentId")!!
+                val fileName = call.argument<String>("fileName")!!
+                result.success(getUriByName(treeUri, parentId, fileName).toString())
             } else if (call.method == "readFileByName") {
                 val treeUri = Uri.parse(call.argument<String>("treeUri"))
                 val parentId = call.argument<String>("parentId")!!

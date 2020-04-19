@@ -24,6 +24,8 @@ class Track {
   /// Which work parts of the recorded work are contained in this track.
   final List<int> partIds;
 
+  String uri;
+
   Track({
     this.fileName,
     this.index,
@@ -110,6 +112,10 @@ class MusicLibrary {
           final content = await Platform.readFile(treeUri, child.id);
           final musicusFile = MusicusFile.fromJson(jsonDecode(content));
           for (final track in musicusFile.tracks) {
+            final uri =
+                await Platform.getUriByName(treeUri, parentId, track.fileName);
+            track.uri = uri;
+
             if (tracks.containsKey(track.recordingId)) {
               tracks[track.recordingId].add(track);
             } else {
@@ -124,7 +130,7 @@ class MusicLibrary {
   }
 
   /// Add a list of new tracks to the music library.
-  /// 
+  ///
   /// They are stored in this instance and on disk in the directory denoted by
   /// [parentId].
   Future<void> addTracks(String parentId, List<Track> newTracks) async {
@@ -140,6 +146,10 @@ class MusicLibrary {
     }
 
     for (final track in newTracks) {
+      final uri =
+          await Platform.getUriByName(treeUri, parentId, track.fileName);
+      track.uri = uri;
+
       musicusFile.tracks.add(track);
 
       if (tracks.containsKey(track.recordingId)) {

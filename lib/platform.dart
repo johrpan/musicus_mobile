@@ -62,6 +62,22 @@ class Platform {
     );
   }
 
+  /// Get document URI by file name
+  ///
+  /// [treeId] is the base URI from the SAF, [parentId] is the document ID of
+  /// the parent directory.
+  static Future<String> getUriByName(
+      String treeUri, String parentId, String fileName) async {
+    return await _platform.invokeMethod(
+      'getUriByName',
+      {
+        'treeUri': treeUri,
+        'parentId': parentId,
+        'fileName': fileName,
+      },
+    );
+  }
+
   /// Read contents of file by name
   ///
   /// [treeId] is the base URI from the SAF, [parentId] is the document ID of
