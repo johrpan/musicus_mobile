@@ -1,0 +1,17 @@
+name: musicus_player
+description: A simple music player for Musicus.
+version: 0.0.1
+
+environment:
+  sdk: ">=2.3.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: de.johrpan.musicus_player
+        pluginClass: MusicusPlayerPlugin
