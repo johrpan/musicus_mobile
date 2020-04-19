@@ -14,6 +14,8 @@ dependencies:
     sdk: flutter
   moor:
   moor_ffi:
+  musicus_player:
+    path: ../musicus_player
   path:
   path_provider:
   rxdart:
