@@ -47,6 +47,11 @@ public class MusicusPlayerPlugin: FlutterPlugin, MethodCallHandler {
     } else if (call.method == "pause") {
       mediaPlayer?.pause()
       result.success(null)
+    } else if (call.method == "stop") {
+      uri = null
+      mediaPlayer?.release()
+      mediaPlayer = null
+      result.success(null)
     } else {
       result.notImplemented()
     }

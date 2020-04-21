@@ -40,4 +40,9 @@ class MusicusPlayer {
   Future<void> pause() async {
     await _channel.invokeMethod('pause');
   }
+
+  /// Stop the player.
+  Future<void> stop() async {
+    await _channel.invokeMethod('stop');
+  }
 }
