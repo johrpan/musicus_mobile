@@ -4,6 +4,32 @@ import 'package:flutter/services.dart';
 
 import 'platform.dart';
 
+/// Bundles a [Track] with the URI of the audio file it represents.
+///
+/// The uri shouldn't be stored on disk, but will be used at runtime.
+class InternalTrack {
+  /// The represented track.
+  final Track track;
+
+  /// The URI of the represented audio file as retrieved from the SAF.
+  final String uri;
+
+  InternalTrack({
+    this.track,
+    this.uri,
+  });
+
+  factory InternalTrack.fromJson(Map<String, dynamic> json) => InternalTrack(
+        track: Track.fromJson(json['track']),
+        uri: json['uri'],
+      );
+
+  Map<String, dynamic> toJson() => {
+        'track': track.toJson(),
+        'uri': uri,
+      };
+}
+
 /// Description of a concrete audio file.
 ///
 /// This gets stored in the folder of the audio file and links the audio file
@@ -23,8 +49,6 @@ class Track {
 
   /// Which work parts of the recorded work are contained in this track.
   final List<int> partIds;
-
-  String uri;
 
   Track({
     this.fileName,
@@ -91,7 +115,10 @@ class MusicLibrary {
   final String treeUri;
 
   /// Map of all available tracks by recording ID.
-  final Map<int, List<Track>> tracks = {};
+  ///
+  /// These are [InternalTrack] objects to store the URI of the corresponding
+  /// audio file alongside the real [Track] object.
+  final Map<int, List<InternalTrack>> tracks = {};
 
   MusicLibrary(this.treeUri);
 
@@ -112,15 +139,7 @@ class MusicLibrary {
           final content = await Platform.readFile(treeUri, child.id);
           final musicusFile = MusicusFile.fromJson(jsonDecode(content));
           for (final track in musicusFile.tracks) {
-            final uri =
-                await Platform.getUriByName(treeUri, parentId, track.fileName);
-            track.uri = uri;
-
-            if (tracks.containsKey(track.recordingId)) {
-              tracks[track.recordingId].add(track);
-            } else {
-              tracks[track.recordingId] = [track];
-            }
+            _indexTrack(parentId, track);
           }
         }
       }
@@ -146,20 +165,25 @@ class MusicLibrary {
     }
 
     for (final track in newTracks) {
-      final uri =
-          await Platform.getUriByName(treeUri, parentId, track.fileName);
-      track.uri = uri;
-
+      _indexTrack(parentId, track);
       musicusFile.tracks.add(track);
-
-      if (tracks.containsKey(track.recordingId)) {
-        tracks[track.recordingId].add(track);
-      } else {
-        tracks[track.recordingId] = [track];
-      }
     }
 
     await Platform.writeFileByName(
         treeUri, parentId, 'musicus.json', jsonEncode(musicusFile.toJson()));
+  }
+
+  /// Add a track to the map of available tracks.
+  Future<void> _indexTrack(String parentId, Track track) async {
+    final iTrack = InternalTrack(
+      track: track,
+      uri: await Platform.getUriByName(treeUri, parentId, track.fileName),
+    );
+
+    if (tracks.containsKey(track.recordingId)) {
+      tracks[track.recordingId].add(iTrack);
+    } else {
+      tracks[track.recordingId] = [iTrack];
+    }
   }
 }
