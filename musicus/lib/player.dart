@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:ui';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:musicus_player/musicus_player.dart';
@@ -7,15 +9,14 @@ import 'package:rxdart/rxdart.dart';
 
 import 'music_library.dart';
 
+const _portName = 'playbackService';
+
 /// Entrypoint for the playback service.
 void _playbackServiceEntrypoint() {
   AudioServiceBackground.run(() => _PlaybackService());
 }
 
 class Player {
-  /// The interval between playback position updates in milliseconds.
-  static const positionUpdateInterval = 250;
-
   /// Whether the player is active.
   ///
   /// This means, that there is at least one item in the queue and the playback
@@ -40,16 +41,12 @@ class Player {
   /// Playback position normalized to the range from zero to one.
   final normalizedPosition = BehaviorSubject.seeded(0.0);
 
-  /// The current position in milliseconds.
-  int _positionMs = 0;
+  StreamSubscription _playbackServiceStateSubscription;
 
-  StreamSubscription<PlaybackState> _stateStreamSubscription;
-  StreamSubscription<MediaItem> _mediaItemStreamSubscription;
-
-  /// Update [position] and [normalizedPosition] according to [_positionMs].
-  void _updatePosition() {
-    position.add(Duration(milliseconds: _positionMs));
-    normalizedPosition.add(_positionMs / duration.value.inMilliseconds);
+  /// Update [position] and [normalizedPosition] from position in milliseconds.
+  void _updatePosition(int positionMs) {
+    position.add(Duration(milliseconds: positionMs));
+    normalizedPosition.add(positionMs / duration.value.inMilliseconds);
   }
 
   /// Set everything to its default because the playback service was stopped.
@@ -59,9 +56,6 @@ class Player {
     position.add(const Duration());
     duration.add(const Duration(seconds: 1));
     normalizedPosition.add(0.0);
-    _positionMs = 0;
-    _stateStreamSubscription.cancel();
-    _mediaItemStreamSubscription.cancel();
   }
 
   /// Start playback service.
@@ -75,40 +69,39 @@ class Player {
         androidNotificationIcon: 'drawable/ic_notification',
       );
 
-      setup();
+      active.add(true);
     }
   }
 
   /// Connect listeners and initialize streams.
   void setup() {
+    if (_playbackServiceStateSubscription == null) {
+      // We will receive updated state information from the playback service,
+      // which runs in its own isolate, through this port.
+      final receivePort = ReceivePort();
+      _playbackServiceStateSubscription = receivePort.listen((msg) {
+        // If state is null, the background audio service has stopped.
+        if (msg == null) {
+          _stop();
+        } else {
+          final state = msg as PlaybackServiceState;
+
+          // TODO: Consider checking, whether values have actually changed.
+          playing.add(state.playing);
+          position.add(Duration(milliseconds: state.positionMs));
+          duration.add(Duration(milliseconds: state.durationMs));
+          normalizedPosition.add(state.positionMs / state.durationMs);
+        }
+      });
+      IsolateNameServer.registerPortWithName(receivePort.sendPort, _portName);
+    }
+
     if (AudioService.running) {
       active.add(true);
 
-      _stateStreamSubscription =
-          AudioService.playbackStateStream.listen((playbackState) {
-        if (playbackState != null) {
-          if (playbackState.basicState == BasicPlaybackState.stopped) {
-            _stop();
-          } else {
-            if (playbackState.basicState == BasicPlaybackState.playing) {
-              playing.add(true);
-              _play();
-            } else {
-              playing.add(false);
-            }
-
-            _positionMs = playbackState.currentPosition;
-            _updatePosition();
-          }
-        }
-      });
-
-      _mediaItemStreamSubscription =
-          AudioService.currentMediaItemStream.listen((mediaItem) {
-        if (mediaItem?.duration != null) {
-          duration.add(Duration(milliseconds: mediaItem.duration));
-        }
-      });
+      // Instruct the background service to send its current state. This will
+      // by handled in the listeners, that were already set in the constructor.
+      AudioService.customAction('sendState');
     }
   }
 
@@ -134,16 +127,6 @@ class Player {
     await AudioService.customAction('addTracks', jsonEncode(tracks));
   }
 
-  /// Regularly update [_positionMs] while playing.
-  // TODO: Maybe find a better approach on handling this.
-  Future<void> _play() async {
-    while (playing.value) {
-      await Future.delayed(Duration(milliseconds: positionUpdateInterval));
-      _positionMs += positionUpdateInterval;
-      _updatePosition();
-    }
-  }
-
   /// Seek to [pos], which is a value between (and including) zero and one.
   ///
   /// If the player is not active or an invalid value is provided, this will do
@@ -157,9 +140,7 @@ class Player {
 
   /// Tidy up.
   void dispose() {
-    _stateStreamSubscription.cancel();
-    _mediaItemStreamSubscription.cancel();
-
+    _playbackServiceStateSubscription.cancel();
     active.close();
     playing.close();
     position.close();
@@ -168,7 +149,55 @@ class Player {
   }
 }
 
+/// Bundle of the current state of the playback service.
+class PlaybackServiceState {
+  /// The current playlist.
+  final List<InternalTrack> playlist;
+
+  /// The index of the currentTrack.
+  final int currentTrack;
+
+  /// Whether the player is playing (or paused).
+  final bool playing;
+
+  /// The current playback position in milliseconds.
+  final int positionMs;
+
+  /// The duration of the currently played track in milliseconds.
+  final int durationMs;
+
+  PlaybackServiceState({
+    this.playlist,
+    this.currentTrack,
+    this.playing,
+    this.positionMs,
+    this.durationMs,
+  });
+
+  factory PlaybackServiceState.fromJson(Map<String, dynamic> json) =>
+      PlaybackServiceState(
+        playlist: json['playlist']
+            .map<InternalTrack>((j) => InternalTrack.fromJson(j))
+            .toList(),
+        currentTrack: json['currentTrack'],
+        playing: json['playing'],
+        positionMs: json['positionMs'],
+        durationMs: json['durationMs'],
+      );
+
+  Map<String, dynamic> toJson() => {
+        'playlist': playlist.map((t) => t.toJson()),
+        'currentTrack': currentTrack,
+        'playing': playing,
+        'positionMs': positionMs,
+        'durationMs': durationMs,
+      };
+}
+
 class _PlaybackService extends BackgroundAudioTask {
+  /// The interval between playback position updates in milliseconds.
+  static const positionUpdateInterval = 250;
+
   static const playControl = MediaControl(
     androidIcon: 'drawable/ic_play',
     label: 'Play',
@@ -199,9 +228,8 @@ class _PlaybackService extends BackgroundAudioTask {
 
   MusicusPlayer _player;
   int _currentTrack = 0;
-  int _position;
-  int _updateTime;
   bool _playing = false;
+  int _durationMs = 1000;
 
   _PlaybackService() {
     _player = MusicusPlayer(onComplete: () {
@@ -209,27 +237,48 @@ class _PlaybackService extends BackgroundAudioTask {
     });
   }
 
-  void _setPosition(int position) {
-    _position = position;
-    _updateTime = DateTime.now().millisecondsSinceEpoch;
+  Future<void> _sendMsg(dynamic msg) {
+    final sendPort = IsolateNameServer.lookupPortByName(_portName);
+    sendPort?.send(msg);
   }
 
-  void _setState() {
+  Future<void> _setState() async {
+    final positionMs = await _player.getPosition() ?? 0;
+    final updateTime = DateTime.now().millisecondsSinceEpoch;
+
     AudioServiceBackground.setState(
       controls:
           _playing ? [pauseControl, stopControl] : [playControl, stopControl],
       basicState:
           _playing ? BasicPlaybackState.playing : BasicPlaybackState.paused,
-      position: _position,
-      updateTime: _updateTime,
+      position: positionMs,
+      updateTime: updateTime,
     );
 
     AudioServiceBackground.setMediaItem(dummyMediaItem);
+
+    _sendMsg(PlaybackServiceState(
+      playlist: _playlist,
+      currentTrack: _currentTrack,
+      playing: _playing,
+      positionMs: positionMs,
+      durationMs: _durationMs,
+    ));
+  }
+
+  Future<void> _updatePosition() async {
+    while (_playing) {
+      await Future.delayed(
+          const Duration(milliseconds: positionUpdateInterval));
+
+      // TODO: Consider seperating position updates from general state updates
+      // and/or estimating the position instead of asking the player.
+      _setState();
+    }
   }
 
   @override
   Future<void> onStart() async {
-    _setPosition(0);
     _setState();
     await _completer.future;
   }
@@ -244,7 +293,13 @@ class _PlaybackService extends BackgroundAudioTask {
       final List<InternalTrack> tracks = List.castFrom(
           tracksJson.map((j) => InternalTrack.fromJson(j)).toList());
       _playlist.addAll(tracks);
-      _player.setUri(tracks.first.uri);
+      _player.setUri(tracks.first.uri).then((newDurationMs) {
+        _durationMs = newDurationMs;
+        _setState();
+      });
+    } else if (name == 'sendState') {
+      // Send the current state to the main isolate.
+      _setState();
     }
   }
 
@@ -254,6 +309,7 @@ class _PlaybackService extends BackgroundAudioTask {
 
     _player.play();
     _playing = true;
+    _updatePosition();
     _setState();
   }
 
@@ -270,8 +326,9 @@ class _PlaybackService extends BackgroundAudioTask {
   void onSeekTo(int position) {
     super.onSeekTo(position);
 
-    _setPosition(position);
-    _setState();
+    _player.seekTo(position).then((_) {
+      _setState();
+    });
   }
 
   @override
@@ -282,6 +339,8 @@ class _PlaybackService extends BackgroundAudioTask {
       controls: [],
       basicState: BasicPlaybackState.stopped,
     );
+
+    _sendMsg(null);
 
     // This will end onStart.
     _completer.complete();
