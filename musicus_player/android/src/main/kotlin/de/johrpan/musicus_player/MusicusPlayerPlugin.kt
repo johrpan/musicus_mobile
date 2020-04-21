@@ -40,10 +40,13 @@ public class MusicusPlayerPlugin: FlutterPlugin, MethodCallHandler {
         channel.invokeMethod("onComplete", null)
       }
 
-      result.success(null)
+      result.success(mediaPlayer?.getDuration())
     } else if (call.method == "play") {
       mediaPlayer?.start()
       result.success(null)
+    } else if (call.method == "getPosition") {
+      // TODO: Check, if mediaPlayer is in a valid state.
+      result.success(mediaPlayer?.getCurrentPosition())
     } else if (call.method == "pause") {
       mediaPlayer?.pause()
       result.success(null)
