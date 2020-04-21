@@ -47,6 +47,10 @@ public class MusicusPlayerPlugin: FlutterPlugin, MethodCallHandler {
     } else if (call.method == "getPosition") {
       // TODO: Check, if mediaPlayer is in a valid state.
       result.success(mediaPlayer?.getCurrentPosition())
+    } else if (call.method == "seekTo") {
+      // TODO: Check, if mediaPlayer is in a valid state.
+      mediaPlayer?.seekTo(call.argument("positionMs")!!)
+      result.success(null)
     } else if (call.method == "pause") {
       mediaPlayer?.pause()
       result.success(null)

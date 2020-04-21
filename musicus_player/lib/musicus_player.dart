@@ -44,6 +44,11 @@ class MusicusPlayer {
     return await _channel.invokeMethod('getPosition');
   }
 
+  /// Seek to a new position, which should be provided in milliseconds.
+  Future<void> seekTo(int positionMs) async {
+    await _channel.invokeMethod('seekTo', {'positionMs': positionMs});
+  }
+
   /// Pause playback.
   Future<void> pause() async {
     await _channel.invokeMethod('pause');
