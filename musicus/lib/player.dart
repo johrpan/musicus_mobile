@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:musicus_player/musicus_player.dart';
 import 'package:rxdart/rxdart.dart';
+
+import 'music_library.dart';
 
 /// Entrypoint for the playback service.
 void _playbackServiceEntrypoint() {
@@ -121,6 +125,15 @@ class Player {
     }
   }
 
+  /// Add a list of tracks to the players playlist.
+  Future<void> addTracks(List<InternalTrack> tracks) async {
+    if (!AudioService.running) {
+      await start();
+    }
+
+    await AudioService.customAction('addTracks', jsonEncode(tracks));
+  }
+
   /// Regularly update [_positionMs] while playing.
   // TODO: Maybe find a better approach on handling this.
   Future<void> _play() async {
@@ -182,10 +195,19 @@ class _PlaybackService extends BackgroundAudioTask {
   );
 
   final _completer = Completer();
+  final List<InternalTrack> _playlist = [];
 
+  MusicusPlayer _player;
+  int _currentTrack = 0;
   int _position;
   int _updateTime;
   bool _playing = false;
+
+  _PlaybackService() {
+    _player = MusicusPlayer(onComplete: () {
+      // TODO: Go to next track.
+    });
+  }
 
   void _setPosition(int position) {
     _position = position;
@@ -213,9 +235,24 @@ class _PlaybackService extends BackgroundAudioTask {
   }
 
   @override
+  void onCustomAction(String name, dynamic arguments) {
+    super.onCustomAction(name, arguments);
+
+    // addTracks expects a List<Map<String, dynamic>> as its argument.
+    if (name == 'addTracks') {
+      final tracksJson = jsonDecode(arguments);
+      final List<InternalTrack> tracks = List.castFrom(
+          tracksJson.map((j) => InternalTrack.fromJson(j)).toList());
+      _playlist.addAll(tracks);
+      _player.setUri(tracks.first.uri);
+    }
+  }
+
+  @override
   void onPlay() {
     super.onPlay();
 
+    _player.play();
     _playing = true;
     _setState();
   }
@@ -224,6 +261,7 @@ class _PlaybackService extends BackgroundAudioTask {
   void onPause() {
     super.onPause();
 
+    _player.pause();
     _playing = false;
     _setState();
   }
@@ -238,6 +276,8 @@ class _PlaybackService extends BackgroundAudioTask {
 
   @override
   void onStop() {
+    _player.stop();
+
     AudioServiceBackground.setState(
       controls: [],
       basicState: BasicPlaybackState.stopped,

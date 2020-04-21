@@ -47,7 +47,11 @@ class WorkScreen extends StatelessWidget {
                 return ListTile(
                   title: PerformancesText(recording.id),
                   onTap: () async {
-                    // TODO: Play recording.
+                    final tracks = backend.ml.tracks[recording.id];
+                    tracks.sort(
+                        (t1, t2) => t1.track.index.compareTo(t2.track.index));
+                    
+                    backend.player.addTracks(backend.ml.tracks[recording.id]);
                   },
                 );
               },
