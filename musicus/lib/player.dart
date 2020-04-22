@@ -31,7 +31,12 @@ class Player {
   /// Index of the currently played (or paused) track within the playlist.
   ///
   /// This will be zero, if the player is not active!
-  final currentTrack = BehaviorSubject.seeded(0);
+  final currentIndex = BehaviorSubject.seeded(0);
+
+  /// The currently played track.
+  /// 
+  /// This will be null, if there is no  current track.
+  final currentTrack = BehaviorSubject<InternalTrack>.seeded(null);
 
   /// Whether we are currently playing or not.
   ///
@@ -63,7 +68,7 @@ class Player {
   void _stop() {
     active.add(false);
     playlist.add([]);
-    currentTrack.add(0);
+    currentIndex.add(0);
     playing.add(false);
     position.add(const Duration());
     duration.add(const Duration(seconds: 1));
@@ -100,7 +105,8 @@ class Player {
 
           // TODO: Consider checking, whether values have actually changed.
           playlist.add(state.playlist);
-          currentTrack.add(state.currentTrack);
+          currentIndex.add(state.currentTrack);
+          currentTrack.add(state.playlist[state.currentTrack]);
           playing.add(state.playing);
           position.add(Duration(milliseconds: state.positionMs));
           duration.add(Duration(milliseconds: state.durationMs));
@@ -184,6 +190,9 @@ class Player {
   void dispose() {
     _playbackServiceStateSubscription.cancel();
     active.close();
+    playlist.close();
+    currentIndex.close();
+    currentTrack.close();
     playing.close();
     position.close();
     duration.close();

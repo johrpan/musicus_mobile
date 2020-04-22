@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../backend.dart';
 import '../music_library.dart';
 import '../widgets/play_pause_button.dart';
+import '../widgets/recording_tile.dart';
 
 class ProgramScreen extends StatefulWidget {
   @override
@@ -53,12 +54,13 @@ class _ProgramScreenState extends State<ProgramScreen> {
 
           if (playlist != null && playlist.isNotEmpty) {
             return StreamBuilder<int>(
-              stream: backend.player.currentTrack,
+              stream: backend.player.currentIndex,
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return ListView.builder(
                     itemCount: playlist.length,
                     itemBuilder: (context, index) {
+                      
                       final track = playlist[index];
 
                       return ListTile(
@@ -68,7 +70,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
                                 width: 24.0,
                                 height: 24.0,
                               ),
-                        title: Text(track.track.fileName),
+                        title: RecordingTile(
+                          recordingId: track.track.recordingId,
+                        ),
                         onTap: () {
                           backend.player.skipTo(index);
                         },
