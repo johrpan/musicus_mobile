@@ -17,6 +17,7 @@ public class MusicusPlayerPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var channel: MethodChannel
   private lateinit var context: Context
 
+  private var playing = false
   private var uri: Uri? = null
   private var mediaPlayer: MediaPlayer? = null
 
@@ -40,8 +41,13 @@ public class MusicusPlayerPlugin: FlutterPlugin, MethodCallHandler {
         channel.invokeMethod("onComplete", null)
       }
 
+      if (playing) {
+        mediaPlayer?.start()
+      }
+
       result.success(mediaPlayer?.getDuration())
     } else if (call.method == "play") {
+      playing = true
       mediaPlayer?.start()
       result.success(null)
     } else if (call.method == "getPosition") {
@@ -52,9 +58,11 @@ public class MusicusPlayerPlugin: FlutterPlugin, MethodCallHandler {
       mediaPlayer?.seekTo(call.argument("positionMs")!!)
       result.success(null)
     } else if (call.method == "pause") {
+      playing = false
       mediaPlayer?.pause()
       result.success(null)
     } else if (call.method == "stop") {
+      playing = false
       uri = null
       mediaPlayer?.release()
       mediaPlayer = null
