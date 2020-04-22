@@ -57,15 +57,14 @@ class _TracksEditorState extends State<TracksEditor> {
       body: ReorderableListView(
         header: Column(
           children: <Widget>[
-            recordingId != null
-                ? RecordingTile(
-                    recordingId: recordingId,
-                    onTap: selectRecording,
-                  )
-                : ListTile(
-                    title: Text('Select recording'),
-                    onTap: selectRecording,
-                  ),
+            ListTile(
+              title: recordingId != null
+                  ? RecordingTile(
+                      recordingId: recordingId,
+                    )
+                  : Text('Select recording'),
+              onTap: selectRecording,
+            ),
             ListTile(
               title: Text('Files'),
               trailing: IconButton(

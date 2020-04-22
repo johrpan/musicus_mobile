@@ -7,11 +7,9 @@ import 'texts.dart';
 
 class RecordingTile extends StatelessWidget {
   final int recordingId;
-  final void Function() onTap;
 
   RecordingTile({
     this.recordingId,
-    this.onTap,
   });
 
   @override
@@ -21,35 +19,32 @@ class RecordingTile extends StatelessWidget {
 
     return StreamBuilder<Recording>(
       stream: backend.db.recordingById(recordingId).watchSingle(),
-      builder: (context, snapshot) => ListTile(
-        title: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: 8.0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (snapshot.hasData) ...[
-                DefaultTextStyle(
-                  style: textTheme.subtitle1,
-                  child: ComposersText(snapshot.data.work),
-                ),
-                DefaultTextStyle(
-                  style: textTheme.headline6,
-                  child: WorkText(snapshot.data.work),
-                ),
-              ],
-              const SizedBox(
-                height: 4.0,
+      builder: (context, snapshot) => Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 8.0,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (snapshot.hasData) ...[
+              DefaultTextStyle(
+                style: textTheme.subtitle1,
+                child: ComposersText(snapshot.data.work),
               ),
               DefaultTextStyle(
-                style: textTheme.bodyText1,
-                child: PerformancesText(recordingId),
+                style: textTheme.headline6,
+                child: WorkText(snapshot.data.work),
               ),
             ],
-          ),
+            const SizedBox(
+              height: 4.0,
+            ),
+            DefaultTextStyle(
+              style: textTheme.bodyText1,
+              child: PerformancesText(recordingId),
+            ),
+          ],
         ),
-        onTap: onTap,
       ),
     );
   }
