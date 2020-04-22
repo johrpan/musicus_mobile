@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../music_library.dart';
 import '../widgets/play_pause_button.dart';
 
 class ProgramScreen extends StatefulWidget {
@@ -45,6 +46,45 @@ class _ProgramScreenState extends State<ProgramScreen> {
         ),
         title: Text('Program'),
       ),
+      body: StreamBuilder<List<InternalTrack>>(
+        stream: backend.player.playlist,
+        builder: (context, snapshot) {
+          final playlist = snapshot.data;
+
+          if (playlist != null && playlist.isNotEmpty) {
+            return StreamBuilder<int>(
+              stream: backend.player.currentTrack,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return ListView.builder(
+                    itemCount: playlist.length,
+                    itemBuilder: (context, index) {
+                      final track = playlist[index];
+
+                      return ListTile(
+                        leading: index == snapshot.data
+                            ? const Icon(Icons.play_arrow)
+                            : SizedBox(
+                                width: 24.0,
+                                height: 24.0,
+                              ),
+                        title: Text(track.track.fileName),
+                        onTap: () {
+                          backend.player.skipTo(index);
+                        },
+                      );
+                    },
+                  );
+                } else {
+                  return Container();
+                }
+              },
+            );
+          } else {
+            return Container();
+          }
+        },
+      ),
       bottomNavigationBar: BottomAppBar(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -82,12 +122,16 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 Spacer(),
                 IconButton(
                   icon: const Icon(Icons.skip_previous),
-                  onPressed: () {},
+                  onPressed: () {
+                    backend.player.skipToPrevious();
+                  },
                 ),
                 PlayPauseButton(),
                 IconButton(
                   icon: const Icon(Icons.skip_next),
-                  onPressed: () {},
+                  onPressed: () {
+                    backend.player.skipToNext();
+                  },
                 ),
                 Spacer(),
                 Padding(

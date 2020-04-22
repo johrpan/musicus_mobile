@@ -23,6 +23,16 @@ class Player {
   /// service is ready to play.
   final active = BehaviorSubject.seeded(false);
 
+  /// The current playlist.
+  ///
+  /// If the player is not active, this will be an empty list.
+  final playlist = BehaviorSubject.seeded(<InternalTrack>[]);
+
+  /// Index of the currently played (or paused) track within the playlist.
+  ///
+  /// This will be zero, if the player is not active!
+  final currentTrack = BehaviorSubject.seeded(0);
+
   /// Whether we are currently playing or not.
   ///
   /// This will be false, if the player is not active.
@@ -52,6 +62,8 @@ class Player {
   /// Set everything to its default because the playback service was stopped.
   void _stop() {
     active.add(false);
+    playlist.add([]);
+    currentTrack.add(0);
     playing.add(false);
     position.add(const Duration());
     duration.add(const Duration(seconds: 1));
@@ -87,6 +99,8 @@ class Player {
           final state = msg as PlaybackServiceState;
 
           // TODO: Consider checking, whether values have actually changed.
+          playlist.add(state.playlist);
+          currentTrack.add(state.currentTrack);
           playing.add(state.playing);
           position.add(Duration(milliseconds: state.positionMs));
           duration.add(Duration(milliseconds: state.durationMs));
@@ -135,6 +149,34 @@ class Player {
     if (active.value && pos >= 0.0 && pos <= 1.0) {
       final durationMs = duration.value.inMilliseconds;
       await AudioService.seekTo((pos * durationMs).floor());
+    }
+  }
+
+  /// Play the previous track in the playlist.
+  /// 
+  /// If the player is not active or there is no previous track, this will do
+  /// nothing.
+  Future<void> skipToNext() async {
+    if (AudioService.running) {
+      await AudioService.skipToNext();
+    }
+  }
+
+  /// Skip to the next track in the playlist.
+  /// 
+  /// If the player is not active or there is no next track, this will do
+  /// nothing. If more than five seconds of the current track have been played,
+  /// this will go back to its beginning instead.
+  Future<void> skipToPrevious() async {
+    if (AudioService.running) {
+      await AudioService.skipToPrevious();
+    }
+  }
+
+  /// Switch to the track with the index [index] in the playlist.
+  Future<void> skipTo(int index) async {
+    if (AudioService.running) {
+      await AudioService.customAction('skipTo', index);
     }
   }
 
@@ -288,6 +330,7 @@ class _PlaybackService extends BackgroundAudioTask {
     super.onCustomAction(name, arguments);
 
     // addTracks expects a List<Map<String, dynamic>> as its argument.
+    // skipTo expects an integer as its argument.
     if (name == 'addTracks') {
       final tracksJson = jsonDecode(arguments);
       final List<InternalTrack> tracks = List.castFrom(
@@ -297,6 +340,15 @@ class _PlaybackService extends BackgroundAudioTask {
         _durationMs = newDurationMs;
         _setState();
       });
+    }
+    if (name == 'skipTo') {
+      final index = arguments as int;
+
+      if (index >= 0 && index < _playlist.length) {
+        _currentTrack = index;
+        _player.setUri(_playlist[index].uri);
+        _setState();
+      }
     } else if (name == 'sendState') {
       // Send the current state to the main isolate.
       _setState();
@@ -329,6 +381,33 @@ class _PlaybackService extends BackgroundAudioTask {
     _player.seekTo(position).then((_) {
       _setState();
     });
+  }
+
+  @override
+  void onSkipToNext() {
+    super.onSkipToNext();
+
+    if (_playlist.length > 1 && _currentTrack < _playlist.length - 1) {
+      _currentTrack++;
+      _player.setUri(_playlist[_currentTrack].uri);
+      _setState();
+    }
+  }
+
+  @override
+  void onSkipToPrevious() async {
+    super.onSkipToPrevious();
+
+    // If more than five seconds of the current track have been played, go back
+    // to its beginning, else, switch to the previous track.
+    if (await _player.getPosition() > 5000) {
+      await _player.setUri(_playlist[_currentTrack].uri);
+      _setState();
+    } else if (_playlist.length > 1 && _currentTrack > 0) {
+      _currentTrack--;
+      _player.setUri(_playlist[_currentTrack].uri);
+      _setState();
+    }
   }
 
   @override
