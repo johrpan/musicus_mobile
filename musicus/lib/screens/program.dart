@@ -100,6 +100,8 @@ class ProgramScreen extends StatefulWidget {
 class _ProgramScreenState extends State<ProgramScreen> {
   BackendState backend;
 
+  StreamSubscription<bool> playerActiveSubscription;
+
   StreamSubscription<List<InternalTrack>> playlistSubscription;
   List<ProgramItem> items = [];
 
@@ -112,6 +114,17 @@ class _ProgramScreenState extends State<ProgramScreen> {
     super.didChangeDependencies();
 
     backend = Backend.of(context);
+
+    if (playerActiveSubscription != null) {
+      playerActiveSubscription.cancel();
+    }
+
+    // Close the program screen, if the player is no longer active.
+    playerActiveSubscription = backend.player.active.listen((active) {
+      if (!active) {
+        Navigator.pop(context);
+      }
+    });
 
     if (playlistSubscription != null) {
       playlistSubscription.cancel();
@@ -337,6 +350,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
   @override
   void dispose() {
     super.dispose();
+    playerActiveSubscription.cancel();
     playlistSubscription.cancel();
     positionSubscription.cancel();
   }
