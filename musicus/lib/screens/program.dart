@@ -71,8 +71,8 @@ class ProgramTile extends StatelessWidget {
                   children: <Widget>[
                     for (final part in item.workParts)
                       Padding(
-                        padding: EdgeInsets.only(
-                          left: 8.0 + part.partLevel * 8.0,
+                        padding: const EdgeInsets.only(
+                          left: 8.0,
                         ),
                         child: Text(
                           part.title,
@@ -162,10 +162,6 @@ class _ProgramScreenState extends State<ProgramScreen> {
     // from the database again.
     int lastWorkId;
 
-    // We need to keep track of the last work part to be able to check for the
-    // parent work parts that were left out between the two last tracks.
-    int lastPartId;
-
     // This will always contain the parts of the current work.
     List<Work> workParts = [];
 
@@ -193,40 +189,10 @@ class _ProgramScreenState extends State<ProgramScreen> {
         }
 
         lastWorkId = recording.work;
-        lastPartId = null;
-      }
-
-      /// Search for all parent work parts of [partId] starting from the part
-      /// with the ID [startId] and add them to the part list.
-      void addParentParts(int startId, int partId) {
-        final level = workParts[partId].partLevel;
-        final List<Work> parents = List.filled(level - 1, null);
-
-        for (var i = startId; i < partId; i++) {
-          final part = workParts[i];
-          if (part.partLevel < parents.length) {
-            parents[part.partLevel] = part;
-          }
-        }
-
-        newWorkParts.addAll(parents);
       }
 
       for (final partId in partIds) {
-        // We will need to include all parent work parts first, if there were
-        // work parts left out between the last two tracks or if the current
-        // work part comes before the previous one.
-        if (lastPartId != null) {
-          if (partIds.first > lastPartId + 1) {
-            addParentParts(lastPartId + 1, partId);
-          }
-        } else if (partIds.first > 0) {
-          addParentParts(0, partId);
-        }
-
         newWorkParts.add(workParts[partId]);
-
-        lastPartId = partId;
       }
 
       newItems.add(ProgramItem(

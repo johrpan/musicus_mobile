@@ -8,13 +8,11 @@ import '../selectors/person.dart';
 class PartData {
   final titleController = TextEditingController();
 
-  int level;
   Person composer;
   List<Instrument> instruments;
 
   PartData({
     String title,
-    this.level = 0,
     this.composer,
     this.instruments = const [],
   }) {
@@ -108,17 +106,13 @@ class WorkProperties extends StatelessWidget {
 class PartTile extends StatefulWidget {
   final PartData part;
   final void Function() onMore;
-  final void Function() onAdd;
   final void Function() onDelete;
-  final void Function(int levels) onMove;
 
   PartTile({
     Key key,
     @required this.part,
     @required this.onMore,
-    @required this.onAdd,
     @required this.onDelete,
-    @required this.onMove,
   }) : super(key: key);
 
   @override
@@ -126,72 +120,34 @@ class PartTile extends StatefulWidget {
 }
 
 class _PartTileState extends State<PartTile> {
-  static const unit = 16.0;
-  static const iconShrink = 4.0;
-
-  double dragStart;
-  double dragDelta = 0.0;
-
   @override
   Widget build(BuildContext context) {
-    final padding = widget.part.level * unit + dragDelta;
-    final iconSize = 24 - widget.part.level * iconShrink;
-
-    return GestureDetector(
-      child: Padding(
-        padding: EdgeInsets.only(left: padding > 0.0 ? padding : 0.0),
-        child: Row(
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0, right: 8.0),
-              child: Icon(
-                Icons.drag_handle,
-                size: iconSize,
-              ),
-            ),
-            Expanded(
-              child: TextField(
-                controller: widget.part.titleController,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText: 'Part title',
-                ),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.more_horiz),
-              iconSize: iconSize,
-              onPressed: widget.onMore,
-            ),
-            IconButton(
-              icon: const Icon(Icons.add),
-              iconSize: iconSize,
-              onPressed: widget.onAdd,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              iconSize: iconSize,
-              onPressed: widget.onDelete,
-            ),
-          ],
+    return Row(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.only(left: 16.0, right: 8.0),
+          child: Icon(
+            Icons.drag_handle,
+          ),
         ),
-      ),
-      onHorizontalDragStart: (details) {
-        dragStart = details.localPosition.dx;
-      },
-      onHorizontalDragUpdate: (details) {
-        setState(() {
-          dragDelta = details.localPosition.dx - dragStart;
-        });
-      },
-      onHorizontalDragEnd: (details) {
-        if (dragDelta.abs() >= unit) {
-          widget.onMove((dragDelta / unit).round());
-        }
-        setState(() {
-          dragDelta = 0.0;
-        });
-      },
+        Expanded(
+          child: TextField(
+            controller: widget.part.titleController,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              hintText: 'Part title',
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.more_horiz),
+          onPressed: widget.onMore,
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: widget.onDelete,
+        ),
+      ],
     );
   }
 }
@@ -276,23 +232,11 @@ class _WorkEditorState extends State<WorkEditor> {
             parts.add(PartData(
               title: dbPart.title,
               composer: partComposer,
-              level: dbPart.partLevel,
               instruments: partInstruments,
             ));
           });
         }
       }();
-    }
-  }
-
-  void cleanLevels() {
-    var previousLevel = -1;
-    for (var i = 0; i < parts.length; i++) {
-      final part = parts[i];
-      if (part.level > previousLevel + 1) {
-        part.level = previousLevel + 1;
-      }
-      previousLevel = part.level;
     }
   }
 
@@ -334,29 +278,10 @@ class _WorkEditorState extends State<WorkEditor> {
             ),
           );
         },
-        onAdd: () {
-          setState(() {
-            parts.insert(i + 1, PartData(level: part.level + 1));
-          });
-        },
         onDelete: () {
           setState(() {
             parts.removeAt(i);
-            cleanLevels();
           });
-        },
-        onMove: (levels) {
-          if (levels > 0 && i > 0 && parts[i - 1].level >= part.level) {
-            setState(() {
-              part.level++;
-            });
-          } else if (levels < 0) {
-            final newLevel = part.level + levels;
-            setState(() {
-              part.level = newLevel > 0 ? newLevel : 0;
-              cleanLevels();
-            });
-          }
         },
       ));
     }
@@ -389,7 +314,6 @@ class _WorkEditorState extends State<WorkEditor> {
                     composer: part.composer?.id,
                     partOf: workId,
                     partIndex: i,
-                    partLevel: part.level,
                   ),
                   instrumentIds: part.instruments.map((i) => i.id).toList(),
                 ));
@@ -425,7 +349,7 @@ class _WorkEditorState extends State<WorkEditor> {
                 padding: const EdgeInsets.only(left: 16.0, top: 16.0),
                 child: Text(
                   'Parts',
-                  style: Theme.of(context).textTheme.subhead,
+                  style: Theme.of(context).textTheme.subtitle1,
                 ),
               ),
           ],
@@ -437,8 +361,6 @@ class _WorkEditorState extends State<WorkEditor> {
             final newIndex = i2 > i1 ? i2 - 1 : i2;
 
             parts.insert(newIndex, part);
-
-            cleanLevels();
           });
         },
       ),
@@ -447,7 +369,7 @@ class _WorkEditorState extends State<WorkEditor> {
         label: Text('Add part'),
         onPressed: () {
           setState(() {
-            parts.add(PartData(level: 0));
+            parts.add(PartData());
           });
         },
       ),

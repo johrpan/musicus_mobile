@@ -16,8 +16,7 @@ CREATE TABLE works (
     composer INTEGER REFERENCES persons(id),
     title TEXT NOT NULL,
     part_of INTEGER REFERENCES works(id) ON DELETE CASCADE,
-    part_index INTEGER,
-    part_level INTEGER
+    part_index INTEGER
 );
 
 CREATE TABLE instrumentations (
