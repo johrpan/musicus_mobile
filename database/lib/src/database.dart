@@ -34,7 +34,9 @@ class PerformanceModel {
     'database.moor',
   },
 )
-class Database extends _$Database {  
+class Database extends _$Database {
+  Database(QueryExecutor queryExecutor) : super(queryExecutor);
+
   Database.connect(DatabaseConnection connection) : super.connect(connection);
 
   @override
