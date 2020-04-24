@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../database.dart';
 
 class EnsembleText extends StatelessWidget {
   final int ensembleId;

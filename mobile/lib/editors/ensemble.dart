@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../database.dart';
 
 class EnsembleEditor extends StatefulWidget {
   final Ensemble ensemble;

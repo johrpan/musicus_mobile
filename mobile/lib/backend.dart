@@ -6,11 +6,11 @@ import 'package:flutter/widgets.dart';
 import 'package:moor/isolate.dart';
 import 'package:moor/moor.dart';
 import 'package:moor_ffi/moor_ffi.dart';
+import 'package:musicus_database/musicus_database.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as pp;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'database.dart';
 import 'music_library.dart';
 import 'player.dart';
 

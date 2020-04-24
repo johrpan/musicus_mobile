@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:musicus/database.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 import '../music_library.dart';

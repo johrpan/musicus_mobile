@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../database.dart';
 import '../editors/work.dart';
 
 // TODO: Lazy load works and/or optimize queries.

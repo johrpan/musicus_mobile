@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../database.dart';
 import '../editors/recording.dart';
 import '../widgets/texts.dart';
 import '../widgets/works_by_composer.dart';

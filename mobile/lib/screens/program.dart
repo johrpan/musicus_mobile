@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../database.dart';
 import '../music_library.dart';
 import '../widgets/play_pause_button.dart';
 import '../widgets/recording_tile.dart';
