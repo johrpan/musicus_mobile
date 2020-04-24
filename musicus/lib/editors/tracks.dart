@@ -8,6 +8,8 @@ import '../selectors/recording.dart';
 import '../widgets/recording_tile.dart';
 
 class TrackModel {
+  int workPartIndex;
+  String workPartTitle;
   String fileName;
 
   TrackModel(this.fileName);
@@ -19,13 +21,14 @@ class TracksEditor extends StatefulWidget {
 }
 
 class _TracksEditorState extends State<TracksEditor> {
+  BackendState backend;
   int recordingId;
   String parentId;
   List<TrackModel> trackModels = [];
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    backend = Backend.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -43,7 +46,7 @@ class _TracksEditorState extends State<TracksEditor> {
                   fileName: trackModel.fileName,
                   recordingId: recordingId,
                   index: i,
-                  partIds: [],
+                  partIds: [trackModel.workPartIndex],
                 ));
               }
 
@@ -68,7 +71,7 @@ class _TracksEditorState extends State<TracksEditor> {
             ListTile(
               title: Text('Files'),
               trailing: IconButton(
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.edit),
                 onPressed: () async {
                   final FilesSelectorResult result = await Navigator.push(
                     context,
@@ -78,12 +81,20 @@ class _TracksEditorState extends State<TracksEditor> {
                   );
 
                   if (result != null) {
+                    final List<TrackModel> newTrackModels = [];
+
+                    for (final document in result.selection) {
+                      newTrackModels.add(TrackModel(document.name));
+                    }
+
                     setState(() {
                       parentId = result.parentId;
-                      for (final document in result.selection) {
-                        trackModels.add(TrackModel(document.name));
-                      }
+                      trackModels = newTrackModels;
                     });
+
+                    if (recordingId != null) {
+                      updateAutoParts();
+                    }
                   }
                 },
               ),
@@ -93,15 +104,9 @@ class _TracksEditorState extends State<TracksEditor> {
         children: trackModels
             .map((t) => ListTile(
                   key: Key(t.hashCode.toString()),
-                  title: Text(t.fileName),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () {
-                      setState(() {
-                        trackModels.remove(t);
-                      });
-                    },
-                  ),
+                  leading: const Icon(Icons.drag_handle),
+                  title: Text(t.workPartTitle ?? 'Set work part'),
+                  subtitle: Text(t.fileName),
                 ))
             .toList(),
         onReorder: (i1, i2) {
@@ -115,7 +120,7 @@ class _TracksEditorState extends State<TracksEditor> {
     );
   }
 
-  void selectRecording() async {
+  Future<void> selectRecording() async {
     final Recording recording = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -127,6 +132,27 @@ class _TracksEditorState extends State<TracksEditor> {
       setState(() {
         recordingId = recording.id;
       });
+
+      updateAutoParts();
     }
+  }
+
+  /// Automatically associate the tracks with work parts.
+  Future<void> updateAutoParts() async {
+    final recording = await backend.db.recordingById(recordingId).getSingle();
+    final workId = recording.work;
+    final workParts = await backend.db.workParts(workId).get();
+
+    setState(() {
+      for (var i = 0; i < trackModels.length; i++) {
+        if (i >= workParts.length) {
+          trackModels[i].workPartIndex = null;
+          trackModels[i].workPartTitle = null;
+        } else {
+          trackModels[i].workPartIndex = workParts[i].partIndex;
+          trackModels[i].workPartTitle = workParts[i].title;
+        }
+      }
+    });
   }
 }
