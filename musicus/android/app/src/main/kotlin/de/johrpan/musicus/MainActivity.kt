@@ -232,7 +232,9 @@ class MainActivity : FlutterActivity() {
 
         // TODO: Handle errors.
         val output = contentResolver.openOutputStream(uri!!)!!;
-        output.writer().write(content)
+        val writer = output.writer()
+        writer.write(content)
+        writer.close()
         output.close()
     }
 }
