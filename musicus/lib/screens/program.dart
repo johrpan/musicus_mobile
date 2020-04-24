@@ -3,9 +3,94 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../database.dart';
 import '../music_library.dart';
 import '../widgets/play_pause_button.dart';
 import '../widgets/recording_tile.dart';
+
+/// Data class to bundle information from the database on one track.
+class ProgramItem {
+  /// ID of the recording.
+  ///
+  /// We don't need the real recording, as the [RecordingTile] widget handles
+  /// that for us. If the recording is the same one, as the one from the
+  /// previous track, this will be null.
+  final int recordingId;
+
+  /// List of work parts contained in this track.
+  ///
+  /// This will include the parts linked in the track as well as all parents of
+  /// them, if there are gaps between them (i.e. some parts are missing).
+  final List<Work> workParts;
+
+  ProgramItem({
+    this.recordingId,
+    this.workParts,
+  });
+}
+
+/// Widget displaying a [ProgramItem].
+class ProgramTile extends StatelessWidget {
+  final ProgramItem item;
+  final bool isPlaying;
+
+  ProgramTile({
+    this.item,
+    this.isPlaying,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: isPlaying
+              ? const Icon(Icons.play_arrow)
+              : SizedBox(
+                  width: 24.0,
+                  height: 24.0,
+                ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                if (item.recordingId != null) ...[
+                  RecordingTile(
+                    recordingId: item.recordingId,
+                  ),
+                  SizedBox(
+                    height: 8.0,
+                  ),
+                ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    for (final part in item.workParts)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          left: 8.0 + part.partLevel * 8.0,
+                        ),
+                        child: Text(
+                          part.title,
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class ProgramScreen extends StatefulWidget {
   @override
@@ -14,6 +99,10 @@ class ProgramScreen extends StatefulWidget {
 
 class _ProgramScreenState extends State<ProgramScreen> {
   BackendState backend;
+
+  StreamSubscription<List<InternalTrack>> playlistSubscription;
+  List<ProgramItem> items = [];
+
   StreamSubscription<double> positionSubscription;
   double position = 0.0;
   bool seeking = false;
@@ -23,6 +112,14 @@ class _ProgramScreenState extends State<ProgramScreen> {
     super.didChangeDependencies();
 
     backend = Backend.of(context);
+
+    if (playlistSubscription != null) {
+      playlistSubscription.cancel();
+    }
+
+    playlistSubscription = backend.player.playlist.listen((playlist) {
+      updateProgram(playlist);
+    });
 
     if (positionSubscription != null) {
       positionSubscription.cancel();
@@ -37,6 +134,103 @@ class _ProgramScreenState extends State<ProgramScreen> {
     });
   }
 
+  /// Go through the tracks of [playlist] and preprocess them for displaying.
+  Future<void> updateProgram(List<InternalTrack> playlist) async {
+    List<ProgramItem> newItems = [];
+
+    // The following variables exist to adapt the resulting ProgramItem to its
+    // predecessor.
+
+    // If the previous recording was the same, we won't need to include the
+    // recording data again.
+    int lastRecordingId;
+
+    // If the previous work was the same, we won't need to retrieve its parts
+    // from the database again.
+    int lastWorkId;
+
+    // We need to keep track of the last work part to be able to check for the
+    // parent work parts that were left out between the two last tracks.
+    int lastPartId;
+
+    // This will always contain the parts of the current work.
+    List<Work> workParts = [];
+
+    for (var i = 0; i < playlist.length; i++) {
+      // The data that will be stored in the resulting ProgramItem.
+      int newRecordingId;
+      List<Work> newWorkParts = [];
+
+      final track = playlist[i];
+      final recordingId = track.track.recordingId;
+      final partIds = track.track.partIds;
+
+      // newRecordingId will be null, if the recording ID is the same. This
+      // also means, that the work is the same, so workParts doesn't have to
+      // be updated either.
+      if (recordingId != lastRecordingId) {
+        lastRecordingId = recordingId;
+        newRecordingId = recordingId;
+
+        final recording =
+            await backend.db.recordingById(recordingId).getSingle();
+
+        if (recording.work != lastWorkId) {
+          workParts = await backend.db.workParts(recording.work).get();
+        }
+
+        lastWorkId = recording.work;
+        lastPartId = null;
+      }
+
+      /// Search for all parent work parts of [partId] starting from the part
+      /// with the ID [startId] and add them to the part list.
+      void addParentParts(int startId, int partId) {
+        final level = workParts[partId].partLevel;
+        final List<Work> parents = List.filled(level - 1, null);
+
+        for (var i = startId; i < partId; i++) {
+          final part = workParts[i];
+          if (part.partLevel < parents.length) {
+            parents[part.partLevel] = part;
+          }
+        }
+
+        newWorkParts.addAll(parents);
+      }
+
+      for (final partId in partIds) {
+        // We will need to include all parent work parts first, if there were
+        // work parts left out between the last two tracks or if the current
+        // work part comes before the previous one.
+        if (lastPartId != null) {
+          if (partIds.first > lastPartId + 1) {
+            addParentParts(lastPartId + 1, partId);
+          }
+        } else if (partIds.first > 0) {
+          addParentParts(0, partId);
+        }
+
+        newWorkParts.add(workParts[partId]);
+
+        lastPartId = partId;
+      }
+
+      newItems.add(ProgramItem(
+        recordingId: newRecordingId,
+        workParts: newWorkParts,
+      ));
+    }
+
+    // Check, whether we are still a part of the widget tree, because this
+    // function might take some time.
+    if (mounted) {
+      setState(() {
+        items = newItems;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,41 +241,22 @@ class _ProgramScreenState extends State<ProgramScreen> {
         ),
         title: Text('Program'),
       ),
-      body: StreamBuilder<List<InternalTrack>>(
-        stream: backend.player.playlist,
+      body: StreamBuilder<int>(
+        stream: backend.player.currentIndex,
         builder: (context, snapshot) {
-          final playlist = snapshot.data;
-
-          if (playlist != null && playlist.isNotEmpty) {
-            return StreamBuilder<int>(
-              stream: backend.player.currentIndex,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return ListView.builder(
-                    itemCount: playlist.length,
-                    itemBuilder: (context, index) {
-                      
-                      final track = playlist[index];
-
-                      return ListTile(
-                        leading: index == snapshot.data
-                            ? const Icon(Icons.play_arrow)
-                            : SizedBox(
-                                width: 24.0,
-                                height: 24.0,
-                              ),
-                        title: RecordingTile(
-                          recordingId: track.track.recordingId,
-                        ),
-                        onTap: () {
-                          backend.player.skipTo(index);
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  return Container();
-                }
+          if (snapshot.hasData) {
+            return ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                return InkWell(
+                  child: ProgramTile(
+                    item: items[index],
+                    isPlaying: index == snapshot?.data,
+                  ),
+                  onTap: () {
+                    backend.player.skipTo(index);
+                  },
+                );
               },
             );
           } else {
@@ -162,6 +337,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
   @override
   void dispose() {
     super.dispose();
+    playlistSubscription.cancel();
     positionSubscription.cancel();
   }
 }
