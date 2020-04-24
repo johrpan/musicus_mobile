@@ -9,20 +9,14 @@ https://musicus.org
 The top level directories contain the main Musicus packages, of which some
 depend on other ones. All packages are written in [Dart](https://dart.dev).
 
-### `database`
+`database` – A Database of classical music. This package will be used by all
+standalone Musicus applications for storing classical music metadata.
 
-A Database of classical music. This package will be used by all standalone
-Musicus applications for storing classical music metadata.
-
-### `mobile`
-
-The Musicus mobile app. It is being developed using
+`mobile` – The Musicus mobile app. It is being developed using
 [Flutter toolkit](https://flutter.dev) and only runs on Android for now.
 
-### `player`
-
-The simplest possible audio player plugin. This is used by the mobile app for
-playback.
+`player` – The simplest possible audio player plugin. This is used by the
+mobile app for playback.
 
 ## Hacking
 
