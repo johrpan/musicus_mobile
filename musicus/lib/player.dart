@@ -57,7 +57,6 @@ class Player {
   final normalizedPosition = BehaviorSubject.seeded(0.0);
 
   StreamSubscription _playbackServiceStateSubscription;
-  int _durationMs = 1000;
 
   /// Set everything to its default because the playback service was stopped.
   void _stop() {
@@ -86,7 +85,7 @@ class Player {
   }
 
   /// Update [position] and [normalizedPosition].
-  /// 
+  ///
   /// Requires [duration] to be up to date
   void _updatePosition(int positionMs) {
     position.add(Duration(milliseconds: positionMs));
@@ -101,7 +100,7 @@ class Player {
   }
 
   /// Update [currentIndex] and [currentTrack].
-  /// 
+  ///
   /// Requires [playlist] to be up to date.
   void _updateCurrentTrack(int index) {
     currentIndex.add(index);
@@ -114,7 +113,11 @@ class Player {
       // We will receive updated state information from the playback service,
       // which runs in its own isolate, through this port.
       final receivePort = ReceivePort();
-      _playbackServiceStateSubscription = receivePort.listen((msg) {
+      receivePort.asBroadcastStream(
+        onListen: (subscription) {
+          _playbackServiceStateSubscription = subscription;
+        },
+      ).listen((msg) {
         // If state is null, the background audio service has stopped.
         if (msg == null) {
           _stop();
@@ -228,8 +231,12 @@ class _StatusMessage extends _Message {
   /// Whether the player is playing (or paused).
   final bool playing;
 
+  /// Playback position in milliseconds.
+  final int positionMs;
+
   _StatusMessage({
     this.playing,
+    this.positionMs,
   });
 }
 
@@ -365,9 +372,10 @@ class _PlaybackService extends BackgroundAudioTask {
   }
 
   /// Notify the UI about the current playback status.
-  void _sendStatus() {
+  Future<void> _sendStatus() async {
     _sendMsg(_StatusMessage(
       playing: _playing,
+      positionMs: await _player.getPosition(),
     ));
   }
 
@@ -406,7 +414,7 @@ class _PlaybackService extends BackgroundAudioTask {
     }
   }
 
-  /// Set the current track, update the player and notify the UI.
+  /// Set the current track, update the player and notify the system.
   Future<void> _setCurrentTrack(int index) async {
     _currentTrack = index;
     _durationMs = await _player.setUri(_playlist[_currentTrack].uri);
@@ -423,6 +431,14 @@ class _PlaybackService extends BackgroundAudioTask {
     }
 
     _sendPlaylist();
+  }
+
+  /// Jump to the beginning of the track with the index [index].
+  Future<void> _skipTo(int index) async {
+    if (index >= 0 && index < _playlist.length) {
+      await _setCurrentTrack(index);
+      _sendTrack();
+    }
   }
 
   @override
@@ -446,11 +462,7 @@ class _PlaybackService extends BackgroundAudioTask {
     }
     if (name == 'skipTo') {
       final index = arguments as int;
-
-      if (index >= 0 && index < _playlist.length) {
-        _setCurrentTrack(index);
-        _sendTrack();
-      }
+      _skipTo(index);
     } else if (name == 'sendState') {
       _sendPlaylist();
       _sendStatus();
