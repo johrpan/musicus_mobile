@@ -34,7 +34,7 @@ class Player {
   final currentIndex = BehaviorSubject.seeded(0);
 
   /// The currently played track.
-  /// 
+  ///
   /// This will be null, if there is no  current track.
   final currentTrack = BehaviorSubject<InternalTrack>.seeded(null);
 
@@ -57,12 +57,7 @@ class Player {
   final normalizedPosition = BehaviorSubject.seeded(0.0);
 
   StreamSubscription _playbackServiceStateSubscription;
-
-  /// Update [position] and [normalizedPosition] from position in milliseconds.
-  void _updatePosition(int positionMs) {
-    position.add(Duration(milliseconds: positionMs));
-    normalizedPosition.add(positionMs / duration.value.inMilliseconds);
-  }
+  int _durationMs = 1000;
 
   /// Set everything to its default because the playback service was stopped.
   void _stop() {
@@ -90,6 +85,29 @@ class Player {
     }
   }
 
+  /// Update [position] and [normalizedPosition].
+  /// 
+  /// Requires [duration] to be up to date
+  void _updatePosition(int positionMs) {
+    position.add(Duration(milliseconds: positionMs));
+    normalizedPosition.add(positionMs / duration.value.inMilliseconds);
+  }
+
+  /// Update [position], [duration] and [normalizedPosition].
+  void _updateDuration(int positionMs, int durationMs) {
+    position.add(Duration(milliseconds: positionMs));
+    duration.add(Duration(milliseconds: durationMs));
+    normalizedPosition.add(positionMs / durationMs);
+  }
+
+  /// Update [currentIndex] and [currentTrack].
+  /// 
+  /// Requires [playlist] to be up to date.
+  void _updateCurrentTrack(int index) {
+    currentIndex.add(index);
+    currentTrack.add(playlist.value[index]);
+  }
+
   /// Connect listeners and initialize streams.
   void setup() {
     if (_playbackServiceStateSubscription == null) {
@@ -101,16 +119,18 @@ class Player {
         if (msg == null) {
           _stop();
         } else {
-          final state = msg as PlaybackServiceState;
-
-          // TODO: Consider checking, whether values have actually changed.
-          playlist.add(state.playlist);
-          currentIndex.add(state.currentTrack);
-          currentTrack.add(state.playlist[state.currentTrack]);
-          playing.add(state.playing);
-          position.add(Duration(milliseconds: state.positionMs));
-          duration.add(Duration(milliseconds: state.durationMs));
-          normalizedPosition.add(state.positionMs / state.durationMs);
+          if (msg is _StatusMessage) {
+            playing.add(msg.playing);
+          } else if (msg is _PositionMessage) {
+            _updatePosition(msg.positionMs);
+          } else if (msg is _TrackMessage) {
+            _updateCurrentTrack(msg.currentTrack);
+            _updateDuration(msg.positionMs, msg.durationMs);
+          } else if (msg is _PlaylistMessage) {
+            playlist.add(msg.playlist);
+            _updateCurrentTrack(msg.currentTrack);
+            _updateDuration(msg.positionMs, msg.durationMs);
+          }
         }
       });
       IsolateNameServer.registerPortWithName(receivePort.sendPort, _portName);
@@ -159,7 +179,7 @@ class Player {
   }
 
   /// Play the previous track in the playlist.
-  /// 
+  ///
   /// If the player is not active or there is no previous track, this will do
   /// nothing.
   Future<void> skipToNext() async {
@@ -169,7 +189,7 @@ class Player {
   }
 
   /// Skip to the next track in the playlist.
-  /// 
+  ///
   /// If the player is not active or there is no next track, this will do
   /// nothing. If more than five seconds of the current track have been played,
   /// this will go back to its beginning instead.
@@ -200,49 +220,75 @@ class Player {
   }
 }
 
-/// Bundle of the current state of the playback service.
-class PlaybackServiceState {
-  /// The current playlist.
-  final List<InternalTrack> playlist;
+/// A message from the playback service to the UI.
+abstract class _Message {}
 
-  /// The index of the currentTrack.
-  final int currentTrack;
-
+/// Playback status update.
+class _StatusMessage extends _Message {
   /// Whether the player is playing (or paused).
   final bool playing;
 
-  /// The current playback position in milliseconds.
+  _StatusMessage({
+    this.playing,
+  });
+}
+
+/// The playback position has changed.
+///
+/// This could be due to seeking or because time progressed.
+class _PositionMessage extends _Message {
+  /// Playback position in milliseconds.
   final int positionMs;
 
-  /// The duration of the currently played track in milliseconds.
+  _PositionMessage({
+    this.positionMs,
+  });
+}
+
+/// The current track has changed.
+///
+/// This also notifies about the playback position, as the old position could be
+/// behind the new duration.
+class _TrackMessage extends _Message {
+  /// Index of the new track within the playlist.
+  final int currentTrack;
+
+  /// Duration of the new track in milliseconds.
   final int durationMs;
 
-  PlaybackServiceState({
+  /// Playback position in milliseconds.
+  final int positionMs;
+
+  _TrackMessage({
+    this.currentTrack,
+    this.durationMs,
+    this.positionMs,
+  });
+}
+
+/// The playlist was changed.
+///
+/// This also notifies about the current track, as the old index could be out of
+/// range in the new playlist.
+class _PlaylistMessage extends _Message {
+  /// The new playlist.
+  final List<InternalTrack> playlist;
+
+  /// The current track.
+  final int currentTrack;
+
+  /// Duration of the current track in milliseconds.
+  final int durationMs;
+
+  /// Playback position in milliseconds.
+  final int positionMs;
+
+  _PlaylistMessage({
     this.playlist,
     this.currentTrack,
-    this.playing,
-    this.positionMs,
     this.durationMs,
+    this.positionMs,
   });
-
-  factory PlaybackServiceState.fromJson(Map<String, dynamic> json) =>
-      PlaybackServiceState(
-        playlist: json['playlist']
-            .map<InternalTrack>((j) => InternalTrack.fromJson(j))
-            .toList(),
-        currentTrack: json['currentTrack'],
-        playing: json['playing'],
-        positionMs: json['positionMs'],
-        durationMs: json['durationMs'],
-      );
-
-  Map<String, dynamic> toJson() => {
-        'playlist': playlist.map((t) => t.toJson()),
-        'currentTrack': currentTrack,
-        'playing': playing,
-        'positionMs': positionMs,
-        'durationMs': durationMs,
-      };
 }
 
 class _PlaybackService extends BackgroundAudioTask {
@@ -283,16 +329,19 @@ class _PlaybackService extends BackgroundAudioTask {
   int _durationMs = 1000;
 
   _PlaybackService() {
-    _player = MusicusPlayer(onComplete: () {
-      // TODO: Go to next track.
+    _player = MusicusPlayer(onComplete: () async {
+      if (_currentTrack < _playlist.length - 1) {
+        await _setCurrentTrack(_currentTrack + 1);
+        _sendTrack();
+      } else {
+        _playing = false;
+        _sendStatus();
+        _setState();
+      }
     });
   }
 
-  Future<void> _sendMsg(dynamic msg) {
-    final sendPort = IsolateNameServer.lookupPortByName(_portName);
-    sendPort?.send(msg);
-  }
-
+  /// Update the audio service status for the system.
   Future<void> _setState() async {
     final positionMs = await _player.getPosition() ?? 0;
     final updateTime = DateTime.now().millisecondsSinceEpoch;
@@ -307,25 +356,73 @@ class _PlaybackService extends BackgroundAudioTask {
     );
 
     AudioServiceBackground.setMediaItem(dummyMediaItem);
+  }
 
-    _sendMsg(PlaybackServiceState(
-      playlist: _playlist,
-      currentTrack: _currentTrack,
+  /// Send a message to the UI.
+  void _sendMsg(_Message msg) {
+    final sendPort = IsolateNameServer.lookupPortByName(_portName);
+    sendPort?.send(msg);
+  }
+
+  /// Notify the UI about the current playback status.
+  void _sendStatus() {
+    _sendMsg(_StatusMessage(
       playing: _playing,
-      positionMs: positionMs,
-      durationMs: _durationMs,
     ));
   }
 
+  /// Notify the UI about the current playback position.
+  Future<void> _sendPosition() async {
+    _sendMsg(_PositionMessage(
+      positionMs: await _player.getPosition(),
+    ));
+  }
+
+  /// Notify the UI about the current track.
+  Future<void> _sendTrack() async {
+    _sendMsg(_TrackMessage(
+      currentTrack: _currentTrack,
+      durationMs: _durationMs,
+      positionMs: await _player.getPosition(),
+    ));
+  }
+
+  /// Notify the UI about the current playlist.
+  Future<void> _sendPlaylist() async {
+    _sendMsg(_PlaylistMessage(
+      playlist: _playlist,
+      currentTrack: _currentTrack,
+      durationMs: _durationMs,
+      positionMs: await _player.getPosition(),
+    ));
+  }
+
+  /// Notify the UI of the new playback position periodically.
   Future<void> _updatePosition() async {
     while (_playing) {
       await Future.delayed(
           const Duration(milliseconds: positionUpdateInterval));
-
-      // TODO: Consider seperating position updates from general state updates
-      // and/or estimating the position instead of asking the player.
-      _setState();
+      _sendPosition();
     }
+  }
+
+  /// Set the current track, update the player and notify the UI.
+  Future<void> _setCurrentTrack(int index) async {
+    _currentTrack = index;
+    _durationMs = await _player.setUri(_playlist[_currentTrack].uri);
+    _setState();
+  }
+
+  /// Add [tracks] to the playlist.
+  Future<void> _addTracks(List<InternalTrack> tracks) async {
+    final play = _playlist.isEmpty;
+
+    _playlist.addAll(tracks);
+    if (play) {
+      await _setCurrentTrack(0);
+    }
+
+    _sendPlaylist();
   }
 
   @override
@@ -344,23 +441,19 @@ class _PlaybackService extends BackgroundAudioTask {
       final tracksJson = jsonDecode(arguments);
       final List<InternalTrack> tracks = List.castFrom(
           tracksJson.map((j) => InternalTrack.fromJson(j)).toList());
-      _playlist.addAll(tracks);
-      _player.setUri(tracks.first.uri).then((newDurationMs) {
-        _durationMs = newDurationMs;
-        _setState();
-      });
+
+      _addTracks(tracks);
     }
     if (name == 'skipTo') {
       final index = arguments as int;
 
       if (index >= 0 && index < _playlist.length) {
-        _currentTrack = index;
-        _player.setUri(_playlist[index].uri);
-        _setState();
+        _setCurrentTrack(index);
+        _sendTrack();
       }
     } else if (name == 'sendState') {
-      // Send the current state to the main isolate.
-      _setState();
+      _sendPlaylist();
+      _sendStatus();
     }
   }
 
@@ -370,6 +463,8 @@ class _PlaybackService extends BackgroundAudioTask {
 
     _player.play();
     _playing = true;
+
+    _sendStatus();
     _updatePosition();
     _setState();
   }
@@ -380,42 +475,43 @@ class _PlaybackService extends BackgroundAudioTask {
 
     _player.pause();
     _playing = false;
+
+    _sendStatus();
     _setState();
   }
 
   @override
-  void onSeekTo(int position) {
+  Future<void> onSeekTo(int position) async {
     super.onSeekTo(position);
 
-    _player.seekTo(position).then((_) {
-      _setState();
-    });
+    await _player.seekTo(position);
+
+    _sendPosition();
+    _setState();
   }
 
   @override
-  void onSkipToNext() {
+  Future<void> onSkipToNext() async {
     super.onSkipToNext();
 
     if (_playlist.length > 1 && _currentTrack < _playlist.length - 1) {
-      _currentTrack++;
-      _player.setUri(_playlist[_currentTrack].uri);
-      _setState();
+      await _setCurrentTrack(_currentTrack + 1);
+      _sendTrack();
     }
   }
 
   @override
-  void onSkipToPrevious() async {
+  Future<void> onSkipToPrevious() async {
     super.onSkipToPrevious();
 
     // If more than five seconds of the current track have been played, go back
     // to its beginning, else, switch to the previous track.
     if (await _player.getPosition() > 5000) {
-      await _player.setUri(_playlist[_currentTrack].uri);
-      _setState();
+      await _setCurrentTrack(_currentTrack);
+      _sendTrack();
     } else if (_playlist.length > 1 && _currentTrack > 0) {
-      _currentTrack--;
-      _player.setUri(_playlist[_currentTrack].uri);
-      _setState();
+      await _setCurrentTrack(_currentTrack - 1);
+      _sendTrack();
     }
   }
 
