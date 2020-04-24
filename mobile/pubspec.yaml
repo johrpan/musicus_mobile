@@ -15,7 +15,7 @@ dependencies:
   moor:
   moor_ffi:
   musicus_player:
-    path: ../musicus_player
+    path: ../player
   path:
   path_provider:
   rxdart:
