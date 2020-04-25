@@ -7,26 +7,68 @@ part 'database.g.dart';
 final _random = Random(DateTime.now().millisecondsSinceEpoch);
 int generateId() => _random.nextInt(0xFFFFFFFF);
 
-class WorkModel {
+class WorkPartData {
   final Work work;
   final List<int> instrumentIds;
 
-  WorkModel({
-    @required this.work,
-    @required this.instrumentIds,
+  WorkPartData({
+    this.work,
+    this.instrumentIds,
   });
+
+  factory WorkPartData.fromJson(Map<String, dynamic> json) => WorkPartData(
+        work: Work.fromJson(json['work']),
+        instrumentIds: List<int>.from(json['instrumentIds']),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'work': work.toJson(),
+        'instrumentIds': instrumentIds,
+      };
 }
 
-class PerformanceModel {
-  final Person person;
-  final Ensemble ensemble;
-  final Instrument role;
+class WorkData {
+  final WorkPartData data;
+  final List<WorkPartData> partData;
 
-  PerformanceModel({
-    this.person,
-    this.ensemble,
-    this.role,
+  WorkData({
+    this.data,
+    this.partData,
   });
+
+  factory WorkData.fromJson(Map<String, dynamic> json) => WorkData(
+        data: WorkPartData.fromJson(json['data']),
+        partData: json['partData']
+            .map<WorkPartData>((j) => WorkPartData.fromJson(j))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'data': data.toJson(),
+        'partData': partData.map((d) => d.toJson()).toList(),
+      };
+}
+
+class RecordingData {
+  final Recording recording;
+  final List<Performance> performances;
+
+  RecordingData({
+    this.recording,
+    this.performances,
+  });
+
+  factory RecordingData.fromJson(Map<String, dynamic> json) => RecordingData(
+        recording: Recording.fromJson(json['recording']),
+        performances: json['performances']
+            .map<Performance>((j) => Performance.fromJson(j))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'recording': recording.toJson(),
+        'performances': performances.map((p) => p.toJson()).toList(),
+      };
 }
 
 @UseMoor(
@@ -57,25 +99,25 @@ class Database extends _$Database {
     await into(instruments).insert(instrument, orReplace: true);
   }
 
-  Future<void> updateWork(WorkModel model, List<WorkModel> parts) async {
+  Future<void> updateWork(WorkData data) async {
     await transaction(() async {
-      final workId = model.work.id;
+      final workId = data.data.work.id;
       await (delete(works)..where((w) => w.id.equals(workId))).go();
       await (delete(works)..where((w) => w.partOf.equals(workId))).go();
 
-      Future<void> insertWork(WorkModel model) async {
-        await into(works).insert(model.work);
+      Future<void> insertWork(WorkPartData partData) async {
+        await into(works).insert(partData.work);
         await batch((b) => b.insertAll(
             instrumentations,
-            model.instrumentIds
+            partData.instrumentIds
                 .map((id) =>
-                    Instrumentation(work: model.work.id, instrument: id))
+                    Instrumentation(work: partData.work.id, instrument: id))
                 .toList()));
       }
 
-      await insertWork(model);
-      for (final part in parts) {
-        await insertWork(part);
+      await insertWork(data.data);
+      for (final partData in data.partData) {
+        await insertWork(partData);
       }
     });
   }
@@ -84,20 +126,14 @@ class Database extends _$Database {
     await into(ensembles).insert(ensemble, orReplace: true);
   }
 
-  Future<void> updateRecording(
-      Recording recording, List<PerformanceModel> models) async {
+  Future<void> updateRecording(RecordingData data) async {
     await transaction(() async {
       await (delete(performances)
-            ..where((p) => p.recording.equals(recording.id)))
+            ..where((p) => p.recording.equals(data.recording.id)))
           .go();
-      await into(recordings).insert(recording, orReplace: true);
-      for (final model in models) {
-        await into(performances).insert(Performance(
-          recording: recording.id,
-          person: model.person?.id,
-          ensemble: model.ensemble?.id,
-          role: model.role?.id,
-        ));
+      await into(recordings).insert(data.recording, orReplace: true);
+      for (final performance in data.performances) {
+        await into(performances).insert(performance);
       }
     });
   }

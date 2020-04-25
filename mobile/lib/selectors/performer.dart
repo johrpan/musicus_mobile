@@ -7,6 +7,18 @@ import '../editors/person.dart';
 
 import 'instruments.dart';
 
+class PerformanceModel {
+  final Person person;
+  final Ensemble ensemble;
+  final Instrument role;
+
+  PerformanceModel({
+    this.person,
+    this.ensemble,
+    this.role,
+  });
+}
+
 class PerformerSelector extends StatefulWidget {
   @override
   _PerformerSelectorState createState() => _PerformerSelectorState();

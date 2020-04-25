@@ -295,7 +295,7 @@ class _WorkEditorState extends State<WorkEditor> {
             onPressed: () async {
               final workId = widget.work?.id ?? generateId();
 
-              final model = WorkModel(
+              final data = WorkPartData(
                 work: Work(
                   id: workId,
                   title: titleController.text,
@@ -304,10 +304,10 @@ class _WorkEditorState extends State<WorkEditor> {
                 instrumentIds: instruments.map((i) => i.id).toList(),
               );
 
-              final List<WorkModel> partModels = [];
+              final List<WorkPartData> partData = [];
               for (var i = 0; i < parts.length; i++) {
                 final part = parts[i];
-                partModels.add(WorkModel(
+                partData.add(WorkPartData(
                   work: Work(
                     id: generateId(),
                     title: part.titleController.text,
@@ -319,8 +319,12 @@ class _WorkEditorState extends State<WorkEditor> {
                 ));
               }
 
-              await backend.db.updateWork(model, partModels);
-              Navigator.pop(context, model.work);
+              await backend.db.updateWork(WorkData(
+                data: data,
+                partData: partData,
+              ));
+
+              Navigator.pop(context, data.work);
             },
           ),
         ],

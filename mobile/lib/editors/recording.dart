@@ -21,7 +21,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
   final commentController = TextEditingController();
 
   Work work;
-  List<PerformanceModel> performances = [];
+  List<PerformanceModel> performanceModels = [];
 
   @override
   void initState() {
@@ -64,7 +64,20 @@ class _RecordingEditorState extends State<RecordingEditor> {
                 comment: commentController.text,
               );
 
-              await backend.db.updateRecording(recording, performances);
+              final performances = performanceModels
+                  .map((m) => Performance(
+                        recording: recording.id,
+                        person: m.person?.id,
+                        ensemble: m.ensemble?.id,
+                        role: m.role?.id,
+                      ))
+                  .toList();
+
+              await backend.db.updateRecording(RecordingData(
+                recording: recording,
+                performances: performances,
+              ));
+
               Navigator.pop(context, recording);
             },
           )
@@ -74,10 +87,10 @@ class _RecordingEditorState extends State<RecordingEditor> {
         children: <Widget>[
           work != null
               ? ListTile(
-                title: WorkText(work.id),
-                subtitle: ComposersText(work.id),
-                onTap: selectWork,
-              )
+                  title: WorkText(work.id),
+                  subtitle: ComposersText(work.id),
+                  onTap: selectWork,
+                )
               : ListTile(
                   title: Text('Work'),
                   subtitle: Text('Select work'),
@@ -111,13 +124,13 @@ class _RecordingEditorState extends State<RecordingEditor> {
 
                 if (model != null) {
                   setState(() {
-                    performances.add(model);
+                    performanceModels.add(model);
                   });
                 }
               },
             ),
           ),
-          for (final performance in performances)
+          for (final performance in performanceModels)
             ListTile(
               title: Text(performance.person != null
                   ? '${performance.person.firstName} ${performance.person.lastName}'
@@ -128,7 +141,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
                 icon: const Icon(Icons.delete),
                 onPressed: () {
                   setState(() {
-                    performances.remove(performance);
+                    performanceModels.remove(performance);
                   });
                 },
               ),
