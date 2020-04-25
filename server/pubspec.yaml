@@ -2,6 +2,9 @@ name: musicus_server
 description: A server hosting a Musicus database.
 version: 0.0.1
 
+environment:
+  sdk: ">=2.3.0 <3.0.0"
+
 dependencies:
   aqueduct:
   moor_ffi:

@@ -2,6 +2,9 @@ name: musicus_client
 description: Client library for the Musicus server.
 version: 0.0.1
 
+environment:
+  sdk: ">=2.3.0 <3.0.0"
+
 dependencies:
   http:
   musicus_database:
