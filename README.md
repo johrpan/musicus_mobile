@@ -18,6 +18,11 @@ standalone Musicus applications for storing classical music metadata.
 `player` – The simplest possible audio player plugin. This is used by the
 mobile app for playback.
 
+`server` – A simple http server hosting a Musicus database. The server is
+developed using the [Aqueduct framework](https://aqueduct.io).
+
+`client` – A client library for the Musicus server.
+
 ## Hacking
 
 Picking up Dart as a programming language and Flutter as an UI toolkit should
