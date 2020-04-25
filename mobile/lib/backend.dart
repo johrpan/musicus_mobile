@@ -82,6 +82,7 @@ class Backend extends StatefulWidget {
 }
 
 class BackendState extends State<Backend> {
+  static const defaultUrl = 'https://musicus.johrpan.de/api';
   static const _platform = MethodChannel('de.johrpan.musicus/platform');
 
   final player = Player();
@@ -119,11 +120,14 @@ class BackendState extends State<Backend> {
     db = Database.connect(dbConnection);
 
     _shPref = await SharedPreferences.getInstance();
-    final url = _shPref.getString('musicusServerUrl');
-    musicusServerUrl.add(url);
-    if (url != null) {
-      client = MusicusClient(url);
+    var url = _shPref.getString('musicusServerUrl');
+
+    if (url == null) {
+      url = defaultUrl;
+      await _shPref.setString('musicusServerUrl', url);
     }
+    musicusServerUrl.add(url);
+    client = MusicusClient(url);
 
     musicLibraryUri = _shPref.getString('musicLibraryUri');
 
@@ -158,7 +162,7 @@ class BackendState extends State<Backend> {
   }
 
   Future<void> setMusicusServer(String serverUrl) async {
-    final url = serverUrl.isNotEmpty ? serverUrl : null;
+    final url = serverUrl.isNotEmpty ? serverUrl : defaultUrl;
     await _shPref.setString('musicusServerUrl', url);
 
     if (client != null) {
