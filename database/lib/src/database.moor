@@ -13,7 +13,7 @@ CREATE TABLE instruments (
 
 CREATE TABLE works (
     id INTEGER NOT NULL PRIMARY KEY,
-    composer INTEGER REFERENCES persons(id),
+    composer INTEGER REFERENCES persons(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     part_of INTEGER REFERENCES works(id) ON DELETE CASCADE,
     part_index INTEGER
@@ -31,7 +31,7 @@ CREATE TABLE ensembles (
 
 CREATE TABLE recordings (
     id INTEGER NOT NULL PRIMARY KEY,
-    work INTEGER REFERENCES works(id),
+    work INTEGER REFERENCES works(id) ON DELETE SET NULL,
     comment TEXT NOT NULL
 );
 
@@ -39,7 +39,7 @@ CREATE TABLE performances (
     recording INTEGER NOT NULL REFERENCES recordings(id) ON DELETE CASCADE,
     person INTEGER REFERENCES persons(id) ON DELETE CASCADE,
     ensemble INTEGER REFERENCES ensembles(id) ON DELETE CASCADE,
-    role INTEGER REFERENCES instruments(id)
+    role INTEGER REFERENCES instruments(id) ON DELETE SET NULL
 );
 
 allPersons:
