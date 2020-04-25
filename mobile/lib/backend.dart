@@ -6,9 +6,11 @@ import 'package:flutter/widgets.dart';
 import 'package:moor/isolate.dart';
 import 'package:moor/moor.dart';
 import 'package:moor_ffi/moor_ffi.dart';
+import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_database/musicus_database.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as pp;
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'music_library.dart';
@@ -86,6 +88,10 @@ class BackendState extends State<Backend> {
 
   BackendStatus status = BackendStatus.loading;
   Database db;
+
+  final musicusServerUrl = BehaviorSubject<String>();
+  MusicusClient client;
+
   String musicLibraryUri;
   MusicLibrary ml;
 
@@ -113,6 +119,12 @@ class BackendState extends State<Backend> {
     db = Database.connect(dbConnection);
 
     _shPref = await SharedPreferences.getInstance();
+    final url = _shPref.getString('musicusServerUrl');
+    musicusServerUrl.add(url);
+    if (url != null) {
+      client = MusicusClient(url);
+    }
+
     musicLibraryUri = _shPref.getString('musicLibraryUri');
 
     _loadMusicLibrary();
@@ -145,9 +157,25 @@ class BackendState extends State<Backend> {
     }
   }
 
+  Future<void> setMusicusServer(String serverUrl) async {
+    final url = serverUrl.isNotEmpty ? serverUrl : null;
+    await _shPref.setString('musicusServerUrl', url);
+
+    if (client != null) {
+      client.dispose();
+    }
+
+    if (url != null) {
+      client = MusicusClient(url);
+    }
+
+    musicusServerUrl.add(url);
+  }
+
   @override
   void dispose() {
     super.dispose();
+    client.dispose();
     _moorIsolate.shutdownAll();
   }
 }
