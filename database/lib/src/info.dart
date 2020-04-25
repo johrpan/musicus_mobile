@@ -71,7 +71,7 @@ class WorkInfo {
         composers:
             json['composers'].map<Person>((j) => Person.fromJson(j)).toList(),
         parts:
-            json['parts'].map<WorkInfo>((j) => WorkInfo.fromJson(j)).toList(),
+            json['parts'].map<PartInfo>((j) => PartInfo.fromJson(j)).toList(),
       );
 
   Map<String, dynamic> toJson() => {
