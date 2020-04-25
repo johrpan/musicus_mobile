@@ -8,7 +8,7 @@ class CompositionsController extends ResourceController {
 
   @Operation.get('id')
   Future<Response> getWorks(@Bind.path('id') int id) async {
-    final works = db.worksByComposer(id).get();
+    final works = await db.getWorks(id);
     return Response.ok(works);
   }
 }

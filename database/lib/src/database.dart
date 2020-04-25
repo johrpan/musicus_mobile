@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:moor/moor.dart';
 
+import 'info.dart';
+
 part 'database.g.dart';
 
 final _random = Random(DateTime.now().millisecondsSinceEpoch);
@@ -99,6 +101,50 @@ class Database extends _$Database {
     await into(instruments).insert(instrument, orReplace: true);
   }
 
+  /// Retrieve more information on an already queried work.
+  Future<WorkInfo> getWorkInfo(Work work) async {
+    final id = work.id;
+
+    final composers = await composersByWork(id).get();
+    final instruments = await instrumentsByWork(id).get();
+
+    final List<PartInfo> parts = [];
+    for (final part in await workParts(id).get()) {
+      parts.add(PartInfo(
+        work: part,
+        composer: part.composer != null
+            ? await personById(part.composer).getSingle()
+            : null,
+        instruments: await instrumentsByWork(id).get(),
+      ));
+    }
+
+    return WorkInfo(
+      work: work,
+      instruments: instruments,
+      composers: composers,
+      parts: parts,
+    );
+  }
+
+  /// Get all available information on a work.
+  Future<WorkInfo> getWork(int id) async {
+    final work = await workById(id).getSingle();
+    return await getWorkInfo(work);
+  }
+
+  /// Get information on all works written by the person with ID [personId].
+  Future<List<WorkInfo>> getWorks(int personId) async {
+    final works = await worksByComposer(personId).get();
+
+    final List<WorkInfo> result = [];
+    for (final work in works) {
+      result.add(await getWorkInfo(work));
+    }
+
+    return result;
+  }
+
   Future<void> updateWork(WorkData data) async {
     await transaction(() async {
       final workId = data.data.work.id;
@@ -136,5 +182,48 @@ class Database extends _$Database {
         await into(performances).insert(performance);
       }
     });
+  }
+
+  /// Retreive more information on an already queried recording.
+  Future<RecordingInfo> getRecordingInfo(Recording recording) async {
+    final id = recording.id;
+
+    final List<PerformanceInfo> performances = [];
+    for (final performance in await performancesByRecording(id).get()) {
+      performances.add(PerformanceInfo(
+        person: performance.person != null
+            ? await personById(performance.person).getSingle()
+            : null,
+        ensemble: performance.ensemble != null
+            ? await ensembleById(performance.ensemble).getSingle()
+            : null,
+        role: performance.role != null
+            ? await instrumentById(performance.role).getSingle()
+            : null,
+      ));
+    }
+
+    return RecordingInfo(
+      recording: recording,
+      performances: performances,
+    );
+  }
+
+  /// Get all available information on a recording.
+  Future<RecordingInfo> getRecording(int id) async {
+    final recording = await recordingById(id).getSingle();
+    return await getRecordingInfo(recording);
+  }
+
+  /// Get information on all recordings of the work with ID [workId].
+  Future<List<RecordingInfo>> getRecordings(int workId) async {
+    final recordings = await recordingsByWork(workId).get();
+
+    final List<RecordingInfo> result = [];
+    for (final recording in recordings) {
+      result.add(await getRecordingInfo(recording));
+    }
+
+    return result;
   }
 }

@@ -59,40 +59,38 @@ class MusicusClient {
   }
 
   /// Get all works composed by the person with the ID [personId].
-  Future<List<Work>> getWorks(int personId) async {
+  Future<List<WorkInfo>> getWorks(int personId) async {
     final response = await _client.get('$host/persons/$personId/works');
     final json = jsonDecode(response.body);
-    return json.map<Work>((j) => Work.fromJson(j)).toList();
+    return json.map<WorkInfo>((j) => WorkInfo.fromJson(j)).toList();
   }
 
   /// Get a work by ID.
-  Future<Work> getWork(int id) async {
+  Future<WorkInfo> getWork(int id) async {
     final response = await _client.get('$host/works/$id');
     final json = jsonDecode(response.body);
-    return Work.fromJson(json);
-  }
-
-  /// Get all work parts of the work with the ID [workId].
-  Future<List<Work>> getParts(int workId) async {
-    final response = await _client.get('$host/works/$workId/parts');
-    final json = jsonDecode(response.body);
-    return json.map<Work>((j) => Work.fromJson(j)).toList();
+    return WorkInfo.fromJson(json);
   }
 
   /// Get all recordings of the work with the ID [workId].
-  Future<List<Recording>> getRecordings(int workId) async {
+  Future<List<RecordingInfo>> getRecordings(int workId) async {
     final response = await _client.get('$host/works/$workId/recordings');
     final json = jsonDecode(response.body);
-    return json.map<Recording>((j) => Recording.fromJson(j)).toList();
+    return json.map<RecordingInfo>((j) => RecordingInfo.fromJson(j)).toList();
   }
 
   /// Create or update a work.
-  Future<void> putWork(WorkData data) async {
-    await _client.put(
+  /// 
+  /// The new or updated work is returned.
+  Future<WorkInfo> putWork(WorkData data) async {
+    final response = await _client.put(
       '$host/works/${data.data.work.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data.toJson()),
     );
+
+    final json = jsonDecode(response.body);
+    return WorkInfo.fromJson(json);
   }
 
   /// Get a list of all ensembles.
@@ -119,27 +117,24 @@ class MusicusClient {
   }
 
   /// Get a recording by ID.
-  Future<Recording> getRecording(int id) async {
+  Future<RecordingInfo> getRecording(int id) async {
     final response = await _client.get('$host/recordings/$id');
     final json = jsonDecode(response.body);
-    return Recording.fromJson(json);
-  }
-
-  /// Get all performances within the recording with the ID [recordingId].
-  Future<List<Performance>> getPerformances(int recordingId) async {
-    final response =
-        await _client.get('$host/recordings/$recordingId/performances');
-    final json = jsonDecode(response.body);
-    return json.map<Performance>((j) => Performance.fromJson(j)).toList();
+    return RecordingInfo.fromJson(json);
   }
 
   /// Create or update a recording.
-  Future<void> putRecording(RecordingData data) async {
-    await _client.put(
+  /// 
+  /// The new or updated recording is returned.
+  Future<RecordingInfo> putRecording(RecordingData data) async {
+    final response = await _client.put(
       '$host/recordings/${data.recording.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(data.toJson()),
     );
+
+    final json = jsonDecode(response.body);
+    return RecordingInfo.fromJson(json);
   }
 
   /// Close the internal http client.

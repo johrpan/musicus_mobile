@@ -8,7 +8,7 @@ class WorksController extends ResourceController {
 
   @Operation.get('id')
   Future<Response> getWork(@Bind.path('id') int id) async {
-    final work = await db.workById(id).getSingle();
+    final work = await db.getWork(id);
     if (work != null) {
       return Response.ok(work);
     } else {
@@ -21,6 +21,7 @@ class WorksController extends ResourceController {
       @Bind.path('id') int id, @Bind.body() Map<String, dynamic> json) async {
     final data = WorkData.fromJson(json);
     await db.updateWork(data);
-    return Response.ok(null);
+    
+    return Response.ok(await db.getWork(id));
   }
 }

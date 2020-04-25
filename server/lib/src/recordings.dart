@@ -8,7 +8,7 @@ class RecordingsController extends ResourceController {
 
   @Operation.get('id')
   Future<Response> getRecording(@Bind.path('id') int id) async {
-    final recording = await db.recordingById(id).getSingle();
+    final recording = await db.getRecording(id);
     if (recording != null) {
       return Response.ok(recording);
     } else {
@@ -21,6 +21,7 @@ class RecordingsController extends ResourceController {
       @Bind.path('id') int id, @Bind.body() Map<String, dynamic> json) async {
     final data = RecordingData.fromJson(json);
     await db.updateRecording(data);
-    return Response.ok(null);
+    
+    return Response.ok(await db.getRecording(id));
   }
 }

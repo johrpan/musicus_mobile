@@ -8,7 +8,7 @@ class WorkRecordingsController extends ResourceController {
 
   @Operation.get('id')
   Future<Response> getRecordings(@Bind.path('id') int id) async {
-    final recordings = await db.recordingsByWork(id).get();
+    final recordings = await db.getRecordings(id);
     return Response.ok(recordings);
   }
 }
