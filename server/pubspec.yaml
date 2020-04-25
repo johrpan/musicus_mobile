@@ -1,0 +1,9 @@
+name: musicus_server
+description: A server hosting a Musicus database.
+version: 0.0.1
+
+dependencies:
+  aqueduct:
+  moor_ffi:
+  musicus_database:
+    path: ../database

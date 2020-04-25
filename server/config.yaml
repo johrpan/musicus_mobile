@@ -1,0 +1,3 @@
+host: localhost
+port: 1833
+dbPath: db.sqlite

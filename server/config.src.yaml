@@ -1,0 +1,3 @@
+# A dbPath of null means that we want an in-memory database.
+host: localhost
+port: 1833
