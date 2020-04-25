@@ -1,0 +1,8 @@
+name: musicus_client
+description: Client library for the Musicus server.
+version: 0.0.1
+
+dependencies:
+  http:
+  musicus_database:
+    path: ../database
