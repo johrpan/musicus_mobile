@@ -70,6 +70,7 @@ class _PerformanceEditorState extends State<PerformanceEditor> {
               if (newPerson != null) {
                 setState(() {
                   person = newPerson;
+                  ensemble = null;
                 });
               }
             },
@@ -89,6 +90,7 @@ class _PerformanceEditorState extends State<PerformanceEditor> {
               if (newEnsemble != null) {
                 setState(() {
                   ensemble = newEnsemble;
+                  person = null;
                 });
               }
             },
@@ -96,6 +98,16 @@ class _PerformanceEditorState extends State<PerformanceEditor> {
           ListTile(
             title: Text('Role'),
             subtitle: Text(role?.name ?? 'Select instrument/role'),
+            trailing: role != null
+                ? IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () {
+                      setState(() {
+                        role = null;
+                      });
+                    },
+                  )
+                : null,
             onTap: () async {
               final Instrument newRole = await Navigator.push(
                 context,
