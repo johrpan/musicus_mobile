@@ -173,6 +173,7 @@ class WorkEditor extends StatefulWidget {
 class _WorkEditorState extends State<WorkEditor> {
   final titleController = TextEditingController();
 
+  bool uploading = false;
   Person composer;
   List<Instrument> instruments = [];
   List<PartData> parts = [];
@@ -249,45 +250,72 @@ class _WorkEditorState extends State<WorkEditor> {
       appBar: AppBar(
         title: Text('Work'),
         actions: <Widget>[
-          FlatButton(
-            child: Text('DONE'),
-            onPressed: () async {
-              final workId = widget?.workInfo?.work?.id ?? generateId();
-
-              List<PartInfo> partInfos = [];
-              for (var i = 0; i < parts.length; i++) {
-                final part = parts[i];
-                partInfos.add(PartInfo(
-                  work: Work(
-                    id: generateId(),
-                    title: part.titleController.text,
-                    composer: part.composer?.id,
-                    partOf: workId,
-                    partIndex: i,
+          uploading
+              ? Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                      ),
+                    ),
                   ),
-                  instruments: part.instruments,
-                  composer: part.composer,
-                ));
-              }
+                )
+              : FlatButton(
+                  child: Text('DONE'),
+                  onPressed: () async {
+                    setState(() {
+                      uploading = true;
+                    });
 
-              final workInfo = WorkInfo(
-                work: Work(
-                  id: workId,
-                  title: titleController.text,
-                  composer: composer?.id,
+                    final workId = widget?.workInfo?.work?.id ?? generateId();
+
+                    List<PartInfo> partInfos = [];
+                    for (var i = 0; i < parts.length; i++) {
+                      final part = parts[i];
+                      partInfos.add(PartInfo(
+                        work: Work(
+                          id: generateId(),
+                          title: part.titleController.text,
+                          composer: part.composer?.id,
+                          partOf: workId,
+                          partIndex: i,
+                        ),
+                        instruments: part.instruments,
+                        composer: part.composer,
+                      ));
+                    }
+
+                    final workInfo = WorkInfo(
+                      work: Work(
+                        id: workId,
+                        title: titleController.text,
+                        composer: composer?.id,
+                      ),
+                      instruments: instruments,
+                      // TODO: Theoretically, this should include all composers
+                      // from the parts.
+                      composers: [composer],
+                      parts: partInfos,
+                    );
+
+                    final success = await backend.client.putWork(workInfo);
+
+                    setState(() {
+                      uploading = false;
+                    });
+
+                    if (success) {
+                      Navigator.pop(context, workInfo);
+                    } else {
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                        content: Text('Failed to upload'),
+                      ));
+                    }
+                  },
                 ),
-                instruments: instruments,
-                // TODO: Theoretically, this should include all composers from
-                // the parts.
-                composers: [composer],
-                parts: partInfos,
-              );
-
-              await backend.client.putWork(workInfo);
-
-              Navigator.pop(context, workInfo);
-            },
-          ),
         ],
       ),
       body: ReorderableListView(

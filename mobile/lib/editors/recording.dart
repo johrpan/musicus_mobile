@@ -12,7 +12,7 @@ import '../selectors/work.dart';
 /// navigator as a [RecordingSelectorResult] object.
 class RecordingEditor extends StatefulWidget {
   /// The recording to edit.
-  /// 
+  ///
   /// If this is null, a new recording will be created.
   final RecordingInfo recordingInfo;
 
@@ -27,6 +27,7 @@ class RecordingEditor extends StatefulWidget {
 class _RecordingEditorState extends State<RecordingEditor> {
   final commentController = TextEditingController();
 
+  bool uploading = false;
   WorkInfo workInfo;
   List<PerformanceInfo> performanceInfos = [];
 
@@ -103,29 +104,58 @@ class _RecordingEditorState extends State<RecordingEditor> {
       appBar: AppBar(
         title: Text('Recording'),
         actions: <Widget>[
-          FlatButton(
-            child: Text('DONE'),
-            onPressed: () async {
-              final recordingInfo = RecordingInfo(
-                recording: Recording(
-                  id: widget?.recordingInfo?.recording?.id ?? generateId(),
-                  work: workInfo.work.id,
-                  comment: commentController.text,
-                ),
-                performances: performanceInfos,
-              );
+          uploading
+              ? Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                      ),
+                    ),
+                  ),
+                )
+              : FlatButton(
+                  child: Text('DONE'),
+                  onPressed: () async {
+                    setState(() {
+                      uploading = true;
+                    });
 
-              await backend.client.putRecording(recordingInfo);
+                    final recordingInfo = RecordingInfo(
+                      recording: Recording(
+                        id: widget?.recordingInfo?.recording?.id ??
+                            generateId(),
+                        work: workInfo.work.id,
+                        comment: commentController.text,
+                      ),
+                      performances: performanceInfos,
+                    );
 
-              Navigator.pop(
-                context,
-                RecordingSelectorResult(
-                  workInfo: workInfo,
-                  recordingInfo: recordingInfo,
+                    final success =
+                        await backend.client.putRecording(recordingInfo);
+
+                    setState(() {
+                      uploading = false;
+                    });
+
+                    if (success) {
+                      Navigator.pop(
+                        context,
+                        RecordingSelectorResult(
+                          workInfo: workInfo,
+                          recordingInfo: recordingInfo,
+                        ),
+                      );
+                    } else {
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                        content: Text('Failed to upload'),
+                      ));
+                    }
+                  },
                 ),
-              );
-            },
-          )
         ],
       ),
       body: ListView(

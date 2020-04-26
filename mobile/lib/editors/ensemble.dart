@@ -17,6 +17,8 @@ class EnsembleEditor extends StatefulWidget {
 class _EnsembleEditorState extends State<EnsembleEditor> {
   final nameController = TextEditingController();
 
+  bool uploading = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,18 +36,46 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
       appBar: AppBar(
         title: Text('Ensemble'),
         actions: <Widget>[
-          FlatButton(
-            child: Text('DONE'),
-            onPressed: () async {
-              final ensemble = Ensemble(
-                id: widget.ensemble?.id ?? generateId(),
-                name: nameController.text,
-              );
+          uploading
+              ? Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                      ),
+                    ),
+                  ),
+                )
+              : FlatButton(
+                  child: Text('DONE'),
+                  onPressed: () async {
+                    setState(() {
+                      uploading = true;
+                    });
 
-              await backend.client.putEnsemble(ensemble);
-              Navigator.pop(context, ensemble);
-            },
-          )
+                    final ensemble = Ensemble(
+                      id: widget.ensemble?.id ?? generateId(),
+                      name: nameController.text,
+                    );
+
+                    final success = await backend.client.putEnsemble(ensemble);
+
+                    setState(() {
+                      uploading = false;
+                    });
+
+                    if (success) {
+                      Navigator.pop(context, ensemble);
+                    } else {
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                        content: Text('Failed to upload'),
+                      ));
+                    }
+                  },
+                ),
         ],
       ),
       body: ListView(

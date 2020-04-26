@@ -18,6 +18,8 @@ class _PersonEditorState extends State<PersonEditor> {
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
 
+  bool uploading = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,19 +38,47 @@ class _PersonEditorState extends State<PersonEditor> {
       appBar: AppBar(
         title: Text('Person'),
         actions: <Widget>[
-          FlatButton(
-            child: Text('DONE'),
-            onPressed: () async {
-              final person = Person(
-                id: widget.person?.id ?? generateId(),
-                firstName: firstNameController.text,
-                lastName: lastNameController.text,
-              );
+          uploading
+              ? Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                      ),
+                    ),
+                  ),
+                )
+              : FlatButton(
+                  child: Text('DONE'),
+                  onPressed: () async {
+                    setState(() {
+                      uploading = true;
+                    });
 
-              await backend.client.putPerson(person);
-              Navigator.pop(context, person);
-            },
-          ),
+                    final person = Person(
+                      id: widget.person?.id ?? generateId(),
+                      firstName: firstNameController.text,
+                      lastName: lastNameController.text,
+                    );
+
+                    final success = await backend.client.putPerson(person);
+
+                    setState(() {
+                      uploading = false;
+                    });
+
+                    if (success) {
+                      Navigator.pop(context, person);
+                    } else {
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                        content: Text('Failed to upload'),
+                      ));
+                    }
+                  },
+                ),
         ],
       ),
       body: ListView(

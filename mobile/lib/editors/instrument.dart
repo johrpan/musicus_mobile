@@ -17,6 +17,8 @@ class InstrumentEditor extends StatefulWidget {
 class _InstrumentEditorState extends State<InstrumentEditor> {
   final nameController = TextEditingController();
 
+  bool uploading = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,18 +36,47 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
       appBar: AppBar(
         title: Text('Instrument/Role'),
         actions: <Widget>[
-          FlatButton(
-            child: Text('DONE'),
-            onPressed: () async {
-              final instrument = Instrument(
-                id: widget.instrument?.id ?? generateId(),
-                name: nameController.text,
-              );
+          uploading
+              ? Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24.0,
+                      height: 24.0,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                      ),
+                    ),
+                  ),
+                )
+              : FlatButton(
+                  child: Text('DONE'),
+                  onPressed: () async {
+                    setState(() {
+                      uploading = true;
+                    });
 
-              await backend.client.putInstrument(instrument);
-              Navigator.pop(context, instrument);
-            },
-          )
+                    final instrument = Instrument(
+                      id: widget.instrument?.id ?? generateId(),
+                      name: nameController.text,
+                    );
+
+                    final success =
+                        await backend.client.putInstrument(instrument);
+
+                    setState(() {
+                      uploading = false;
+                    });
+
+                    if (success) {
+                      Navigator.pop(context, instrument);
+                    } else {
+                      Scaffold.of(context).showSnackBar(SnackBar(
+                        content: Text('Failed to upload'),
+                      ));
+                    }
+                  },
+                ),
         ],
       ),
       body: ListView(

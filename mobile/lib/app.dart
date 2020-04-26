@@ -25,6 +25,13 @@ class App extends StatelessWidget {
           primary: Colors.amber,
           secondary: Colors.amber,
         ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: Colors.grey[800],
+          contentTextStyle: TextStyle(
+            color: Colors.white,
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
         fontFamily: 'Libertinus Sans',
       ),
       home: Builder(
