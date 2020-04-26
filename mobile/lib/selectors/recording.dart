@@ -1,211 +1,90 @@
 import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
 import '../editors/recording.dart';
-import '../widgets/texts.dart';
-import '../widgets/works_by_composer.dart';
+import '../widgets/lists.dart';
 
-class PersonList extends StatelessWidget {
-  final void Function(int personId) onSelect;
+class RecordingSelectorResult {
+  final WorkInfo workInfo;
+  final RecordingInfo recordingInfo;
 
-  PersonList({
-    this.onSelect,
+  RecordingSelectorResult({
+    this.workInfo,
+    this.recordingInfo,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    final backend = Backend.of(context);
-
-    return Column(
-      children: <Widget>[
-        Material(
-          elevation: 2.0,
-          child: ListTile(
-            title: Text('Composers'),
-          ),
-        ),
-        Expanded(
-          child: StreamBuilder<List<Person>>(
-            stream: backend.db.allPersons().watch(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return ListView.builder(
-                  itemCount: snapshot.data.length,
-                  itemBuilder: (context, index) {
-                    final person = snapshot.data[index];
-                    return ListTile(
-                      title: Text('${person.lastName}, ${person.firstName}'),
-                      onTap: () => onSelect(person.id),
-                    );
-                  },
-                );
-              } else {
-                return Container();
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
 }
 
-class WorkList extends StatelessWidget {
-  final int composerId;
-  final void Function(int workId) onSelect;
+/// A screen to select a recording.
+///
+/// If the user has selected a recording, a [RecordingSelectorResult] containing
+/// the selected recording and the recorded work will be returned using the
+/// navigator.
+class RecordingSelector extends StatefulWidget {
+  @override
+  _RecordingSelectorState createState() => _RecordingSelectorState();
+}
 
-  WorkList({
-    this.composerId,
-    this.onSelect,
-  });
+class _RecordingSelectorState extends State<RecordingSelector> {
+  Person person;
+  WorkInfo workInfo;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Material(
-          elevation: 2.0,
-          child: ListTile(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
+    Widget body;
+
+    if (person == null) {
+      body = PersonsList(
+        onSelected: (newPerson) {
+          setState(() {
+            person = newPerson;
+          });
+        },
+      );
+    } else if (workInfo == null) {
+      body = WorksList(
+        personId: person.id,
+        onSelected: (newWorkInfo) {
+          setState(() {
+            workInfo = newWorkInfo;
+          });
+        },
+      );
+    } else {
+      body = RecordingsList(
+        workId: workInfo.work.id,
+        onSelected: (recordingInfo) {
+          Navigator.pop(
+            context,
+            RecordingSelectorResult(
+              workInfo: workInfo,
+              recordingInfo: recordingInfo,
             ),
-            title: PersonText(composerId),
-          ),
-        ),
-        Expanded(
-          child: WorksByComposer(
-            personId: composerId,
-            onTap: (selectedWork) => onSelect(selectedWork.id),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class RecordingList extends StatelessWidget {
-  final int workId;
-  final void Function(Recording recording) onSelect;
-
-  RecordingList({
-    this.workId,
-    this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final backend = Backend.of(context);
-    return Column(
-      children: <Widget>[
-        Material(
-          elevation: 2.0,
-          child: ListTile(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.pop(context),
-            ),
-            title: WorkText(workId),
-            subtitle: ComposersText(workId),
-          ),
-        ),
-        Expanded(
-          child: StreamBuilder<List<Recording>>(
-            stream: backend.db.recordingsByWork(workId).watch(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return ListView.builder(
-                  itemCount: snapshot.data.length,
-                  itemBuilder: (context, index) {
-                    final recording = snapshot.data[index];
-                    return ListTile(
-                      title: PerformancesText(recording.id),
-                      onTap: () => onSelect(recording),
-                    );
-                  },
-                );
-              } else {
-                return Container();
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class RecordingsSelector extends StatefulWidget {
-  @override
-  _RecordingsSelectorState createState() => _RecordingsSelectorState();
-}
-
-class _RecordingsSelectorState extends State<RecordingsSelector> {
-  final nestedNavigator = GlobalKey<NavigatorState>();
-
-  @override
-  Widget build(BuildContext context) {
-    // This exists to circumvent the nested navigator when selecting a
-    // recording.
-    void popUpperNavigator(Recording recording) {
-      Navigator.pop(context, recording);
+          );
+        },
+      );
     }
 
-    return WillPopScope(
-      child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text('Select recording'),
-        ),
-        body: Navigator(
-          key: nestedNavigator,
-          onGenerateRoute: (settings) => settings.name == '/'
-              ? MaterialPageRoute(
-                  builder: (context) => PersonList(
-                    onSelect: (personId) => nestedNavigator.currentState.push(
-                      MaterialPageRoute(
-                        builder: (context) => WorkList(
-                          composerId: personId,
-                          onSelect: (workId) =>
-                              nestedNavigator.currentState.push(
-                            MaterialPageRoute(
-                              builder: (context) => RecordingList(
-                                workId: workId,
-                                onSelect: (recording) =>
-                                    popUpperNavigator(recording),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              : null,
-          initialRoute: '/',
-        ),
-        floatingActionButton: FloatingActionButton(
-          child: const Icon(Icons.add),
-          onPressed: () async {
-            final recording = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RecordingEditor(),
-                fullscreenDialog: true,
-              ),
-            );
-
-            if (recording != null) {
-              Navigator.pop(context, recording);
-            }
-          },
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Select recording'),
       ),
-      onWillPop: () async => !(await nestedNavigator.currentState.maybePop()),
+      body: body,
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          final RecordingSelectorResult result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RecordingEditor(),
+              fullscreenDialog: true,
+            ),
+          );
+
+          if (result != null) {
+            Navigator.pop(context, result);
+          }
+        },
+      ),
     );
   }
 }

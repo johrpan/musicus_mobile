@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../selectors/performer.dart';
+import '../editors/performance.dart';
+import '../selectors/recording.dart';
 import '../selectors/work.dart';
-import '../widgets/texts.dart';
 
+/// Screen for editing a recording.
+///
+/// If the user has finished editing, the result will be returned using the
+/// navigator as a [RecordingSelectorResult] object.
 class RecordingEditor extends StatefulWidget {
   final Recording recording;
 
@@ -20,8 +24,8 @@ class RecordingEditor extends StatefulWidget {
 class _RecordingEditorState extends State<RecordingEditor> {
   final commentController = TextEditingController();
 
-  Work work;
-  List<PerformanceModel> performanceModels = [];
+  WorkInfo workInfo;
+  List<PerformanceInfo> performanceInfos = [];
 
   @override
   void initState() {
@@ -37,18 +41,54 @@ class _RecordingEditorState extends State<RecordingEditor> {
     final backend = Backend.of(context);
 
     Future<void> selectWork() async {
-      final Work newWork = await Navigator.push(
+      final WorkInfo newWorkInfo = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => WorkSelector(),
             fullscreenDialog: true,
           ));
 
-      if (newWork != null) {
+      if (newWorkInfo != null) {
         setState(() {
-          work = newWork;
+          workInfo = newWorkInfo;
         });
       }
+    }
+
+    final List<Widget> performanceTiles = [];
+    for (var i = 0; i < performanceInfos.length; i++) {
+      final p = performanceInfos[i];
+
+      performanceTiles.add(ListTile(
+        title: Text(p.person != null
+            ? '${p.person.firstName} ${p.person.lastName}'
+            : p.ensemble.name),
+        subtitle: p.role != null ? Text(p.role.name) : null,
+        trailing: IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () {
+            setState(() {
+              performanceInfos.remove(p);
+            });
+          },
+        ),
+        onTap: () async {
+          final PerformanceInfo performanceInfo = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PerformanceEditor(
+                  performanceInfo: p,
+                ),
+                fullscreenDialog: true,
+              ));
+
+          if (performanceInfo != null) {
+            setState(() {
+              performanceInfos[i] = performanceInfo;
+            });
+          }
+        },
+      ));
     }
 
     return Scaffold(
@@ -60,11 +100,11 @@ class _RecordingEditorState extends State<RecordingEditor> {
             onPressed: () async {
               final recording = Recording(
                 id: widget.recording?.id ?? generateId(),
-                work: work.id,
+                work: workInfo.work.id,
                 comment: commentController.text,
               );
 
-              final performances = performanceModels
+              final performances = performanceInfos
                   .map((m) => Performance(
                         recording: recording.id,
                         person: m.person?.id,
@@ -73,22 +113,28 @@ class _RecordingEditorState extends State<RecordingEditor> {
                       ))
                   .toList();
 
-              await backend.db.updateRecording(RecordingData(
+              final recordingInfo =
+                  await backend.client.putRecording(RecordingData(
                 recording: recording,
                 performances: performances,
               ));
 
-              Navigator.pop(context, recording);
+              Navigator.pop(context, RecordingSelectorResult(
+                workInfo: workInfo,
+                recordingInfo: recordingInfo,
+              ));
             },
           )
         ],
       ),
       body: ListView(
         children: <Widget>[
-          work != null
+          workInfo != null
               ? ListTile(
-                  title: WorkText(work.id),
-                  subtitle: ComposersText(work.id),
+                  title: Text(workInfo.work.title),
+                  subtitle: Text(workInfo.composers
+                      .map((p) => '${p.firstName} ${p.lastName}')
+                      .join(', ')),
                   onTap: selectWork,
                 )
               : ListTile(
@@ -115,37 +161,22 @@ class _RecordingEditorState extends State<RecordingEditor> {
             trailing: IconButton(
               icon: const Icon(Icons.add),
               onPressed: () async {
-                final PerformanceModel model = await Navigator.push(
+                final PerformanceInfo model = await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PerformerSelector(),
+                      builder: (context) => PerformanceEditor(),
                       fullscreenDialog: true,
                     ));
 
                 if (model != null) {
                   setState(() {
-                    performanceModels.add(model);
+                    performanceInfos.add(model);
                   });
                 }
               },
             ),
           ),
-          for (final performance in performanceModels)
-            ListTile(
-              title: Text(performance.person != null
-                  ? '${performance.person.firstName} ${performance.person.lastName}'
-                  : performance.ensemble.name),
-              subtitle:
-                  performance.role != null ? Text(performance.role.name) : null,
-              trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () {
-                  setState(() {
-                    performanceModels.remove(performance);
-                  });
-                },
-              ),
-            ),
+          ...performanceTiles,
         ],
       ),
     );

@@ -55,7 +55,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      // For debugging purposes
       body: StreamBuilder<List<Person>>(
         stream: backend.db.allPersons().watch(),
         builder: (context, snapshot) {

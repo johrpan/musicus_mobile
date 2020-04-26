@@ -1,50 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
-
 import 'texts.dart';
 
 class RecordingTile extends StatelessWidget {
-  final int recordingId;
+  final WorkInfo workInfo;
+  final RecordingInfo recordingInfo;
 
   RecordingTile({
-    this.recordingId,
+    this.workInfo,
+    this.recordingInfo,
   });
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
     final textTheme = Theme.of(context).textTheme;
 
-    return StreamBuilder<Recording>(
-      stream: backend.db.recordingById(recordingId).watchSingle(),
-      builder: (context, snapshot) => Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 8.0,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (snapshot.hasData) ...[
-              DefaultTextStyle(
-                style: textTheme.subtitle1,
-                child: ComposersText(snapshot.data.work),
-              ),
-              DefaultTextStyle(
-                style: textTheme.headline6,
-                child: WorkText(snapshot.data.work),
-              ),
-            ],
-            const SizedBox(
-              height: 4.0,
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 8.0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          DefaultTextStyle(
+            style: textTheme.subtitle1,
+            child: Text(workInfo.composers
+                .map((p) => '${p.firstName} ${p.lastName}')
+                .join(', ')),
+          ),
+          DefaultTextStyle(
+            style: textTheme.headline6,
+            child: Text(workInfo.work.title),
+          ),
+          const SizedBox(
+            height: 4.0,
+          ),
+          DefaultTextStyle(
+            style: textTheme.bodyText1,
+            child: PerformancesText(
+              performanceInfos: recordingInfo.performances,
             ),
-            DefaultTextStyle(
-              style: textTheme.bodyText1,
-              child: PerformancesText(recordingId),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

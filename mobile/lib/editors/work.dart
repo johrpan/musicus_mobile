@@ -152,6 +152,10 @@ class _PartTileState extends State<PartTile> {
   }
 }
 
+/// Screen for editing a work.
+/// 
+/// If the user is finished editing, the result will be returned as a [WorkInfo]
+/// object.
 class WorkEditor extends StatefulWidget {
   final Work work;
 
@@ -319,12 +323,12 @@ class _WorkEditorState extends State<WorkEditor> {
                 ));
               }
 
-              await backend.db.updateWork(WorkData(
+              final workInfo = await backend.client.putWork(WorkData(
                 data: data,
                 partData: partData,
               ));
 
-              Navigator.pop(context, data.work);
+              Navigator.pop(context, workInfo);
             },
           ),
         ],

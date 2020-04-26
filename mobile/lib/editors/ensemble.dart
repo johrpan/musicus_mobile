@@ -42,7 +42,7 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
                 name: nameController.text,
               );
 
-              await backend.db.updateEnsemble(ensemble);
+              await backend.client.putEnsemble(ensemble);
               Navigator.pop(context, ensemble);
             },
           )

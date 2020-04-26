@@ -42,7 +42,7 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
                 name: nameController.text,
               );
 
-              await backend.db.updateInstrument(instrument);
+              await backend.client.putInstrument(instrument);
               Navigator.pop(context, instrument);
             },
           )

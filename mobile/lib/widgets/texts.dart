@@ -49,72 +49,38 @@ class PersonText extends StatelessWidget {
   }
 }
 
-class PerformancesText extends StatefulWidget {
-  final int recordingId;
+/// A widget showing information on a list of performances.
+class PerformancesText extends StatelessWidget {
+  /// The information to show.
+  final List<PerformanceInfo> performanceInfos;
 
-  PerformancesText(this.recordingId);
-
-  @override
-  _PerformancesTextState createState() => _PerformancesTextState();
-}
-
-class _PerformancesTextState extends State<PerformancesText> {
-  BackendState backend;
-  StreamSubscription<List<Performance>> performancesSubscription;
-  String text = '...';
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    performancesSubscription?.cancel();
-    backend = Backend.of(context);
-
-    performancesSubscription = backend.db
-        .performancesByRecording(widget.recordingId)
-        .watch()
-        .listen((performances) async {
-      final List<String> texts = [];
-
-      for (final performance in performances) {
-        final buffer = StringBuffer();
-
-        if (performance.person != null) {
-          final person =
-              await backend.db.personById(performance.person).getSingle();
-          buffer.write('${person.firstName} ${person.lastName}');
-        } else if (performance.ensemble != null) {
-          final ensemble =
-              await backend.db.ensembleById(performance.ensemble).getSingle();
-          buffer.write(ensemble.name);
-        } else {
-          buffer.write('Unknown');
-        }
-
-        if (performance.role != null) {
-          final role =
-              await backend.db.instrumentById(performance.role).getSingle();
-          buffer.write(' (${role.name})');
-        }
-
-        texts.add(buffer.toString());
-      }
-
-      setState(() {
-        text = texts.join(', ');
-      });
-    });
-  }
+  PerformancesText({
+    this.performanceInfos,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Text(text);
-  }
+    final List<String> performanceTexts = [];
 
-  @override
-  void dispose() {
-    super.dispose();
-    performancesSubscription?.cancel();
+    for (final p in performanceInfos) {
+      final buffer = StringBuffer();
+
+      if (p.person != null) {
+        buffer.write('${p.person.firstName} ${p.person.lastName}');
+      } else if (p.ensemble != null) {
+        buffer.write(p.ensemble.name);
+      } else {
+        buffer.write('Unknown');
+      }
+
+      if (p.role != null) {
+        buffer.write(' (${p.role.name})');
+      }
+
+      performanceTexts.add(buffer.toString());
+    }
+
+    return Text(performanceTexts.join(', '));
   }
 }
 

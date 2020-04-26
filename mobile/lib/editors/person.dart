@@ -45,7 +45,7 @@ class _PersonEditorState extends State<PersonEditor> {
                 lastName: lastNameController.text,
               );
 
-              await backend.db.updatePerson(person);
+              await backend.client.putPerson(person);
               Navigator.pop(context, person);
             },
           ),

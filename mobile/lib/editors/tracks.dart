@@ -22,7 +22,8 @@ class TracksEditor extends StatefulWidget {
 
 class _TracksEditorState extends State<TracksEditor> {
   BackendState backend;
-  int recordingId;
+  WorkInfo workInfo;
+  RecordingInfo recordingInfo;
   String parentId;
   List<TrackModel> trackModels = [];
 
@@ -44,11 +45,71 @@ class _TracksEditorState extends State<TracksEditor> {
 
                 tracks.add(Track(
                   fileName: trackModel.fileName,
-                  recordingId: recordingId,
+                  recordingId: recordingInfo.recording.id,
                   index: i,
                   partIds: [trackModel.workPartIndex],
                 ));
               }
+
+              // We need to copy all information associated with this track we
+              // got by asking the server to our local database. For now, we
+              // will just override everything that we already had previously.
+
+              // TODO: Think about efficiency.
+              backend.db.transaction(() async {
+                for (final composer in workInfo.composers) {
+                  await backend.db.updatePerson(composer);
+                }
+
+                for (final instrument in workInfo.instruments) {
+                  await backend.db.updateInstrument(instrument);
+                }
+
+                for (final partInfo in workInfo.parts) {
+                  for (final instrument in partInfo.instruments) {
+                    await backend.db.updateInstrument(instrument);
+                  }
+                }
+
+                await backend.db.updateWork(WorkData(
+                  data: WorkPartData(
+                    work: workInfo.work,
+                    instrumentIds:
+                        workInfo.instruments.map((i) => i.id).toList(),
+                  ),
+                  partData: workInfo.parts
+                      .map((p) => WorkPartData(
+                            work: p.work,
+                            instrumentIds:
+                                p.instruments.map((i) => i.id).toList(),
+                          ))
+                      .toList(),
+                ));
+
+                for (final performance in recordingInfo.performances) {
+                  if (performance.person != null) {
+                    await backend.db.updatePerson(performance.person);
+                  }
+                  if (performance.ensemble != null) {
+                    await backend.db.updateEnsemble(performance.ensemble);
+                  }
+                  if (performance.role != null) {
+                    await backend.db.updateInstrument(performance.role);
+                  }
+                }
+
+                await backend.db.updateRecording(RecordingData(
+                  recording: recordingInfo.recording,
+                  performances: recordingInfo.performances
+                      .map((p) => Performance(
+                            recording: recordingInfo.recording.id,
+                            person: p.person?.id,
+                            ensemble: p.ensemble?.id,
+                            role: p.role?.id,
+                          ))
+                      .toList(),
+                ));
+              });
 
               backend.ml.addTracks(parentId, tracks);
 
@@ -61,9 +122,10 @@ class _TracksEditorState extends State<TracksEditor> {
         header: Column(
           children: <Widget>[
             ListTile(
-              title: recordingId != null
+              title: recordingInfo != null
                   ? RecordingTile(
-                      recordingId: recordingId,
+                      workInfo: workInfo,
+                      recordingInfo: recordingInfo,
                     )
                   : Text('Select recording'),
               onTap: selectRecording,
@@ -92,7 +154,7 @@ class _TracksEditorState extends State<TracksEditor> {
                       trackModels = newTrackModels;
                     });
 
-                    if (recordingId != null) {
+                    if (recordingInfo != null) {
                       updateAutoParts();
                     }
                   }
@@ -121,16 +183,17 @@ class _TracksEditorState extends State<TracksEditor> {
   }
 
   Future<void> selectRecording() async {
-    final Recording recording = await Navigator.push(
+    final RecordingSelectorResult result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RecordingsSelector(),
+        builder: (context) => RecordingSelector(),
       ),
     );
 
-    if (recording != null) {
+    if (result != null) {
       setState(() {
-        recordingId = recording.id;
+        workInfo = result.workInfo;
+        recordingInfo = result.recordingInfo;
       });
 
       updateAutoParts();
@@ -139,18 +202,14 @@ class _TracksEditorState extends State<TracksEditor> {
 
   /// Automatically associate the tracks with work parts.
   Future<void> updateAutoParts() async {
-    final recording = await backend.db.recordingById(recordingId).getSingle();
-    final workId = recording.work;
-    final workParts = await backend.db.workParts(workId).get();
-
     setState(() {
       for (var i = 0; i < trackModels.length; i++) {
-        if (i >= workParts.length) {
+        if (i >= workInfo.parts.length) {
           trackModels[i].workPartIndex = null;
           trackModels[i].workPartTitle = null;
         } else {
-          trackModels[i].workPartIndex = workParts[i].partIndex;
-          trackModels[i].workPartTitle = workParts[i].title;
+          trackModels[i].workPartIndex = workInfo.parts[i].work.partIndex;
+          trackModels[i].workPartTitle = workInfo.parts[i].work.title;
         }
       }
     });

@@ -1,68 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
 import '../editors/work.dart';
+import '../widgets/lists.dart';
 
-// TODO: Lazy load works and/or optimize queries.
-class WorkSelector extends StatelessWidget {
+/// A screen to select a work.
+///
+/// If the user has selected a work, a [WorkInfo] will be returned
+/// using the navigator.
+class WorkSelector extends StatefulWidget {
+  @override
+  _WorkSelectorState createState() => _WorkSelectorState();
+}
+
+class _WorkSelectorState extends State<WorkSelector> {
+  Person person;
+
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    Widget body;
+
+    if (person == null) {
+      body = PersonsList(
+        onSelected: (newPerson) {
+          setState(() {
+            person = newPerson;
+          });
+        },
+      );
+    } else {
+      body = WorksList(
+        personId: person.id,
+        onSelected: (workInfo) {
+          setState(() {
+            Navigator.pop(context, workInfo);
+          });
+        },
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Select work'),
       ),
-      body: StreamBuilder<List<Person>>(
-        stream: backend.db.allPersons().watch(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (context, index) {
-                final person = snapshot.data[index];
-                final title = Text('${person.lastName}, ${person.firstName}');
-                return StreamBuilder<List<Work>>(
-                  stream: backend.db.worksByComposer(person.id).watch(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data.isNotEmpty) {
-                      return ExpansionTile(
-                        title: title,
-                        children: <Widget>[
-                          for (final work in snapshot.data)
-                            ListTile(
-                              title: Text(work.title),
-                              onTap: () => Navigator.pop(context, work),
-                            ),
-                        ],
-                      );
-                    } else {
-                      return ListTile(
-                        title: title,
-                      );
-                    }
-                  },
-                );
-              },
-            );
-          } else {
-            return Container();
-          }
-        },
-      ),
+      body: body,
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
-          final Work work = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WorkEditor(),
-                fullscreenDialog: true,
-              ));
+          final WorkInfo workInfo = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkEditor(),
+              fullscreenDialog: true,
+            ),
+          );
 
-          if (work != null) {
-            Navigator.pop(context, work);
+          if (workInfo != null) {
+            Navigator.pop(context, workInfo);
           }
         },
       ),

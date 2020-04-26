@@ -16,7 +16,7 @@ class PersonScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backend = Backend.of(context);
-
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('${person.firstName} ${person.lastName}'),

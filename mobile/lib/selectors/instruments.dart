@@ -35,7 +35,9 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.multiple ? 'Select instruments/roles' : 'Select instrument/role'),
+        title: Text(widget.multiple
+            ? 'Select instruments/roles'
+            : 'Select instrument/role'),
         actions: widget.multiple
             ? <Widget>[
                 FlatButton(
@@ -45,8 +47,8 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
               ]
             : null,
       ),
-      body: StreamBuilder(
-        stream: backend.db.allInstruments().watch(),
+      body: FutureBuilder<List<Instrument>>(
+        future: backend.client.getInstruments(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
