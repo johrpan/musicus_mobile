@@ -83,14 +83,11 @@ class MusicusClient {
   ///
   /// The new or updated work is returned.
   Future<void> putWork(WorkInfo workInfo) async {
-    final response = await _client.put(
+    await _client.put(
       '$host/works/${workInfo.work.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(workInfo.toJson()),
     );
-
-    final json = jsonDecode(response.body);
-    return WorkInfo.fromJson(json);
   }
 
   /// Get a list of all ensembles.
