@@ -98,31 +98,24 @@ class _RecordingEditorState extends State<RecordingEditor> {
           FlatButton(
             child: Text('DONE'),
             onPressed: () async {
-              final recording = Recording(
-                id: widget.recording?.id ?? generateId(),
-                work: workInfo.work.id,
-                comment: commentController.text,
+              final recordingInfo = RecordingInfo(
+                recording: Recording(
+                  id: widget.recording?.id ?? generateId(),
+                  work: workInfo.work.id,
+                  comment: commentController.text,
+                ),
+                performances: performanceInfos,
               );
 
-              final performances = performanceInfos
-                  .map((m) => Performance(
-                        recording: recording.id,
-                        person: m.person?.id,
-                        ensemble: m.ensemble?.id,
-                        role: m.role?.id,
-                      ))
-                  .toList();
+              await backend.client.putRecording(recordingInfo);
 
-              final recordingInfo =
-                  await backend.client.putRecording(RecordingData(
-                recording: recording,
-                performances: performances,
-              ));
-
-              Navigator.pop(context, RecordingSelectorResult(
-                workInfo: workInfo,
-                recordingInfo: recordingInfo,
-              ));
+              Navigator.pop(
+                context,
+                RecordingSelectorResult(
+                  workInfo: workInfo,
+                  recordingInfo: recordingInfo,
+                ),
+              );
             },
           )
         ],

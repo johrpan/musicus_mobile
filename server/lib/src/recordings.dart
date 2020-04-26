@@ -19,9 +19,9 @@ class RecordingsController extends ResourceController {
   @Operation.put('id')
   Future<Response> putRecording(
       @Bind.path('id') int id, @Bind.body() Map<String, dynamic> json) async {
-    final data = RecordingData.fromJson(json);
-    await db.updateRecording(data);
+    final recordingInfo = RecordingInfo.fromJson(json);
+    await db.updateRecording(recordingInfo);
     
-    return Response.ok(await db.getRecording(id));
+    return Response.ok(null);
   }
 }

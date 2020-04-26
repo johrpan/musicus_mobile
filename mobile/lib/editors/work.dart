@@ -153,7 +153,7 @@ class _PartTileState extends State<PartTile> {
 }
 
 /// Screen for editing a work.
-/// 
+///
 /// If the user is finished editing, the result will be returned as a [WorkInfo]
 /// object.
 class WorkEditor extends StatefulWidget {
@@ -299,19 +299,10 @@ class _WorkEditorState extends State<WorkEditor> {
             onPressed: () async {
               final workId = widget.work?.id ?? generateId();
 
-              final data = WorkPartData(
-                work: Work(
-                  id: workId,
-                  title: titleController.text,
-                  composer: composer?.id,
-                ),
-                instrumentIds: instruments.map((i) => i.id).toList(),
-              );
-
-              final List<WorkPartData> partData = [];
+              List<PartInfo> partInfos = [];
               for (var i = 0; i < parts.length; i++) {
                 final part = parts[i];
-                partData.add(WorkPartData(
+                partInfos.add(PartInfo(
                   work: Work(
                     id: generateId(),
                     title: part.titleController.text,
@@ -319,14 +310,25 @@ class _WorkEditorState extends State<WorkEditor> {
                     partOf: workId,
                     partIndex: i,
                   ),
-                  instrumentIds: part.instruments.map((i) => i.id).toList(),
+                  instruments: part.instruments,
+                  composer: part.composer,
                 ));
               }
 
-              final workInfo = await backend.client.putWork(WorkData(
-                data: data,
-                partData: partData,
-              ));
+              final workInfo = WorkInfo(
+                work: Work(
+                  id: workId,
+                  title: titleController.text,
+                  composer: composer?.id,
+                ),
+                instruments: instruments,
+                // TODO: Theoretically, this should include all composers from
+                // the parts.
+                composers: [composer],
+                parts: partInfos,
+              );
+
+              await backend.client.putWork(workInfo);
 
               Navigator.pop(context, workInfo);
             },

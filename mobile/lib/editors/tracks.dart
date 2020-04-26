@@ -54,62 +54,8 @@ class _TracksEditorState extends State<TracksEditor> {
               // We need to copy all information associated with this track we
               // got by asking the server to our local database. For now, we
               // will just override everything that we already had previously.
-
-              // TODO: Think about efficiency.
-              backend.db.transaction(() async {
-                for (final composer in workInfo.composers) {
-                  await backend.db.updatePerson(composer);
-                }
-
-                for (final instrument in workInfo.instruments) {
-                  await backend.db.updateInstrument(instrument);
-                }
-
-                for (final partInfo in workInfo.parts) {
-                  for (final instrument in partInfo.instruments) {
-                    await backend.db.updateInstrument(instrument);
-                  }
-                }
-
-                await backend.db.updateWork(WorkData(
-                  data: WorkPartData(
-                    work: workInfo.work,
-                    instrumentIds:
-                        workInfo.instruments.map((i) => i.id).toList(),
-                  ),
-                  partData: workInfo.parts
-                      .map((p) => WorkPartData(
-                            work: p.work,
-                            instrumentIds:
-                                p.instruments.map((i) => i.id).toList(),
-                          ))
-                      .toList(),
-                ));
-
-                for (final performance in recordingInfo.performances) {
-                  if (performance.person != null) {
-                    await backend.db.updatePerson(performance.person);
-                  }
-                  if (performance.ensemble != null) {
-                    await backend.db.updateEnsemble(performance.ensemble);
-                  }
-                  if (performance.role != null) {
-                    await backend.db.updateInstrument(performance.role);
-                  }
-                }
-
-                await backend.db.updateRecording(RecordingData(
-                  recording: recordingInfo.recording,
-                  performances: recordingInfo.performances
-                      .map((p) => Performance(
-                            recording: recordingInfo.recording.id,
-                            person: p.person?.id,
-                            ensemble: p.ensemble?.id,
-                            role: p.role?.id,
-                          ))
-                      .toList(),
-                ));
-              });
+              backend.db.updateWork(workInfo);
+              backend.db.updateRecording(recordingInfo);
 
               backend.ml.addTracks(parentId, tracks);
 

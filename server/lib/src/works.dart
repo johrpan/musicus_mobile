@@ -19,9 +19,9 @@ class WorksController extends ResourceController {
   @Operation.put('id')
   Future<Response> putWork(
       @Bind.path('id') int id, @Bind.body() Map<String, dynamic> json) async {
-    final data = WorkData.fromJson(json);
-    await db.updateWork(data);
-    
-    return Response.ok(await db.getWork(id));
+    final workInfo = WorkInfo.fromJson(json);
+    await db.updateWork(workInfo);
+
+    return Response.ok(null);
   }
 }

@@ -80,13 +80,13 @@ class MusicusClient {
   }
 
   /// Create or update a work.
-  /// 
+  ///
   /// The new or updated work is returned.
-  Future<WorkInfo> putWork(WorkData data) async {
+  Future<void> putWork(WorkInfo workInfo) async {
     final response = await _client.put(
-      '$host/works/${data.data.work.id}',
+      '$host/works/${workInfo.work.id}',
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data.toJson()),
+      body: jsonEncode(workInfo.toJson()),
     );
 
     final json = jsonDecode(response.body);
@@ -124,17 +124,12 @@ class MusicusClient {
   }
 
   /// Create or update a recording.
-  /// 
-  /// The new or updated recording is returned.
-  Future<RecordingInfo> putRecording(RecordingData data) async {
-    final response = await _client.put(
-      '$host/recordings/${data.recording.id}',
+  Future<void> putRecording(RecordingInfo recordingInfo) async {
+    await _client.put(
+      '$host/recordings/${recordingInfo.recording.id}',
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data.toJson()),
+      body: jsonEncode(recordingInfo.toJson()),
     );
-
-    final json = jsonDecode(response.body);
-    return RecordingInfo.fromJson(json);
   }
 
   /// Close the internal http client.

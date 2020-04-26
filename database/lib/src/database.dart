@@ -9,70 +9,6 @@ part 'database.g.dart';
 final _random = Random(DateTime.now().millisecondsSinceEpoch);
 int generateId() => _random.nextInt(0xFFFFFFFF);
 
-class WorkPartData {
-  final Work work;
-  final List<int> instrumentIds;
-
-  WorkPartData({
-    this.work,
-    this.instrumentIds,
-  });
-
-  factory WorkPartData.fromJson(Map<String, dynamic> json) => WorkPartData(
-        work: Work.fromJson(json['work']),
-        instrumentIds: List<int>.from(json['instrumentIds']),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'work': work.toJson(),
-        'instrumentIds': instrumentIds,
-      };
-}
-
-class WorkData {
-  final WorkPartData data;
-  final List<WorkPartData> partData;
-
-  WorkData({
-    this.data,
-    this.partData,
-  });
-
-  factory WorkData.fromJson(Map<String, dynamic> json) => WorkData(
-        data: WorkPartData.fromJson(json['data']),
-        partData: json['partData']
-            .map<WorkPartData>((j) => WorkPartData.fromJson(j))
-            .toList(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'data': data.toJson(),
-        'partData': partData.map((d) => d.toJson()).toList(),
-      };
-}
-
-class RecordingData {
-  final Recording recording;
-  final List<Performance> performances;
-
-  RecordingData({
-    this.recording,
-    this.performances,
-  });
-
-  factory RecordingData.fromJson(Map<String, dynamic> json) => RecordingData(
-        recording: Recording.fromJson(json['recording']),
-        performances: json['performances']
-            .map<Performance>((j) => Performance.fromJson(j))
-            .toList(),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'recording': recording.toJson(),
-        'performances': performances.map((p) => p.toJson()).toList(),
-      };
-}
-
 @UseMoor(
   include: {
     'database.moor',
@@ -145,25 +81,44 @@ class Database extends _$Database {
     return result;
   }
 
-  Future<void> updateWork(WorkData data) async {
+  /// Update a work and its associated data.
+  ///
+  /// This will explicitly update all associated composers and instruments, even
+  /// if they have already existed before.
+  Future<void> updateWork(WorkInfo workInfo) async {
     await transaction(() async {
-      final workId = data.data.work.id;
-      await (delete(works)..where((w) => w.id.equals(workId))).go();
-      await (delete(works)..where((w) => w.partOf.equals(workId))).go();
+      final workId = workInfo.work.id;
 
-      Future<void> insertWork(WorkPartData partData) async {
-        await into(works).insert(partData.work);
-        await batch((b) => b.insertAll(
-            instrumentations,
-            partData.instrumentIds
-                .map((id) =>
-                    Instrumentation(work: partData.work.id, instrument: id))
-                .toList()));
+      // Delete old work data first. The parts and instrumentations will be
+      // deleted automatically due to their foreign key constraints.
+      await (delete(works)..where((w) => w.id.equals(workId))).go();
+
+      /// Insert instrumentations for a work.
+      ///
+      /// At the moment, this will also update all provided instruments, even
+      /// if they were already there previously.
+      Future<void> insertInstrumentations(
+          int workId, List<Instrument> instruments) async {
+        for (final instrument in instruments) {
+          await updateInstrument(instrument);
+          await into(instrumentations).insert(Instrumentation(
+            work: workId,
+            instrument: instrument.id,
+          ));
+        }
       }
 
-      await insertWork(data.data);
-      for (final partData in data.partData) {
-        await insertWork(partData);
+      // This will also include the composers of the work's parts.
+      for (final person in workInfo.composers) {
+        await updatePerson(person);
+      }
+
+      await into(works).insert(workInfo.work);
+      await insertInstrumentations(workId, workInfo.instruments);
+
+      for (final partInfo in workInfo.parts) {
+        await into(works).insert(partInfo.work);
+        await insertInstrumentations(partInfo.work.id, partInfo.instruments);
       }
     });
   }
@@ -172,14 +127,38 @@ class Database extends _$Database {
     await into(ensembles).insert(ensemble, orReplace: true);
   }
 
-  Future<void> updateRecording(RecordingData data) async {
+  /// Update a recording and its associated data.
+  ///
+  /// This will explicitly also update all assoicated persons and instruments.
+  Future<void> updateRecording(RecordingInfo recordingInfo) async {
     await transaction(() async {
-      await (delete(performances)
-            ..where((p) => p.recording.equals(data.recording.id)))
-          .go();
-      await into(recordings).insert(data.recording, orReplace: true);
-      for (final performance in data.performances) {
-        await into(performances).insert(performance);
+      final recordingId = recordingInfo.recording.id;
+
+      // Delete the old recording first. This will also delete the performances
+      // due to their foreign key constraint.
+      await (delete(recordings)..where((r) => r.id.equals(recordingId))).go();
+
+      await into(recordings).insert(recordingInfo.recording);
+
+      for (final performance in recordingInfo.performances) {
+        if (performance.person != null) {
+          await updatePerson(performance.person);
+        }
+
+        if (performance.ensemble != null) {
+          await updateEnsemble(performance.ensemble);
+        }
+
+        if (performance.role != null) {
+          await updateInstrument(performance.role);
+        }
+
+        await into(performances).insert(Performance(
+          recording: recordingId,
+          person: performance.person?.id,
+          ensemble: performance.ensemble?.id,
+          role: performance.role?.id,
+        ));
       }
     });
   }
