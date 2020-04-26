@@ -11,10 +11,13 @@ import '../selectors/work.dart';
 /// If the user has finished editing, the result will be returned using the
 /// navigator as a [RecordingSelectorResult] object.
 class RecordingEditor extends StatefulWidget {
-  final Recording recording;
+  /// The recording to edit.
+  /// 
+  /// If this is null, a new recording will be created.
+  final RecordingInfo recordingInfo;
 
   RecordingEditor({
-    this.recording,
+    this.recordingInfo,
   });
 
   @override
@@ -31,8 +34,13 @@ class _RecordingEditorState extends State<RecordingEditor> {
   void initState() {
     super.initState();
 
-    if (widget.recording != null) {
-      // TODO: Initialize.
+    if (widget.recordingInfo != null) {
+      final backend = Backend.of(context);
+
+      () async {
+        workInfo = await backend.db.getWork(widget.recordingInfo.recording.id);
+        performanceInfos = List.from(widget.recordingInfo.performances);
+      }();
     }
   }
 
@@ -100,7 +108,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
             onPressed: () async {
               final recordingInfo = RecordingInfo(
                 recording: Recording(
-                  id: widget.recording?.id ?? generateId(),
+                  id: widget?.recordingInfo?.recording?.id ?? generateId(),
                   work: workInfo.work.id,
                   comment: commentController.text,
                 ),
