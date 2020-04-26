@@ -20,10 +20,6 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: 0,
-                child: Text('Start player'),
-              ),
-              PopupMenuItem(
                 value: 1,
                 child: Text('Add tracks'),
               ),
@@ -33,9 +29,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
             onSelected: (selected) {
-              if (selected == 0) {
-                backend.player.start();
-              } else if (selected == 1) {
+              if (selected == 1) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
