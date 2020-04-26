@@ -16,7 +16,7 @@ class PersonScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backend = Backend.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text('${person.firstName} ${person.lastName}'),
@@ -47,14 +47,18 @@ class PersonScreen extends StatelessWidget {
                 final work = snapshot.data[index];
                 return ListTile(
                   title: Text(work.title),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WorkScreen(
-                        work: work,
+                  onTap: () async {
+                    final workInfo = await backend.db.getWorkInfo(work);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WorkScreen(
+                          workInfo: workInfo,
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             );

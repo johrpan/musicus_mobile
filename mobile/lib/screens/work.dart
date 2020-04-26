@@ -6,10 +6,10 @@ import '../editors/work.dart';
 import '../widgets/texts.dart';
 
 class WorkScreen extends StatelessWidget {
-  final Work work;
+  final WorkInfo workInfo;
 
   WorkScreen({
-    this.work,
+    this.workInfo,
   });
 
   @override
@@ -18,7 +18,7 @@ class WorkScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(work.title),
+        title: Text(workInfo.work.title),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.edit),
@@ -27,7 +27,7 @@ class WorkScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => WorkEditor(
-                    work: work,
+                    workInfo: workInfo,
                   ),
                   fullscreenDialog: true,
                 ),
@@ -37,7 +37,7 @@ class WorkScreen extends StatelessWidget {
         ],
       ),
       body: StreamBuilder<List<Recording>>(
-        stream: backend.db.recordingsByWork(work.id).watch(),
+        stream: backend.db.recordingsByWork(workInfo.work.id).watch(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(

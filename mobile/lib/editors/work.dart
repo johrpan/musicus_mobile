@@ -157,10 +157,13 @@ class _PartTileState extends State<PartTile> {
 /// If the user is finished editing, the result will be returned as a [WorkInfo]
 /// object.
 class WorkEditor extends StatefulWidget {
-  final Work work;
+  /// The work to edit.
+  ///
+  /// If this is null, a new work will be created.
+  final WorkInfo workInfo;
 
   WorkEditor({
-    this.work,
+    this.workInfo,
   });
 
   @override
@@ -170,9 +173,6 @@ class WorkEditor extends StatefulWidget {
 class _WorkEditorState extends State<WorkEditor> {
   final titleController = TextEditingController();
 
-  BackendState backend;
-
-  String title = '';
   Person composer;
   List<Instrument> instruments = [];
   List<PartData> parts = [];
@@ -181,71 +181,26 @@ class _WorkEditorState extends State<WorkEditor> {
   void initState() {
     super.initState();
 
-    if (widget.work != null) {
-      titleController.text = widget.work.title;
-    }
-  }
+    if (widget.workInfo != null) {
+      titleController.text = widget.workInfo.work.title;
+      // TODO: Theoretically this includes the composers of all parts.
+      composer = widget.workInfo.composers.first;
+      instruments = List.from(widget.workInfo.instruments);
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    backend = Backend.of(context);
-
-    if (widget.work != null) {
-      if (widget.work.composer != null) {
-        () async {
-          final person =
-              await backend.db.personById(widget.work.composer).getSingle();
-
-          // We don't want to override a newly selected composer.
-          if (composer == null) {
-            setState(() {
-              composer = person;
-            });
-          }
-        }();
+      for (final partInfo in widget.workInfo.parts) {
+        parts.add(PartData(
+          title: partInfo.work.title,
+          composer: partInfo.composer,
+          instruments: List.from(partInfo.instruments),
+        ));
       }
-
-      () async {
-        final selection =
-            await backend.db.instrumentsByWork(widget.work.id).get();
-
-        // We don't want to override already selected instruments.
-        if (instruments.isEmpty) {
-          setState(() {
-            instruments = selection;
-          });
-        }
-      }();
-
-      () async {
-        final dbParts = await backend.db.workParts(widget.work.id).get();
-        for (final dbPart in dbParts) {
-          final partInstruments =
-              await backend.db.instrumentsByWork(dbPart.id).get();
-
-          Person partComposer;
-
-          if (dbPart.composer != null) {
-            partComposer =
-                await backend.db.personById(dbPart.composer).getSingle();
-          }
-
-          setState(() {
-            parts.add(PartData(
-              title: dbPart.title,
-              composer: partComposer,
-              instruments: partInstruments,
-            ));
-          });
-        }
-      }();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final backend = Backend.of(context);
+
     final List<Widget> partTiles = [];
     for (var i = 0; i < parts.length; i++) {
       final part = parts[i];
@@ -297,7 +252,7 @@ class _WorkEditorState extends State<WorkEditor> {
           FlatButton(
             child: Text('DONE'),
             onPressed: () async {
-              final workId = widget.work?.id ?? generateId();
+              final workId = widget?.workInfo?.work?.id ?? generateId();
 
               List<PartInfo> partInfos = [];
               for (var i = 0; i < parts.length; i++) {
