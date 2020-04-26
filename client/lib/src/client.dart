@@ -28,16 +28,20 @@ class MusicusClient {
   }
 
   /// Create or update a person.
-  /// 
+  ///
   /// Returns true, if the operation was successful.
   Future<bool> putPerson(Person person) async {
-    final response = await _client.put(
-      '$host/persons/${person.id}',
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(person.toJson()),
-    );
+    try {
+      final response = await _client.put(
+        '$host/persons/${person.id}',
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(person.toJson()),
+      );
 
-    return response.statusCode == HttpStatus.ok;
+      return response.statusCode == HttpStatus.ok;
+    } on Exception {
+      return false;
+    }
   }
 
   /// Get a list of all available instruments.
@@ -55,16 +59,20 @@ class MusicusClient {
   }
 
   /// Create or update an instrument.
-  /// 
+  ///
   /// Returns true, if the operation was successful.
   Future<bool> putInstrument(Instrument instrument) async {
-    final response = await _client.put(
-      '$host/instruments/${instrument.id}',
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(instrument.toJson()),
-    );
+    try {
+      final response = await _client.put(
+        '$host/instruments/${instrument.id}',
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(instrument.toJson()),
+      );
 
-    return response.statusCode == HttpStatus.ok;
+      return response.statusCode == HttpStatus.ok;
+    } on Exception {
+      return false;
+    }
   }
 
   /// Get all works composed by the person with the ID [personId].
@@ -89,16 +97,20 @@ class MusicusClient {
   }
 
   /// Create or update a work.
-  /// 
+  ///
   /// Returns true, if the operation was successful.
   Future<bool> putWork(WorkInfo workInfo) async {
-    final response = await _client.put(
-      '$host/works/${workInfo.work.id}',
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(workInfo.toJson()),
-    );
+    try {
+      final response = await _client.put(
+        '$host/works/${workInfo.work.id}',
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(workInfo.toJson()),
+      );
 
-    return response.statusCode == HttpStatus.ok;
+      return response.statusCode == HttpStatus.ok;
+    } on Exception {
+      return false;
+    }
   }
 
   /// Get a list of all ensembles.
@@ -116,16 +128,20 @@ class MusicusClient {
   }
 
   /// Create or update an ensemble.
-  /// 
+  ///
   /// Returns true, if the operation was successful.
   Future<bool> putEnsemble(Ensemble ensemble) async {
-    final response = await _client.put(
-      '$host/ensembles/${ensemble.id}',
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(ensemble.toJson()),
-    );
+    try {
+      final response = await _client.put(
+        '$host/ensembles/${ensemble.id}',
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(ensemble.toJson()),
+      );
 
-    return response.statusCode == HttpStatus.ok;
+      return response.statusCode == HttpStatus.ok;
+    } on Exception {
+      return false;
+    }
   }
 
   /// Get a recording by ID.
@@ -136,16 +152,20 @@ class MusicusClient {
   }
 
   /// Create or update a recording.
-  /// 
+  ///
   /// Returns true, if the operation was successful.
   Future<bool> putRecording(RecordingInfo recordingInfo) async {
-    final response = await _client.put(
-      '$host/recordings/${recordingInfo.recording.id}',
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(recordingInfo.toJson()),
-    );
+    try {
+      final response = await _client.put(
+        '$host/recordings/${recordingInfo.recording.id}',
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(recordingInfo.toJson()),
+      );
 
-    return response.statusCode == HttpStatus.ok;
+      return response.statusCode == HttpStatus.ok;
+    } on Exception {
+      return false;
+    }
   }
 
   /// Close the internal http client.
