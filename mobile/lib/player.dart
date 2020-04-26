@@ -170,6 +170,16 @@ class Player {
     await AudioService.customAction('addTracks', jsonEncode(tracks));
   }
 
+  /// Remove the track at [index] from the playlist.
+  ///
+  /// If the player is not active or an invalid value is provided, this will do
+  /// nothing.
+  Future<void> removeTrack(int index) async {
+    if (AudioService.running) {
+      await AudioService.customAction('removeTrack', index);
+    }
+  }
+
   /// Seek to [pos], which is a value between (and including) zero and one.
   ///
   /// If the player is not active or an invalid value is provided, this will do
@@ -433,6 +443,27 @@ class _PlaybackService extends BackgroundAudioTask {
     _sendPlaylist();
   }
 
+  /// Remove the track at [index] from the playlist.
+  ///
+  /// If it was the current track, the next track will be played.
+  Future<void> _removeTrack(int index) async {
+    if (index >= 0 && index < _playlist.length) {
+      _playlist.removeAt(index);
+
+      if (_playlist.isEmpty) {
+        onStop();
+      } else {
+        if (_currentTrack == index) {
+          await _setCurrentTrack(index);
+        } else if (_currentTrack > index) {
+          _currentTrack--;
+        }
+
+        _sendPlaylist();
+      }
+    }
+  }
+
   /// Jump to the beginning of the track with the index [index].
   Future<void> _skipTo(int index) async {
     if (index >= 0 && index < _playlist.length) {
@@ -452,15 +483,17 @@ class _PlaybackService extends BackgroundAudioTask {
     super.onCustomAction(name, arguments);
 
     // addTracks expects a List<Map<String, dynamic>> as its argument.
-    // skipTo expects an integer as its argument.
+    // skipTo and removeTrack expect an integer as their argument.
     if (name == 'addTracks') {
       final tracksJson = jsonDecode(arguments);
       final List<InternalTrack> tracks = List.castFrom(
           tracksJson.map((j) => InternalTrack.fromJson(j)).toList());
 
       _addTracks(tracks);
-    }
-    if (name == 'skipTo') {
+    } else if (name == 'removeTrack') {
+      final index = arguments as int;
+      _removeTrack(index);
+    } else if (name == 'skipTo') {
       final index = arguments as int;
       _skipTo(index);
     } else if (name == 'sendState') {

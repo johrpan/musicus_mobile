@@ -183,6 +183,24 @@ class _ProgramScreenState extends State<ProgramScreen> {
                   onTap: () {
                     backend.player.skipTo(index);
                   },
+                  onLongPress: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return SimpleDialog(
+                          children: <Widget>[
+                            ListTile(
+                              title: Text('Remove from playlist'),
+                              onTap: () {
+                                backend.player.removeTrack(index);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        );
+                      }
+                    );
+                  },
                 );
               },
             );
