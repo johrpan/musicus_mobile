@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:musicus_database/musicus_database.dart';
@@ -27,12 +28,16 @@ class MusicusClient {
   }
 
   /// Create or update a person.
-  Future<void> putPerson(Person person) async {
-    await _client.put(
+  /// 
+  /// Returns true, if the operation was successful.
+  Future<bool> putPerson(Person person) async {
+    final response = await _client.put(
       '$host/persons/${person.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(person.toJson()),
     );
+
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Get a list of all available instruments.
@@ -50,12 +55,16 @@ class MusicusClient {
   }
 
   /// Create or update an instrument.
-  Future<void> putInstrument(Instrument instrument) async {
-    await _client.put(
+  /// 
+  /// Returns true, if the operation was successful.
+  Future<bool> putInstrument(Instrument instrument) async {
+    final response = await _client.put(
       '$host/instruments/${instrument.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(instrument.toJson()),
     );
+
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Get all works composed by the person with the ID [personId].
@@ -80,14 +89,16 @@ class MusicusClient {
   }
 
   /// Create or update a work.
-  ///
-  /// The new or updated work is returned.
-  Future<void> putWork(WorkInfo workInfo) async {
-    await _client.put(
+  /// 
+  /// Returns true, if the operation was successful.
+  Future<bool> putWork(WorkInfo workInfo) async {
+    final response = await _client.put(
       '$host/works/${workInfo.work.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(workInfo.toJson()),
     );
+
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Get a list of all ensembles.
@@ -105,12 +116,16 @@ class MusicusClient {
   }
 
   /// Create or update an ensemble.
-  Future<void> putEnsemble(Ensemble ensemble) async {
-    await _client.put(
+  /// 
+  /// Returns true, if the operation was successful.
+  Future<bool> putEnsemble(Ensemble ensemble) async {
+    final response = await _client.put(
       '$host/ensembles/${ensemble.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(ensemble.toJson()),
     );
+
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Get a recording by ID.
@@ -121,12 +136,16 @@ class MusicusClient {
   }
 
   /// Create or update a recording.
-  Future<void> putRecording(RecordingInfo recordingInfo) async {
-    await _client.put(
+  /// 
+  /// Returns true, if the operation was successful.
+  Future<bool> putRecording(RecordingInfo recordingInfo) async {
+    final response = await _client.put(
       '$host/recordings/${recordingInfo.recording.id}',
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(recordingInfo.toJson()),
     );
+
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Close the internal http client.
