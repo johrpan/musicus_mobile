@@ -7,8 +7,9 @@ class CompositionsController extends ResourceController {
   CompositionsController(this.db);
 
   @Operation.get('id')
-  Future<Response> getWorks(@Bind.path('id') int id) async {
-    final works = await db.getWorks(id);
+  Future<Response> getWorks(@Bind.path('id') int id,
+      [@Bind.query('p') int page, @Bind.query('s') String search]) async {
+    final works = await db.getWorks(id, page, search);
     return Response.ok(works);
   }
 }

@@ -7,8 +7,9 @@ class InstrumentsController extends ResourceController {
   InstrumentsController(this.db);
 
   @Operation.get()
-  Future<Response> getInstruments() async {
-    final instruments = await db.allInstruments().get();
+  Future<Response> getInstruments(
+      [@Bind.query('p') int page, @Bind.query('s') String search]) async {
+    final instruments = await db.getInstruments(page, search);
     return Response.ok(instruments);
   }
 

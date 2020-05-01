@@ -7,8 +7,9 @@ class PersonsController extends ResourceController {
   PersonsController(this.db);
 
   @Operation.get()
-  Future<Response> getPersons() async {
-    final persons = await db.allPersons().get();
+  Future<Response> getPersons(
+      [@Bind.query('p') int page, @Bind.query('s') String search]) async {
+    final persons = await db.getPersons(page, search);
     return Response.ok(persons);
   }
 

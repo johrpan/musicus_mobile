@@ -7,8 +7,9 @@ class EnsemblesController extends ResourceController {
   EnsemblesController(this.db);
 
   @Operation.get()
-  Future<Response> getEnsembles() async {
-    final ensembles = await db.allEnsembles().get();
+  Future<Response> getEnsembles(
+      [@Bind.query('p') int page, @Bind.query('s') String search]) async {
+    final ensembles = await db.getEnsembles(page, search);
     return Response.ok(ensembles);
   }
 
