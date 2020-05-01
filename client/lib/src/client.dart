@@ -2,29 +2,83 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:meta/meta.dart';
 import 'package:musicus_database/musicus_database.dart';
 
 /// A simple http client for the Musicus server.
 class MusicusClient {
-  /// The URL of the Musicus server to connect to.
+  /// URI scheme to use for the connection.
+  ///
+  /// This will be used as the scheme parameter when creating Uri objects.
+  final String scheme;
+
+  /// The host name of the Musicus server to connect to.
+  ///
+  /// This will be used as the host parameter when creating Uri objects.
   final String host;
+
+  /// This will be used as the port parameter when creating Uri objects.
+  final int port;
 
   final _client = http.Client();
 
-  MusicusClient(this.host);
+  MusicusClient({
+    this.scheme = 'https',
+    this.port = 443,
+    @required this.host,
+  })  : assert(scheme != null),
+        assert(port != null),
+        assert(host != null);
 
-  /// Get a list of all available persons.
-  Future<List<Person>> getPersons() async {
-    final response = await _client.get('$host/persons');
+  /// Get a list of persons.
+  ///
+  /// You can get another page using the [page] parameter. If a non empty
+  /// [search] string is provided, the persons will get filtered based on that
+  /// string.
+  Future<List<Person>> getPersons([int page, String search]) async {
+    final params = <String, String>{};
+
+    if (page != null) {
+      params['p'] = page.toString();
+    }
+
+    if (search != null) {
+      params['s'] = search;
+    }
+
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/persons',
+      queryParameters: params,
+    ));
+
     final json = jsonDecode(response.body);
     return json.map<Person>((j) => Person.fromJson(j)).toList();
   }
 
   /// Get a person by ID.
   Future<Person> getPerson(int id) async {
-    final response = await _client.get('$host/persons/$id');
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/persons/$id',
+    ));
+
     final json = jsonDecode(response.body);
     return Person.fromJson(json);
+  }
+
+  /// Delete a person by ID.
+  Future<void> deletePerson(int id) async {
+    await _client.delete(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/persons/$id',
+    ));
   }
 
   /// Create or update a person.
@@ -33,7 +87,12 @@ class MusicusClient {
   Future<bool> putPerson(Person person) async {
     try {
       final response = await _client.put(
-        '$host/persons/${person.id}',
+        Uri(
+          scheme: scheme,
+          host: host,
+          port: port,
+          path: '/persons/${person.id}',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(person.toJson()),
       );
@@ -44,16 +103,43 @@ class MusicusClient {
     }
   }
 
-  /// Get a list of all available instruments.
-  Future<List<Instrument>> getInstruments() async {
-    final response = await _client.get('$host/instruments');
+  /// Get a list of instruments.
+  ///
+  /// You can get another page using the [page] parameter. If a non empty
+  /// [search] string is provided, the results will get filtered based on that
+  /// string.
+  Future<List<Instrument>> getInstruments([int page, String search]) async {
+    final params = <String, String>{};
+
+    if (page != null) {
+      params['p'] = page.toString();
+    }
+
+    if (search != null) {
+      params['s'] = search;
+    }
+
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/instruments',
+      queryParameters: params,
+    ));
+
     final json = jsonDecode(response.body);
     return json.map<Instrument>((j) => Instrument.fromJson(j)).toList();
   }
 
   /// Get an instrument by ID.
   Future<Instrument> getInstrument(int id) async {
-    final response = await _client.get('$host/instruments/$id');
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/instruments/$id',
+    ));
+
     final json = jsonDecode(response.body);
     return Instrument.fromJson(json);
   }
@@ -64,7 +150,12 @@ class MusicusClient {
   Future<bool> putInstrument(Instrument instrument) async {
     try {
       final response = await _client.put(
-        '$host/instruments/${instrument.id}',
+        Uri(
+          scheme: scheme,
+          host: host,
+          port: port,
+          path: '/instruments/${instrument.id}',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(instrument.toJson()),
       );
@@ -75,23 +166,86 @@ class MusicusClient {
     }
   }
 
-  /// Get all works composed by the person with the ID [personId].
-  Future<List<WorkInfo>> getWorks(int personId) async {
-    final response = await _client.get('$host/persons/$personId/works');
+  /// Delete an instrument by ID.
+  Future<void> deleteInstrument(int id) async {
+    await _client.delete(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/instruments/$id',
+    ));
+  }
+
+  /// Get a list of works written by the person with the ID [personId].
+  ///
+  /// You can get another page using the [page] parameter. If a non empty
+  /// [search] string is provided, the results will get filtered based on that
+  /// string.
+  Future<List<WorkInfo>> getWorks(int personId,
+      [int page, String search]) async {
+    final params = <String, String>{};
+
+    if (page != null) {
+      params['p'] = page.toString();
+    }
+
+    if (search != null) {
+      params['s'] = search;
+    }
+
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/persons/$personId/works',
+      queryParameters: params,
+    ));
+
     final json = jsonDecode(response.body);
     return json.map<WorkInfo>((j) => WorkInfo.fromJson(j)).toList();
   }
 
   /// Get a work by ID.
   Future<WorkInfo> getWork(int id) async {
-    final response = await _client.get('$host/works/$id');
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/works/$id',
+    ));
+
     final json = jsonDecode(response.body);
     return WorkInfo.fromJson(json);
   }
 
-  /// Get all recordings of the work with the ID [workId].
-  Future<List<RecordingInfo>> getRecordings(int workId) async {
-    final response = await _client.get('$host/works/$workId/recordings');
+  /// Delete a work by ID.
+  Future<void> deleteWork(int id) async {
+    await _client.delete(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/works/$id',
+    ));
+  }
+
+  /// Get a list of recordings of the work with the ID [workId].
+  ///
+  /// You can get another page using the [page] parameter.
+  Future<List<RecordingInfo>> getRecordings(int workId, [int page]) async {
+    final params = <String, String>{};
+
+    if (page != null) {
+      params['p'] = page.toString();
+    }
+
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/works/$workId/recordings',
+      queryParameters: params,
+    ));
+
     final json = jsonDecode(response.body);
     return json.map<RecordingInfo>((j) => RecordingInfo.fromJson(j)).toList();
   }
@@ -102,7 +256,12 @@ class MusicusClient {
   Future<bool> putWork(WorkInfo workInfo) async {
     try {
       final response = await _client.put(
-        '$host/works/${workInfo.work.id}',
+        Uri(
+          scheme: scheme,
+          host: host,
+          port: port,
+          path: '/works/${workInfo.work.id}',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(workInfo.toJson()),
       );
@@ -113,16 +272,43 @@ class MusicusClient {
     }
   }
 
-  /// Get a list of all ensembles.
-  Future<List<Ensemble>> getEnsembles() async {
-    final response = await _client.get('$host/ensembles');
+  /// Get a list of ensembles.
+  ///
+  /// You can get another page using the [page] parameter. If a non empty
+  /// [search] string is provided, the results will get filtered based on that
+  /// string.
+  Future<List<Ensemble>> getEnsembles([int page, String search]) async {
+    final params = <String, String>{};
+
+    if (page != null) {
+      params['p'] = page.toString();
+    }
+
+    if (search != null) {
+      params['s'] = search;
+    }
+
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/ensembles',
+      queryParameters: params,
+    ));
+
     final json = jsonDecode(response.body);
     return json.map<Ensemble>((j) => Ensemble.fromJson(j)).toList();
   }
 
   /// Get an ensemble by ID.
   Future<Ensemble> getEnsemble(int id) async {
-    final response = await _client.get('$host/ensembles/$id');
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/ensembles/$id',
+    ));
+
     final json = jsonDecode(response.body);
     return Ensemble.fromJson(json);
   }
@@ -133,7 +319,12 @@ class MusicusClient {
   Future<bool> putEnsemble(Ensemble ensemble) async {
     try {
       final response = await _client.put(
-        '$host/ensembles/${ensemble.id}',
+        Uri(
+          scheme: scheme,
+          host: host,
+          port: port,
+          path: '/ensembles/${ensemble.id}',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(ensemble.toJson()),
       );
@@ -144,9 +335,25 @@ class MusicusClient {
     }
   }
 
+  /// Delete an ensemble by ID.
+  Future<void> deleteEnsemble(int id) async {
+    await _client.delete(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/ensembles/$id',
+    ));
+  }
+
   /// Get a recording by ID.
   Future<RecordingInfo> getRecording(int id) async {
-    final response = await _client.get('$host/recordings/$id');
+    final response = await _client.get(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/recordings/$id',
+    ));
+
     final json = jsonDecode(response.body);
     return RecordingInfo.fromJson(json);
   }
@@ -157,7 +364,12 @@ class MusicusClient {
   Future<bool> putRecording(RecordingInfo recordingInfo) async {
     try {
       final response = await _client.put(
-        '$host/recordings/${recordingInfo.recording.id}',
+        Uri(
+          scheme: scheme,
+          host: host,
+          port: port,
+          path: '/recordings/${recordingInfo.recording.id}',
+        ),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(recordingInfo.toJson()),
       );
@@ -166,6 +378,16 @@ class MusicusClient {
     } on Exception {
       return false;
     }
+  }
+
+  /// Delete a recording by ID.
+  Future<void> deleteRecording(int id) async {
+    await _client.delete(Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: '/recordings/$id',
+    ));
   }
 
   /// Close the internal http client.

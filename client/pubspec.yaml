@@ -7,5 +7,6 @@ environment:
 
 dependencies:
   http:
+  meta:
   musicus_database:
     path: ../database
