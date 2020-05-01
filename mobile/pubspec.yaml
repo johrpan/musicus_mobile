@@ -12,6 +12,7 @@ dependencies:
   audio_service:
   flutter:
     sdk: flutter
+  meta:
   moor:
   moor_ffi:
   musicus_client:

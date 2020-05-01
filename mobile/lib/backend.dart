@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:moor/isolate.dart';
 import 'package:moor/moor.dart';
@@ -10,11 +9,10 @@ import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_database/musicus_database.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as pp;
-import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'music_library.dart';
 import 'player.dart';
+import 'settings.dart';
 
 // The following code was taken from
 // https://moor.simonbinder.eu/docs/advanced-features/isolates/ and just
@@ -82,22 +80,15 @@ class Backend extends StatefulWidget {
 }
 
 class BackendState extends State<Backend> {
-  static const defaultUrl = 'https://musicus.johrpan.de/api';
-  static const _platform = MethodChannel('de.johrpan.musicus/platform');
-
   final player = Player();
+  final settings = Settings();
 
   BackendStatus status = BackendStatus.loading;
   Database db;
-
-  final musicusServerUrl = BehaviorSubject<String>();
   MusicusClient client;
-
-  String musicLibraryUri;
   MusicLibrary ml;
 
   MoorIsolate _moorIsolate;
-  SharedPreferences _shPref;
 
   @override
   void initState() {
@@ -119,28 +110,26 @@ class BackendState extends State<Backend> {
     player.setup();
     db = Database.connect(dbConnection);
 
-    _shPref = await SharedPreferences.getInstance();
-    var url = _shPref.getString('musicusServerUrl');
+    await settings.load();
 
-    if (url == null) {
-      url = defaultUrl;
-      await _shPref.setString('musicusServerUrl', url);
-    }
-    musicusServerUrl.add(url);
-    client = MusicusClient(url);
+    _updateMusicLibrary(settings.musicLibraryUri.value);
+    settings.musicLibraryUri.listen((uri) {
+      _updateMusicLibrary(uri);
+    });
 
-    musicLibraryUri = _shPref.getString('musicLibraryUri');
-
-    _loadMusicLibrary();
+    _updateClient(settings.server.value);
+    settings.server.listen((serverSettings) {
+      _updateClient(serverSettings);
+    });
   }
 
-  Future<void> _loadMusicLibrary() async {
-    if (musicLibraryUri == null) {
+  Future<void> _updateMusicLibrary(String uri) async {
+    if (uri == null) {
       setState(() {
         status = BackendStatus.setup;
       });
     } else {
-      ml = MusicLibrary(musicLibraryUri);
+      ml = MusicLibrary(uri);
       await ml.load();
       setState(() {
         status = BackendStatus.ready;
@@ -148,32 +137,12 @@ class BackendState extends State<Backend> {
     }
   }
 
-  Future<void> chooseMusicLibraryUri() async {
-    final uri = await _platform.invokeMethod<String>('openTree');
-
-    if (uri != null) {
-      musicLibraryUri = uri;
-      await _shPref.setString('musicLibraryUri', uri);
-      setState(() {
-        status = BackendStatus.loading;
-      });
-      await _loadMusicLibrary();
-    }
-  }
-
-  Future<void> setMusicusServer(String serverUrl) async {
-    final url = serverUrl.isNotEmpty ? serverUrl : defaultUrl;
-    await _shPref.setString('musicusServerUrl', url);
-
-    if (client != null) {
-      client.dispose();
-    }
-
-    if (url != null) {
-      client = MusicusClient(url);
-    }
-
-    musicusServerUrl.add(url);
+  Future<void> _updateClient(ServerSettings serverSettings) async {
+    client = MusicusClient(
+      host: serverSettings.host,
+      port: serverSettings.port,
+      basePath: serverSettings.basePath,
+    );
   }
 
   @override

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../backend.dart';
+import '../settings.dart';
+
+import 'server_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backend = Backend.of(context);
+    final settings = backend.settings;
 
     return Scaffold(
       appBar: AppBar(
@@ -13,60 +17,42 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         children: <Widget>[
-          ListTile(
-            leading: Icon(Icons.library_music),
-            title: Text('Music library path'),
-            subtitle: Text(backend.musicLibraryUri),
-            onTap: () {
-              backend.chooseMusicLibraryUri();
-            },
-          ),
           StreamBuilder<String>(
-            stream: backend.musicusServerUrl,
-            builder: (context, snapshot) {
-              return ListTile(
-                leading: Icon(Icons.router),
-                title: Text('Musicus server'),
-                subtitle: Text(snapshot.data ?? 'Set server URL'),
-                onTap: () {
-                  showDialog(
-                      context: context,
-                      builder: (context) {
-                        final controller = TextEditingController();
+              stream: settings.musicLibraryUri,
+              builder: (context, snapshot) {
+                return ListTile(
+                  title: Text('Music library path'),
+                  subtitle: Text(snapshot.data ?? 'Choose folder'),
+                  isThreeLine: snapshot.hasData,
+                  onTap: () {
+                    settings.chooseMusicLibraryUri();
+                  },
+                );
+              }),
+          StreamBuilder<ServerSettings>(
+              stream: settings.server,
+              builder: (context, snapshot) {
+                final s = snapshot.data;
 
-                        if (snapshot.data != null) {
-                          controller.text = snapshot.data;
-                        }
+                return ListTile(
+                  title: Text('Musicus server'),
+                  subtitle: Text(
+                      s != null ? '${s.host}:${s.port}${s.basePath}' : '...'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    final ServerSettings result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ServerSettingsScreen(),
+                      ),
+                    );
 
-                        return AlertDialog(
-                          title: Text('Musicus server'),
-                          content: TextField(
-                            controller: controller,
-                            decoration: InputDecoration(
-                              labelText: 'Server URL',
-                            ),
-                          ),
-                          actions: <Widget>[
-                            FlatButton(
-                              onPressed: () {
-                                backend.setMusicusServer(controller.text);
-                                Navigator.pop(context);
-                              },
-                              child: Text('SET'),
-                            ),
-                            FlatButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: Text('CANCEL'),
-                            ),
-                          ],
-                        );
-                      });
-                },
-              );
-            }
-          ),
+                    if (result != null) {
+                      settings.setServerSettings(result);
+                    }
+                  },
+                );
+              }),
         ],
       ),
     );

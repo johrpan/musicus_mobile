@@ -49,8 +49,8 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<List<Person>>(
-        stream: backend.db.allPersons().watch(),
+      body: FutureBuilder<List<Person>>(
+        future: backend.db.getPersons(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(

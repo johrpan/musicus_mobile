@@ -37,14 +37,15 @@ class PersonScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<List<Work>>(
-        stream: backend.db.worksByComposer(person.id).watch(),
+      body: FutureBuilder<List<WorkInfo>>(
+        future: backend.db.getWorks(person.id),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
               itemCount: snapshot.data.length,
               itemBuilder: (context, index) {
-                final work = snapshot.data[index];
+                final work = snapshot.data[index].work;
+
                 return ListTile(
                   title: Text(work.title),
                   onTap: () async {

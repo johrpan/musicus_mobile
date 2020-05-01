@@ -131,7 +131,8 @@ class _FilesSelectorState extends State<FilesSelector> {
     });
 
     final newChildren = await Platform.getChildren(
-        backend.musicLibraryUri, history.isNotEmpty ? history.last.id : null);
+        backend.settings.musicLibraryUri.value,
+        history.isNotEmpty ? history.last.id : null);
 
     newChildren.sort((d1, d2) {
       if (d1.isDirectory != d2.isDirectory) {

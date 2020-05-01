@@ -36,33 +36,25 @@ class WorkScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<List<Recording>>(
-        stream: backend.db.recordingsByWork(workInfo.work.id).watch(),
+      body: FutureBuilder<List<RecordingInfo>>(
+        future: backend.db.getRecordings(workInfo.work.id),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
               itemCount: snapshot.data.length,
               itemBuilder: (context, index) {
-                final recording = snapshot.data[index];
+                final recordingInfo = snapshot.data[index];
+                final recording = recordingInfo.recording;
 
                 return ListTile(
-                  title: FutureBuilder<RecordingInfo>(
-                    future: backend.db.getRecordingInfo(recording),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return PerformancesText(
-                          performanceInfos: snapshot.data.performances,
-                        );
-                      } else {
-                        return Text('...');
-                      }
-                    }
+                  title: PerformancesText(
+                    performanceInfos: recordingInfo.performances,
                   ),
                   onTap: () async {
                     final tracks = backend.ml.tracks[recording.id];
                     tracks.sort(
                         (t1, t2) => t1.track.index.compareTo(t2.track.index));
-                    
+
                     backend.player.addTracks(backend.ml.tracks[recording.id]);
                   },
                 );

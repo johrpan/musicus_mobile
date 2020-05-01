@@ -58,7 +58,7 @@ class App extends StatelessWidget {
                     leading: const Icon(Icons.folder_open),
                     title: Text('Choose path'),
                     onTap: () {
-                      backend.chooseMusicLibraryUri();
+                      backend.settings.chooseMusicLibraryUri();
                     },
                   ),
                 ],
