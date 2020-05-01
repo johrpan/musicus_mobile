@@ -15,6 +15,8 @@ int generateId() => _random.nextInt(0xFFFFFFFF);
   },
 )
 class Database extends _$Database {
+  static const pageSize = 25;
+
   Database(QueryExecutor queryExecutor) : super(queryExecutor);
 
   Database.connect(DatabaseConnection connection) : super.connect(connection);
@@ -29,8 +31,48 @@ class Database extends _$Database {
         },
       );
 
+  /// Get all available persons.
+  ///
+  /// This will return a list of [pageSize] persons. You can get another page
+  /// using the [page] parameter. If a non empty [search] string is provided,
+  /// the persons will get filtered based on that string.
+  Future<List<Person>> getPersons([int page = 0, String search]) async {
+    assert(page != null);
+
+    final offset = page * pageSize;
+    List<Person> result;
+
+    if (search == null || search.isEmpty) {
+      result = await allPersons(pageSize, offset).get();
+    } else {
+      result = await searchPersons('$search%', pageSize, offset).get();
+    }
+
+    return result;
+  }
+
   Future<void> updatePerson(Person person) async {
     await into(persons).insert(person, orReplace: true);
+  }
+
+  /// Get all available instruments.
+  ///
+  /// This will return a list of [pageSize] instruments. You can get another
+  /// page using the [page] parameter. If a non empty [search] string is
+  /// provided, the instruments will get filtered based on that string.
+  Future<List<Instrument>> getInstruments([int page = 0, String search]) async {
+    assert(page != null);
+
+    final offset = page * pageSize;
+    List<Instrument> result;
+
+    if (search == null || search.isEmpty) {
+      result = await allInstruments(pageSize, offset).get();
+    } else {
+      result = await searchInstruments('$search%', pageSize, offset).get();
+    }
+
+    return result;
   }
 
   Future<void> updateInstrument(Instrument instrument) async {
@@ -70,8 +112,24 @@ class Database extends _$Database {
   }
 
   /// Get information on all works written by the person with ID [personId].
-  Future<List<WorkInfo>> getWorks(int personId) async {
-    final works = await worksByComposer(personId).get();
+  ///
+  /// This will return a list of [pageSize] results. You can get another page
+  /// using the [page] parameter. If a non empty [search] string is provided,
+  /// the works will be filtered using that string.
+  Future<List<WorkInfo>> getWorks(int personId,
+      [int page = 0, String search]) async {
+    assert(page != null);
+
+    final offset = page * pageSize;
+    List<Work> works;
+
+    if (search == null || search.isEmpty) {
+      works = await worksByComposer(personId, pageSize, offset).get();
+    } else {
+      works =
+          await searchWorksByComposer(personId, '$search%', pageSize, offset)
+              .get();
+    }
 
     final List<WorkInfo> result = [];
     for (final work in works) {
@@ -121,6 +179,26 @@ class Database extends _$Database {
         await insertInstrumentations(partInfo.work.id, partInfo.instruments);
       }
     });
+  }
+
+  /// Get all available ensembles.
+  ///
+  /// This will return a list of [pageSize] ensembles. You can get another page
+  /// using the [page] parameter. If a non empty [search] string is provided,
+  /// the ensembles will get filtered based on that string.
+  Future<List<Ensemble>> getEnsembles([int page = 0, String search]) async {
+    assert(page != null);
+
+    final offset = page * pageSize;
+    List<Ensemble> result;
+
+    if (search == null || search.isEmpty) {
+      result = await allEnsembles(pageSize, offset).get();
+    } else {
+      result = await searchEnsembles('$search%', pageSize, offset).get();
+    }
+
+    return result;
   }
 
   Future<void> updateEnsemble(Ensemble ensemble) async {
@@ -195,8 +273,14 @@ class Database extends _$Database {
   }
 
   /// Get information on all recordings of the work with ID [workId].
-  Future<List<RecordingInfo>> getRecordings(int workId) async {
-    final recordings = await recordingsByWork(workId).get();
+  ///
+  /// This will return a list of [pageSize] recordings. You can get the other
+  /// pages using the [page] parameter.
+  Future<List<RecordingInfo>> getRecordings(int workId, [int page = 0]) async {
+    assert(page != null);
+
+    final offset = page * pageSize;
+    final recordings = await recordingsByWork(workId, pageSize, offset).get();
 
     final List<RecordingInfo> result = [];
     for (final recording in recordings) {
