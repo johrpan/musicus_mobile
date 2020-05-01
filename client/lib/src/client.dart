@@ -20,15 +20,33 @@ class MusicusClient {
   /// This will be used as the port parameter when creating Uri objects.
   final int port;
 
+  /// Base path to the root location of the Musicus API.
+  final String basePath;
+
   final _client = http.Client();
 
   MusicusClient({
     this.scheme = 'https',
-    this.port = 443,
     @required this.host,
+    this.port = 443,
+    this.basePath,
   })  : assert(scheme != null),
         assert(port != null),
         assert(host != null);
+
+  /// Create an URI using member variables and parameters.
+  Uri createUri({
+    @required String path,
+    Map<String, String> params,
+  }) {
+    return Uri(
+      scheme: scheme,
+      host: host,
+      port: port,
+      path: basePath != null ? basePath + path : path,
+      queryParameters: params,
+    );
+  }
 
   /// Get a list of persons.
   ///
@@ -46,12 +64,9 @@ class MusicusClient {
       params['s'] = search;
     }
 
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/persons',
-      queryParameters: params,
+      params: params,
     ));
 
     final json = jsonDecode(response.body);
@@ -60,10 +75,7 @@ class MusicusClient {
 
   /// Get a person by ID.
   Future<Person> getPerson(int id) async {
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/persons/$id',
     ));
 
@@ -73,10 +85,7 @@ class MusicusClient {
 
   /// Delete a person by ID.
   Future<void> deletePerson(int id) async {
-    await _client.delete(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    await _client.delete(createUri(
       path: '/persons/$id',
     ));
   }
@@ -87,10 +96,7 @@ class MusicusClient {
   Future<bool> putPerson(Person person) async {
     try {
       final response = await _client.put(
-        Uri(
-          scheme: scheme,
-          host: host,
-          port: port,
+        createUri(
           path: '/persons/${person.id}',
         ),
         headers: {'Content-Type': 'application/json'},
@@ -119,12 +125,9 @@ class MusicusClient {
       params['s'] = search;
     }
 
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/instruments',
-      queryParameters: params,
+      params: params,
     ));
 
     final json = jsonDecode(response.body);
@@ -133,10 +136,7 @@ class MusicusClient {
 
   /// Get an instrument by ID.
   Future<Instrument> getInstrument(int id) async {
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/instruments/$id',
     ));
 
@@ -150,10 +150,7 @@ class MusicusClient {
   Future<bool> putInstrument(Instrument instrument) async {
     try {
       final response = await _client.put(
-        Uri(
-          scheme: scheme,
-          host: host,
-          port: port,
+        createUri(
           path: '/instruments/${instrument.id}',
         ),
         headers: {'Content-Type': 'application/json'},
@@ -168,10 +165,7 @@ class MusicusClient {
 
   /// Delete an instrument by ID.
   Future<void> deleteInstrument(int id) async {
-    await _client.delete(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    await _client.delete(createUri(
       path: '/instruments/$id',
     ));
   }
@@ -193,12 +187,9 @@ class MusicusClient {
       params['s'] = search;
     }
 
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/persons/$personId/works',
-      queryParameters: params,
+      params: params,
     ));
 
     final json = jsonDecode(response.body);
@@ -207,10 +198,7 @@ class MusicusClient {
 
   /// Get a work by ID.
   Future<WorkInfo> getWork(int id) async {
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/works/$id',
     ));
 
@@ -220,10 +208,7 @@ class MusicusClient {
 
   /// Delete a work by ID.
   Future<void> deleteWork(int id) async {
-    await _client.delete(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    await _client.delete(createUri(
       path: '/works/$id',
     ));
   }
@@ -238,12 +223,9 @@ class MusicusClient {
       params['p'] = page.toString();
     }
 
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/works/$workId/recordings',
-      queryParameters: params,
+      params: params,
     ));
 
     final json = jsonDecode(response.body);
@@ -256,10 +238,7 @@ class MusicusClient {
   Future<bool> putWork(WorkInfo workInfo) async {
     try {
       final response = await _client.put(
-        Uri(
-          scheme: scheme,
-          host: host,
-          port: port,
+        createUri(
           path: '/works/${workInfo.work.id}',
         ),
         headers: {'Content-Type': 'application/json'},
@@ -288,12 +267,9 @@ class MusicusClient {
       params['s'] = search;
     }
 
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/ensembles',
-      queryParameters: params,
+      params: params,
     ));
 
     final json = jsonDecode(response.body);
@@ -302,10 +278,7 @@ class MusicusClient {
 
   /// Get an ensemble by ID.
   Future<Ensemble> getEnsemble(int id) async {
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/ensembles/$id',
     ));
 
@@ -319,10 +292,7 @@ class MusicusClient {
   Future<bool> putEnsemble(Ensemble ensemble) async {
     try {
       final response = await _client.put(
-        Uri(
-          scheme: scheme,
-          host: host,
-          port: port,
+        createUri(
           path: '/ensembles/${ensemble.id}',
         ),
         headers: {'Content-Type': 'application/json'},
@@ -337,20 +307,14 @@ class MusicusClient {
 
   /// Delete an ensemble by ID.
   Future<void> deleteEnsemble(int id) async {
-    await _client.delete(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    await _client.delete(createUri(
       path: '/ensembles/$id',
     ));
   }
 
   /// Get a recording by ID.
   Future<RecordingInfo> getRecording(int id) async {
-    final response = await _client.get(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    final response = await _client.get(createUri(
       path: '/recordings/$id',
     ));
 
@@ -364,10 +328,7 @@ class MusicusClient {
   Future<bool> putRecording(RecordingInfo recordingInfo) async {
     try {
       final response = await _client.put(
-        Uri(
-          scheme: scheme,
-          host: host,
-          port: port,
+        createUri(
           path: '/recordings/${recordingInfo.recording.id}',
         ),
         headers: {'Content-Type': 'application/json'},
@@ -382,10 +343,7 @@ class MusicusClient {
 
   /// Delete a recording by ID.
   Future<void> deleteRecording(int id) async {
-    await _client.delete(Uri(
-      scheme: scheme,
-      host: host,
-      port: port,
+    await _client.delete(createUri(
       path: '/recordings/$id',
     ));
   }
