@@ -36,10 +36,8 @@ class Database extends _$Database {
   /// This will return a list of [pageSize] persons. You can get another page
   /// using the [page] parameter. If a non empty [search] string is provided,
   /// the persons will get filtered based on that string.
-  Future<List<Person>> getPersons([int page = 0, String search]) async {
-    assert(page != null);
-
-    final offset = page * pageSize;
+  Future<List<Person>> getPersons([int page, String search]) async {
+    final offset = page != null ? page * pageSize : 0;
     List<Person> result;
 
     if (search == null || search.isEmpty) {
@@ -66,10 +64,8 @@ class Database extends _$Database {
   /// This will return a list of [pageSize] instruments. You can get another
   /// page using the [page] parameter. If a non empty [search] string is
   /// provided, the instruments will get filtered based on that string.
-  Future<List<Instrument>> getInstruments([int page = 0, String search]) async {
-    assert(page != null);
-
-    final offset = page * pageSize;
+  Future<List<Instrument>> getInstruments([int page, String search]) async {
+    final offset = page != null ? page * pageSize : 0;
     List<Instrument> result;
 
     if (search == null || search.isEmpty) {
@@ -129,10 +125,8 @@ class Database extends _$Database {
   /// using the [page] parameter. If a non empty [search] string is provided,
   /// the works will be filtered using that string.
   Future<List<WorkInfo>> getWorks(int personId,
-      [int page = 0, String search]) async {
-    assert(page != null);
-
-    final offset = page * pageSize;
+      [int page, String search]) async {
+    final offset = page != null ? page * pageSize : 0;
     List<Work> works;
 
     if (search == null || search.isEmpty) {
@@ -205,10 +199,8 @@ class Database extends _$Database {
   /// This will return a list of [pageSize] ensembles. You can get another page
   /// using the [page] parameter. If a non empty [search] string is provided,
   /// the ensembles will get filtered based on that string.
-  Future<List<Ensemble>> getEnsembles([int page = 0, String search]) async {
-    assert(page != null);
-
-    final offset = page * pageSize;
+  Future<List<Ensemble>> getEnsembles([int page, String search]) async {
+    final offset = page != null ? page * pageSize : 0;
     List<Ensemble> result;
 
     if (search == null || search.isEmpty) {
@@ -308,10 +300,8 @@ class Database extends _$Database {
   ///
   /// This will return a list of [pageSize] recordings. You can get the other
   /// pages using the [page] parameter.
-  Future<List<RecordingInfo>> getRecordings(int workId, [int page = 0]) async {
-    assert(page != null);
-
-    final offset = page * pageSize;
+  Future<List<RecordingInfo>> getRecordings(int workId, [int page]) async {
+    final offset = page != null ? page * pageSize : 0;
     final recordings = await recordingsByWork(workId, pageSize, offset).get();
 
     final List<RecordingInfo> result = [];
