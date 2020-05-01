@@ -24,4 +24,10 @@ class RecordingsController extends ResourceController {
     
     return Response.ok(null);
   }
+
+  @Operation.delete('id')
+  Future<Response> deleteRecording(@Bind.path('id') int id) async {
+    await db.deleteRecording(id);
+    return Response.ok(null);
+  }
 }

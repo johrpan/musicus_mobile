@@ -33,4 +33,10 @@ class PersonsController extends ResourceController {
 
     return Response.ok(null);
   }
+
+  @Operation.delete('id')
+  Future<Response> deletePerson(@Bind.path('id') int id) async {
+    await db.deletePerson(id);
+    return Response.ok(null);
+  }
 }

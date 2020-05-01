@@ -24,4 +24,10 @@ class WorksController extends ResourceController {
 
     return Response.ok(null);
   }
+
+  @Operation.delete('id')
+  Future<Response> deleteWork(@Bind.path('id') int id) async {
+    await db.deleteWork(id);
+    return Response.ok(null);
+  }
 }

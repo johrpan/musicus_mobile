@@ -33,4 +33,10 @@ class EnsemblesController extends ResourceController {
 
     return Response.ok(null);
   }
+
+  @Operation.delete('id')
+  Future<Response> deleteEnsemble(@Bind.path('id') int id) async {
+    await db.deleteEnsemble(id);
+    return Response.ok(null);
+  }
 }

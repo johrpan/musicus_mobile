@@ -33,4 +33,10 @@ class InstrumentsController extends ResourceController {
 
     return Response.ok(null);
   }
+
+  @Operation.delete('id')
+  Future<Response> deleteInstrument(@Bind.path('id') int id) async {
+    await db.deleteInstrument(id);
+    return Response.ok(null);
+  }
 }
