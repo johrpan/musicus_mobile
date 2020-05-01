@@ -51,8 +51,14 @@ class Database extends _$Database {
     return result;
   }
 
+  /// Add [person] or replace an existing person with the same ID.
   Future<void> updatePerson(Person person) async {
     await into(persons).insert(person, orReplace: true);
+  }
+
+  /// Delete the person by [id].
+  Future<void> deletePerson(int id) async {
+    await (delete(persons)..where((p) => p.id.equals(id))).go();
   }
 
   /// Get all available instruments.
@@ -75,8 +81,14 @@ class Database extends _$Database {
     return result;
   }
 
+  /// Add [instrument] or replace an existing one with the same ID.
   Future<void> updateInstrument(Instrument instrument) async {
     await into(instruments).insert(instrument, orReplace: true);
+  }
+
+  /// Delete the instrument by [id].
+  Future<void> deleteInstrument(int id) async {
+    await (delete(instruments)..where((i) => i.id.equals(id))).go();
   }
 
   /// Retrieve more information on an already queried work.
@@ -139,7 +151,7 @@ class Database extends _$Database {
     return result;
   }
 
-  /// Update a work and its associated data.
+  /// Add or replace a work and its associated data.
   ///
   /// This will explicitly update all associated composers and instruments, even
   /// if they have already existed before.
@@ -149,7 +161,7 @@ class Database extends _$Database {
 
       // Delete old work data first. The parts and instrumentations will be
       // deleted automatically due to their foreign key constraints.
-      await (delete(works)..where((w) => w.id.equals(workId))).go();
+      await deleteWork(workId);
 
       /// Insert instrumentations for a work.
       ///
@@ -181,6 +193,13 @@ class Database extends _$Database {
     });
   }
 
+  /// Delete the work by [id].
+  Future<void> deleteWork(int id) async {
+    // The parts and instrumentations will be deleted automatically due to
+    // their foreign key constraints.
+    await (delete(works)..where((w) => w.id.equals(id))).go();
+  }
+
   /// Get all available ensembles.
   ///
   /// This will return a list of [pageSize] ensembles. You can get another page
@@ -201,11 +220,17 @@ class Database extends _$Database {
     return result;
   }
 
+  /// Add [ensemble] or replace an existing one with the same ID.
   Future<void> updateEnsemble(Ensemble ensemble) async {
     await into(ensembles).insert(ensemble, orReplace: true);
   }
 
-  /// Update a recording and its associated data.
+  /// Delete the ensemble by [id].
+  Future<void> deleteEnsemble(int id) async {
+    await (delete(ensembles)..where((e) => e.id.equals(id))).go();
+  }
+
+  /// Add or replace a recording and its associated data.
   ///
   /// This will explicitly also update all assoicated persons and instruments.
   Future<void> updateRecording(RecordingInfo recordingInfo) async {
@@ -214,7 +239,7 @@ class Database extends _$Database {
 
       // Delete the old recording first. This will also delete the performances
       // due to their foreign key constraint.
-      await (delete(recordings)..where((r) => r.id.equals(recordingId))).go();
+      await deleteRecording(recordingId);
 
       await into(recordings).insert(recordingInfo.recording);
 
@@ -270,6 +295,13 @@ class Database extends _$Database {
   Future<RecordingInfo> getRecording(int id) async {
     final recording = await recordingById(id).getSingle();
     return await getRecordingInfo(recording);
+  }
+
+  /// Delete a recording by [id].
+  Future<void> deleteRecording(int id) async {
+    // This will also delete the performances due to their foreign key
+    // constraint.
+    await (delete(recordings)..where((r) => r.id.equals(id))).go();
   }
 
   /// Get information on all recordings of the work with ID [workId].
