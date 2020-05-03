@@ -3,18 +3,36 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 import '../editors/tracks.dart';
+import '../widgets/lists.dart';
 
 import 'person.dart';
 import 'settings.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _search;
+
   @override
   Widget build(BuildContext context) {
     final backend = Backend.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Musicus'),
+        title: TextField(
+          autofocus: true,
+          onChanged: (text) {
+            setState(() {
+              _search = text;
+            });
+          },
+          decoration: InputDecoration.collapsed(
+            hintText: 'Composers',
+          ),
+        ),
         actions: <Widget>[
           PopupMenuButton(
             icon: const Icon(Icons.more_vert),
@@ -49,31 +67,22 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<Person>>(
-        future: backend.db.getPersons(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (context, index) {
-                final person = snapshot.data[index];
-                return ListTile(
-                  title: Text('${person.lastName}, ${person.firstName}'),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PersonScreen(
-                        person: person,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          } else {
-            return Container();
-          }
+      body: PagedListView<Person>(
+        search: _search,
+        fetch: (page, search) async {
+          return await backend.db.getPersons(page, search);
         },
+        builder: (context, person) => ListTile(
+          title: Text('${person.lastName}, ${person.firstName}'),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PersonScreen(
+                person: person,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

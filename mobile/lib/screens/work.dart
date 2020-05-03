@@ -4,6 +4,7 @@ import 'package:musicus_database/musicus_database.dart';
 import '../backend.dart';
 import '../editors/work.dart';
 import '../widgets/texts.dart';
+import '../widgets/lists.dart';
 
 class WorkScreen extends StatelessWidget {
   final WorkInfo workInfo;
@@ -36,34 +37,22 @@ class WorkScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<RecordingInfo>>(
-        future: backend.db.getRecordings(workInfo.work.id),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (context, index) {
-                final recordingInfo = snapshot.data[index];
-                final recording = recordingInfo.recording;
-
-                return ListTile(
-                  title: PerformancesText(
-                    performanceInfos: recordingInfo.performances,
-                  ),
-                  onTap: () async {
-                    final tracks = backend.ml.tracks[recording.id];
-                    tracks.sort(
-                        (t1, t2) => t1.track.index.compareTo(t2.track.index));
-
-                    backend.player.addTracks(backend.ml.tracks[recording.id]);
-                  },
-                );
-              },
-            );
-          } else {
-            return Container();
-          }
+      body: PagedListView<RecordingInfo>(
+        fetch: (page, _) async {
+          return await backend.client.getRecordings(workInfo.work.id, page);
         },
+        builder: (context, recordingInfo) => ListTile(
+          title: PerformancesText(
+            performanceInfos: recordingInfo.performances,
+          ),
+          onTap: () {
+            final tracks = backend.ml.tracks[recordingInfo.recording.id];
+            tracks.sort((t1, t2) => t1.track.index.compareTo(t2.track.index));
+
+            backend.player
+                .addTracks(backend.ml.tracks[recordingInfo.recording.id]);
+          },
+        ),
       ),
     );
   }
