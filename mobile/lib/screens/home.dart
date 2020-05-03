@@ -3,6 +3,7 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 import '../editors/tracks.dart';
+import '../icons.dart';
 import '../widgets/lists.dart';
 
 import 'person.dart';
@@ -22,6 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Icon(
+          MusicusIcons.musicus,
+          color: Colors.amber,
+        ),
         title: TextField(
           autofocus: true,
           onChanged: (text) {

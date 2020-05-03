@@ -36,3 +36,6 @@ flutter:
       weight: 700
     - asset: fonts/libertinussans_italic.otf
       style: italic
+  - family: Musicus Icons
+    fonts:
+    - asset: fonts/musicus_icons.ttf
