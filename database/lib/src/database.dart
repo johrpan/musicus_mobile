@@ -51,7 +51,10 @@ class Database extends _$Database {
 
   /// Add [person] or replace an existing person with the same ID.
   Future<void> updatePerson(Person person) async {
-    await into(persons).insert(person, orReplace: true);
+    await into(persons).insert(
+      person,
+      mode: InsertMode.insertOrReplace,
+    );
   }
 
   /// Delete the person by [id].
@@ -79,7 +82,10 @@ class Database extends _$Database {
 
   /// Add [instrument] or replace an existing one with the same ID.
   Future<void> updateInstrument(Instrument instrument) async {
-    await into(instruments).insert(instrument, orReplace: true);
+    await into(instruments).insert(
+      instrument,
+      mode: InsertMode.insertOrReplace,
+    );
   }
 
   /// Delete the instrument by [id].
@@ -214,7 +220,10 @@ class Database extends _$Database {
 
   /// Add [ensemble] or replace an existing one with the same ID.
   Future<void> updateEnsemble(Ensemble ensemble) async {
-    await into(ensembles).insert(ensemble, orReplace: true);
+    await into(ensembles).insert(
+      ensemble,
+      mode: InsertMode.insertOrReplace,
+    );
   }
 
   /// Delete the ensemble by [id].
