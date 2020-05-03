@@ -3,6 +3,7 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 import '../editors/instrument.dart';
+import '../widgets/lists.dart';
 
 class InstrumentsSelector extends StatefulWidget {
   final bool multiple;
@@ -18,7 +19,10 @@ class InstrumentsSelector extends StatefulWidget {
 }
 
 class _InstrumentsSelectorState extends State<InstrumentsSelector> {
+  final _list = GlobalKey<PagedListViewState<Instrument>>();
+  
   Set<Instrument> selection = {};
+  String _search;
 
   @override
   void initState() {
@@ -47,15 +51,36 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
               ]
             : null,
       ),
-      body: FutureBuilder<List<Instrument>>(
-        future: backend.client.getInstruments(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (context, index) {
-                final instrument = snapshot.data[index];
-
+      body: Column(
+        children: <Widget>[
+          Material(
+            elevation: 2.0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
+              child: TextField(
+                autofocus: true,
+                onChanged: (text) {
+                  setState(() {
+                    _search = text;
+                  });
+                },
+                decoration: InputDecoration.collapsed(
+                  hintText: 'Search by name...',
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: PagedListView<Instrument>(
+              key: _list,
+              search: _search,
+              fetch: (page, search) async {
+                return await backend.client.getInstruments(page, search);
+              },
+              builder: (context, instrument) {
                 if (widget.multiple) {
                   return CheckboxListTile(
                     title: Text(instrument.name),
@@ -78,11 +103,9 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
                   );
                 }
               },
-            );
-          } else {
-            return Container();
-          }
-        },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
@@ -99,6 +122,9 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
               setState(() {
                 selection.add(instrument);
               });
+
+              // We need to rebuild the list view, because we added an item.
+              _list.currentState.update();
             } else {
               Navigator.pop(context, instrument);
             }
