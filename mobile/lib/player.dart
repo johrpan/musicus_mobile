@@ -109,35 +109,39 @@ class Player {
 
   /// Connect listeners and initialize streams.
   void setup() {
-    if (_playbackServiceStateSubscription == null) {
-      // We will receive updated state information from the playback service,
-      // which runs in its own isolate, through this port.
-      final receivePort = ReceivePort();
-      receivePort.asBroadcastStream(
-        onListen: (subscription) {
-          _playbackServiceStateSubscription = subscription;
-        },
-      ).listen((msg) {
-        // If state is null, the background audio service has stopped.
-        if (msg == null) {
-          _stop();
-        } else {
-          if (msg is _StatusMessage) {
-            playing.add(msg.playing);
-          } else if (msg is _PositionMessage) {
-            _updatePosition(msg.positionMs);
-          } else if (msg is _TrackMessage) {
-            _updateCurrentTrack(msg.currentTrack);
-            _updateDuration(msg.positionMs, msg.durationMs);
-          } else if (msg is _PlaylistMessage) {
-            playlist.add(msg.playlist);
-            _updateCurrentTrack(msg.currentTrack);
-            _updateDuration(msg.positionMs, msg.durationMs);
-          }
-        }
-      });
-      IsolateNameServer.registerPortWithName(receivePort.sendPort, _portName);
+    if (_playbackServiceStateSubscription != null) {
+      _playbackServiceStateSubscription.cancel();
     }
+
+    // We will receive updated state information from the playback service,
+    // which runs in its own isolate, through this port.
+    final receivePort = ReceivePort();
+    receivePort.asBroadcastStream(
+      onListen: (subscription) {
+        _playbackServiceStateSubscription = subscription;
+      },
+    ).listen((msg) {
+      // If state is null, the background audio service has stopped.
+      if (msg == null) {
+        _stop();
+      } else {
+        if (msg is _StatusMessage) {
+          playing.add(msg.playing);
+        } else if (msg is _PositionMessage) {
+          _updatePosition(msg.positionMs);
+        } else if (msg is _TrackMessage) {
+          _updateCurrentTrack(msg.currentTrack);
+          _updateDuration(msg.positionMs, msg.durationMs);
+        } else if (msg is _PlaylistMessage) {
+          playlist.add(msg.playlist);
+          _updateCurrentTrack(msg.currentTrack);
+          _updateDuration(msg.positionMs, msg.durationMs);
+        }
+      }
+    });
+    
+    IsolateNameServer.removePortNameMapping(_portName);
+    IsolateNameServer.registerPortWithName(receivePort.sendPort, _portName);
 
     if (AudioService.running) {
       active.add(true);
