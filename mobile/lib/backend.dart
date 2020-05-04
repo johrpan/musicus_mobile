@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
 import 'package:moor/isolate.dart';
@@ -88,8 +89,6 @@ class BackendState extends State<Backend> {
   MusicusClient client;
   MusicLibrary ml;
 
-  MoorIsolate _moorIsolate;
-
   @override
   void initState() {
     super.initState();
@@ -105,10 +104,21 @@ class BackendState extends State<Backend> {
   }
 
   Future<void> _load() async {
-    _moorIsolate = await _createMoorIsolate();
-    final dbConnection = await _moorIsolate.connect();
-    player.setup();
+    MoorIsolate moorIsolate;
+
+    final moorPort = IsolateNameServer.lookupPortByName('moorPort');
+    if (moorPort != null) {
+      moorIsolate = MoorIsolate.fromConnectPort(moorPort);
+    } else {
+      moorIsolate = await _createMoorIsolate();
+      IsolateNameServer.registerPortWithName(
+          moorIsolate.connectPort, 'moorPort');
+    }
+
+    final dbConnection = await moorIsolate.connect();
     db = Database.connect(dbConnection);
+
+    player.setup();
 
     await settings.load();
 
@@ -149,7 +159,6 @@ class BackendState extends State<Backend> {
   void dispose() {
     super.dispose();
     client.dispose();
-    _moorIsolate.shutdownAll();
   }
 }
 

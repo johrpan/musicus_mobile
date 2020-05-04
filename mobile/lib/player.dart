@@ -4,6 +4,8 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:moor/isolate.dart';
+import 'package:musicus_database/musicus_database.dart';
 import 'package:musicus_player/musicus_player.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -139,7 +141,7 @@ class Player {
         }
       }
     });
-    
+
     IsolateNameServer.removePortNameMapping(_portName);
     IsolateNameServer.registerPortWithName(receivePort.sendPort, _portName);
 
@@ -334,16 +336,11 @@ class _PlaybackService extends BackgroundAudioTask {
     action: MediaAction.stop,
   );
 
-  static const dummyMediaItem = MediaItem(
-    id: 'dummy',
-    album: 'Johannes Brahms',
-    title: 'Symphony No. 1 in C minor, Op. 68: 1. Un poco sostenuto — Allegro',
-    duration: 10000,
-  );
-
   final _completer = Completer();
+  final _loading = Completer();
   final List<InternalTrack> _playlist = [];
 
+  Database db;
   MusicusPlayer _player;
   int _currentTrack = 0;
   bool _playing = false;
@@ -360,6 +357,16 @@ class _PlaybackService extends BackgroundAudioTask {
         _setState();
       }
     });
+
+    _load();
+  }
+
+  /// Initialize database.
+  Future<void> _load() async {
+    final moorPort = IsolateNameServer.lookupPortByName('moorPort');
+    final moorIsolate = MoorIsolate.fromConnectPort(moorPort);
+    db = Database.connect(await moorIsolate.connect());
+    _loading.complete();
   }
 
   /// Update the audio service status for the system.
@@ -376,7 +383,25 @@ class _PlaybackService extends BackgroundAudioTask {
       updateTime: updateTime,
     );
 
-    AudioServiceBackground.setMediaItem(dummyMediaItem);
+    if (_playlist.isNotEmpty) {
+      await _loading.future;
+
+      final track = _playlist[_currentTrack];
+      final recordingInfo = await db.getRecording(track.track.recordingId);
+      final workInfo = await db.getWork(recordingInfo.recording.work);
+
+      final composers = workInfo.composers
+          .map((p) => '${p.firstName} ${p.lastName}')
+          .join(', ');
+
+      final title = workInfo.work.title;
+
+      AudioServiceBackground.setMediaItem(MediaItem(
+        id: track.uri,
+        album: composers,
+        title: title,
+      ));
+    }
   }
 
   /// Send a message to the UI.
