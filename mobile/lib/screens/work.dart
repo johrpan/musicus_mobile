@@ -39,7 +39,7 @@ class WorkScreen extends StatelessWidget {
       ),
       body: PagedListView<RecordingInfo>(
         fetch: (page, _) async {
-          return await backend.client.getRecordings(workInfo.work.id, page);
+          return await backend.db.getRecordings(workInfo.work.id, page);
         },
         builder: (context, recordingInfo) => ListTile(
           title: PerformancesText(
