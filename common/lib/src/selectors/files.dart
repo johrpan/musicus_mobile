@@ -18,7 +18,20 @@ class FilesSelectorResult {
   FilesSelectorResult(this.parentId, this.selection);
 }
 
+/// A screen for selecting files.
+///
+/// This returns a [FilesSelectorResult] when pooping the navigator. If
+/// [chooseDirectory] is true, the user will select a directory instead. In
+/// that case, the document ID of the directory will be returned directly.
+/// If that value is null, this means that the toplevel directory was selected.
 class FilesSelector extends StatefulWidget {
+  /// Choose a directory instead of multiple files.
+  final bool chooseDirectory;
+
+  FilesSelector({
+    this.chooseDirectory = false,
+  });
+
   @override
   _FilesSelectorState createState() => _FilesSelectorState();
 }
@@ -42,7 +55,8 @@ class _FilesSelectorState extends State<FilesSelector> {
     return WillPopScope(
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Choose files'),
+          title: Text(
+              widget.chooseDirectory ? 'Choose directory' : 'Choose files'),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
@@ -51,14 +65,15 @@ class _FilesSelectorState extends State<FilesSelector> {
           ),
           actions: <Widget>[
             FlatButton(
-              child: Text('DONE'),
+              child: Text(widget.chooseDirectory ? 'SELECT' : 'DONE'),
               onPressed: () {
+                final parentId = history.isNotEmpty ? history.last.id : null;
+
                 Navigator.pop(
                   context,
-                  FilesSelectorResult(
-                    history.isNotEmpty ? history.last.id : null,
-                    selection,
-                  ),
+                  widget.chooseDirectory
+                      ? parentId
+                      : FilesSelectorResult(parentId, selection),
                 );
               },
             ),
@@ -141,9 +156,11 @@ class _FilesSelectorState extends State<FilesSelector> {
       }
     });
 
-    setState(() {
-      children = newChildren;
-    });
+    if (mounted) {
+      setState(() {
+        children = newChildren;
+      });
+    }
   }
 
   bool up() {
