@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
-
-import '../backend.dart';
-import '../settings.dart';
+import 'package:flutter/services.dart';
+import 'package:musicus_common/musicus_common.dart';
 
 import 'server_settings.dart';
 
 class SettingsScreen extends StatelessWidget {
+  static const _platform = MethodChannel('de.johrpan.musicus/platform');
+
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
     final settings = backend.settings;
 
     return Scaffold(
@@ -18,18 +19,23 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: <Widget>[
           StreamBuilder<String>(
-              stream: settings.musicLibraryUri,
+              stream: settings.musicLibraryPath,
               builder: (context, snapshot) {
                 return ListTile(
                   title: Text('Music library path'),
                   subtitle: Text(snapshot.data ?? 'Choose folder'),
                   isThreeLine: snapshot.hasData,
-                  onTap: () {
-                    settings.chooseMusicLibraryUri();
+                  onTap: () async {
+                    final uri =
+                        await _platform.invokeMethod<String>('openTree');
+
+                    if (uri != null) {
+                      settings.setMusicLibraryPath(uri);
+                    }
                   },
                 );
               }),
-          StreamBuilder<ServerSettings>(
+          StreamBuilder<MusicusServerSettings>(
               stream: settings.server,
               builder: (context, snapshot) {
                 final s = snapshot.data;
@@ -37,10 +43,10 @@ class SettingsScreen extends StatelessWidget {
                 return ListTile(
                   title: Text('Musicus server'),
                   subtitle: Text(
-                      s != null ? '${s.host}:${s.port}${s.basePath}' : '...'),
+                      s != null ? '${s.host}:${s.port}${s.apiPath}' : '...'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () async {
-                    final ServerSettings result = await Navigator.push(
+                    final MusicusServerSettings result = await Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ServerSettingsScreen(),
@@ -48,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
                     );
 
                     if (result != null) {
-                      settings.setServerSettings(result);
+                      settings.setServer(result);
                     }
                   },
                 );

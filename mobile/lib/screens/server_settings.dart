@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../backend.dart';
-import '../settings.dart';
+import 'package:musicus_common/musicus_common.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
   @override
@@ -13,16 +11,16 @@ class ServerSettingsScreen extends StatefulWidget {
 class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   final hostController = TextEditingController();
   final portController = TextEditingController();
-  final basePathController = TextEditingController();
+  final apiPathController = TextEditingController();
 
-  BackendState backend;
-  StreamSubscription<ServerSettings> serverSubscription;
+  MusicusBackendState backend;
+  StreamSubscription<MusicusServerSettings> serverSubscription;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    backend = Backend.of(context);
+    backend = MusicusBackend.of(context);
 
     if (serverSubscription != null) {
       serverSubscription.cancel();
@@ -34,10 +32,10 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     });
   }
 
-  void _settingsChanged(ServerSettings settings) {
+  void _settingsChanged(MusicusServerSettings settings) {
     hostController.text = settings.host;
     portController.text = settings.port.toString();
-    basePathController.text = settings.basePath;
+    apiPathController.text = settings.apiPath;
   }
 
   @override
@@ -50,15 +48,15 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
             icon: const Icon(Icons.restore),
             tooltip: 'Reset to default',
             onPressed: () {
-              backend.settings.resetServerSettings();
+              backend.settings.resetServer();
             },
           ),
           FlatButton(
             onPressed: () async {
-              await backend.settings.setServerSettings(ServerSettings(
+              await backend.settings.setServer(MusicusServerSettings(
                 host: hostController.text,
                 port: int.parse(portController.text),
-                basePath: basePathController.text,
+                apiPath: apiPathController.text,
               ));
 
               Navigator.pop(context);
@@ -91,7 +89,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              controller: basePathController,
+              controller: apiPathController,
               decoration: InputDecoration(
                 labelText: 'API path',
               ),

@@ -12,16 +12,19 @@ depend on other ones. All packages are written in [Dart](https://dart.dev).
 `database` – A Database of classical music. This package will be used by all
 standalone Musicus applications for storing classical music metadata.
 
+`server` – A simple http server hosting a Musicus database. The server is
+developed using the [Aqueduct framework](https://aqueduct.io).
+
+`client` – A client library for the Musicus server.
+
+`common` – Common building blocks for Musicus client apps. This includes shared
+UI and backend code for the mobile app and the (future) desktop app.
+
 `mobile` – The Musicus mobile app. It is being developed using
 [Flutter toolkit](https://flutter.dev) and only runs on Android for now.
 
 `player` – The simplest possible audio player plugin. This is used by the
 mobile app for playback.
-
-`server` – A simple http server hosting a Musicus database. The server is
-developed using the [Aqueduct framework](https://aqueduct.io).
-
-`client` – A client library for the Musicus server.
 
 ## Hacking
 

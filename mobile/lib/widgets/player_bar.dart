@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
-import '../music_library.dart';
 import '../screens/program.dart';
 
 import 'play_pause_button.dart';
-import 'texts.dart';
 
 class PlayerBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return BottomAppBar(
       child: InkWell(
@@ -19,7 +17,7 @@ class PlayerBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             StreamBuilder(
-              stream: backend.player.normalizedPosition,
+              stream: backend.playback.normalizedPosition,
               builder: (context, snapshot) => LinearProgressIndicator(
                 value: snapshot.data,
               ),
@@ -32,7 +30,7 @@ class PlayerBar extends StatelessWidget {
                 ),
                 Expanded(
                   child: StreamBuilder<InternalTrack>(
-                    stream: backend.player.currentTrack,
+                    stream: backend.playback.currentTrack,
                     builder: (context, snapshot) {
                       if (snapshot.data != null) {
                         final recordingId = snapshot.data.track.recordingId;

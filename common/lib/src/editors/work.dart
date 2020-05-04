@@ -200,7 +200,7 @@ class _WorkEditorState extends State<WorkEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     final List<Widget> partTiles = [];
     for (var i = 0; i < parts.length; i++) {

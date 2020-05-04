@@ -161,7 +161,7 @@ class _PersonsListState extends State<PersonsList> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Column(
       children: <Widget>[
@@ -222,7 +222,7 @@ class _EnsemblesListState extends State<EnsemblesList> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Column(
       children: <Widget>[
@@ -287,7 +287,7 @@ class _WorksListState extends State<WorksList> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Column(
       children: <Widget>[
@@ -346,7 +346,7 @@ class RecordingsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return PagedListView<RecordingInfo>(
       fetch: (page, _) async {

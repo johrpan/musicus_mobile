@@ -45,7 +45,7 @@ class WorkText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return StreamBuilder<Work>(
       stream: backend.db.workById(workId).watchSingle(),
@@ -61,7 +61,7 @@ class ComposersText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return StreamBuilder<List<Person>>(
       stream: backend.db.composersByWork(workId).watch(),

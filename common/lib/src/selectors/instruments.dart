@@ -35,7 +35,7 @@ class _InstrumentsSelectorState extends State<InstrumentsSelector> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(

@@ -1,8 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-
-import '../backend.dart';
+import 'package:musicus_common/musicus_common.dart';
 
 class PlayPauseButton extends StatefulWidget {
   @override
@@ -12,7 +11,7 @@ class PlayPauseButton extends StatefulWidget {
 class _PlayPauseButtonState extends State<PlayPauseButton>
     with SingleTickerProviderStateMixin {
   AnimationController playPauseAnimation;
-  BackendState backend;
+  MusicusBackendState backend;
   StreamSubscription<bool> playingSubscription;
 
   @override
@@ -29,14 +28,14 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    backend = Backend.of(context);
-    playPauseAnimation.value = backend.player.playing.value ? 1.0 : 0.0;
+    backend = MusicusBackend.of(context);
+    playPauseAnimation.value = backend.playback.playing.value ? 1.0 : 0.0;
 
     if (playingSubscription != null) {
       playingSubscription.cancel();
     }
 
-    playingSubscription = backend.player.playing.listen((playing) =>
+    playingSubscription = backend.playback.playing.listen((playing) =>
         playing ? playPauseAnimation.forward() : playPauseAnimation.reverse());
   }
 
@@ -47,7 +46,7 @@ class _PlayPauseButtonState extends State<PlayPauseButton>
         icon: AnimatedIcons.play_pause,
         progress: playPauseAnimation,
       ),
-      onPressed: backend.player.playPause,
+      onPressed: backend.playback.playPause,
     );
   }
 

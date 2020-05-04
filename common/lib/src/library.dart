@@ -1,32 +1,31 @@
 import 'dart:convert';
 
-import 'package:flutter/services.dart';
-
 import 'platform.dart';
 
-/// Bundles a [Track] with the URI of the audio file it represents.
-///
-/// The uri shouldn't be stored on disk, but will be used at runtime.
+/// Bundles a [Track] with information on how to find the corresponding file.
 class InternalTrack {
   /// The represented track.
   final Track track;
 
-  /// The URI of the represented audio file as retrieved from the SAF.
-  final String uri;
+  /// A string identifying the track for playback.
+  ///
+  /// This will be the result of calling the platform objects getIdentifier()
+  /// function with the file name of the track.
+  final String identifier;
 
   InternalTrack({
     this.track,
-    this.uri,
+    this.identifier,
   });
 
   factory InternalTrack.fromJson(Map<String, dynamic> json) => InternalTrack(
         track: Track.fromJson(json['track']),
-        uri: json['uri'],
+        identifier: json['identifier'],
       );
 
   Map<String, dynamic> toJson() => {
         'track': track.toJson(),
-        'uri': uri,
+        'identifier': identifier,
       };
 }
 
@@ -106,13 +105,12 @@ class MusicusFile {
 }
 
 /// Manager for all available tracks and their representation on disk.
-class MusicLibrary {
-  static const platform = MethodChannel('de.johrpan.musicus/platform');
+class MusicusLibrary {
+  /// String representing the music library base path.
+  final String basePath;
 
-  /// URI of the music library folder.
-  ///
-  /// This is a tree URI in the terms of the Android Storage Access Framework.
-  final String treeUri;
+  /// Access to platform dependent functionality.
+  final MusicusPlatform platform;
 
   /// Map of all available tracks by recording ID.
   ///
@@ -120,7 +118,7 @@ class MusicLibrary {
   /// audio file alongside the real [Track] object.
   final Map<int, List<InternalTrack>> tracks = {};
 
-  MusicLibrary(this.treeUri);
+  MusicusLibrary(this.basePath, this.platform);
 
   /// Load all available tracks.
   ///
@@ -130,13 +128,13 @@ class MusicLibrary {
   Future<void> load() async {
     // TODO: Consider capping the recursion somewhere.
     Future<void> recurse([String parentId]) async {
-      final children = await Platform.getChildren(treeUri, parentId);
+      final children = await platform.getChildren(parentId);
 
       for (final child in children) {
         if (child.isDirectory) {
           recurse(child.id);
         } else if (child.name == 'musicus.json') {
-          final content = await Platform.readFile(treeUri, child.id);
+          final content = await platform.readDocument(child.id);
           final musicusFile = MusicusFile.fromJson(jsonDecode(content));
           for (final track in musicusFile.tracks) {
             _indexTrack(parentId, track);
@@ -156,7 +154,7 @@ class MusicLibrary {
     MusicusFile musicusFile;
 
     final oldContent =
-        await Platform.readFileByName(treeUri, parentId, 'musicus.json');
+        await platform.readDocumentByName(parentId, 'musicus.json');
 
     if (oldContent != null) {
       musicusFile = MusicusFile.fromJson(jsonDecode(oldContent));
@@ -169,15 +167,15 @@ class MusicLibrary {
       musicusFile.tracks.add(track);
     }
 
-    await Platform.writeFileByName(
-        treeUri, parentId, 'musicus.json', jsonEncode(musicusFile.toJson()));
+    await platform.writeDocumentByName(
+        parentId, 'musicus.json', jsonEncode(musicusFile.toJson()));
   }
 
   /// Add a track to the map of available tracks.
   Future<void> _indexTrack(String parentId, Track track) async {
     final iTrack = InternalTrack(
       track: track,
-      uri: await Platform.getUriByName(treeUri, parentId, track.fileName),
+      identifier: await platform.getIdentifier(parentId, track.fileName),
     );
 
     if (tracks.containsKey(track.recordingId)) {

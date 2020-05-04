@@ -3,20 +3,19 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 
-class PersonEditor extends StatefulWidget {
-  final Person person;
+class InstrumentEditor extends StatefulWidget {
+  final Instrument instrument;
 
-  PersonEditor({
-    this.person,
+  InstrumentEditor({
+    this.instrument,
   });
 
   @override
-  _PersonEditorState createState() => _PersonEditorState();
+  _InstrumentEditorState createState() => _InstrumentEditorState();
 }
 
-class _PersonEditorState extends State<PersonEditor> {
-  final firstNameController = TextEditingController();
-  final lastNameController = TextEditingController();
+class _InstrumentEditorState extends State<InstrumentEditor> {
+  final nameController = TextEditingController();
 
   bool uploading = false;
 
@@ -24,19 +23,18 @@ class _PersonEditorState extends State<PersonEditor> {
   void initState() {
     super.initState();
 
-    if (widget.person != null) {
-      firstNameController.text = widget.person.firstName;
-      lastNameController.text = widget.person.lastName;
+    if (widget.instrument != null) {
+      nameController.text = widget.instrument.name;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Person'),
+        title: Text('Instrument/Role'),
         actions: <Widget>[
           uploading
               ? Padding(
@@ -58,20 +56,20 @@ class _PersonEditorState extends State<PersonEditor> {
                       uploading = true;
                     });
 
-                    final person = Person(
-                      id: widget.person?.id ?? generateId(),
-                      firstName: firstNameController.text,
-                      lastName: lastNameController.text,
+                    final instrument = Instrument(
+                      id: widget.instrument?.id ?? generateId(),
+                      name: nameController.text,
                     );
 
-                    final success = await backend.client.putPerson(person);
+                    final success =
+                        await backend.client.putInstrument(instrument);
 
                     setState(() {
                       uploading = false;
                     });
 
                     if (success) {
-                      Navigator.pop(context, person);
+                      Navigator.pop(context, instrument);
                     } else {
                       Scaffold.of(context).showSnackBar(SnackBar(
                         content: Text('Failed to upload'),
@@ -86,18 +84,9 @@ class _PersonEditorState extends State<PersonEditor> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              controller: firstNameController,
+              controller: nameController,
               decoration: InputDecoration(
-                labelText: 'First name',
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: lastNameController,
-              decoration: InputDecoration(
-                labelText: 'Last name',
+                labelText: 'Name',
               ),
             ),
           ),

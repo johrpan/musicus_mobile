@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
-import '../editors/tracks.dart';
 import '../icons.dart';
-import '../widgets/lists.dart';
 
 import 'person.dart';
 import 'settings.dart';
@@ -19,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../music_library.dart';
+import '../library.dart';
 import '../selectors/files.dart';
 import '../selectors/recording.dart';
 import '../widgets/recording_tile.dart';
@@ -21,7 +21,7 @@ class TracksEditor extends StatefulWidget {
 }
 
 class _TracksEditorState extends State<TracksEditor> {
-  BackendState backend;
+  MusicusBackendState backend;
   WorkInfo workInfo;
   RecordingInfo recordingInfo;
   String parentId;
@@ -29,7 +29,7 @@ class _TracksEditorState extends State<TracksEditor> {
 
   @override
   Widget build(BuildContext context) {
-    backend = Backend.of(context);
+    backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +57,7 @@ class _TracksEditorState extends State<TracksEditor> {
               backend.db.updateWork(workInfo);
               backend.db.updateRecording(recordingInfo);
 
-              backend.ml.addTracks(parentId, tracks);
+              backend.library.addTracks(parentId, tracks);
 
               Navigator.pop(context);
             },

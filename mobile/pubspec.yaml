@@ -17,6 +17,8 @@ dependencies:
   moor_ffi:
   musicus_client:
     path: ../client
+  musicus_common:
+    path: ../common
   musicus_database:
     path: ../database
   musicus_player:

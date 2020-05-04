@@ -36,7 +36,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
     super.initState();
 
     if (widget.recordingInfo != null) {
-      final backend = Backend.of(context);
+      final backend = MusicusBackend.of(context);
 
       () async {
         workInfo = await backend.db.getWork(widget.recordingInfo.recording.id);
@@ -47,7 +47,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     Future<void> selectWork() async {
       final WorkInfo newWorkInfo = await Navigator.push(

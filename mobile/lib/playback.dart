@@ -6,10 +6,8 @@ import 'dart:ui';
 import 'package:audio_service/audio_service.dart';
 import 'package:moor/isolate.dart';
 import 'package:musicus_database/musicus_database.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_player/musicus_player.dart';
-import 'package:rxdart/rxdart.dart';
-
-import 'music_library.dart';
 
 const _portName = 'playbackService';
 
@@ -18,61 +16,11 @@ void _playbackServiceEntrypoint() {
   AudioServiceBackground.run(() => _PlaybackService());
 }
 
-class Player {
-  /// Whether the player is active.
-  ///
-  /// This means, that there is at least one item in the queue and the playback
-  /// service is ready to play.
-  final active = BehaviorSubject.seeded(false);
-
-  /// The current playlist.
-  ///
-  /// If the player is not active, this will be an empty list.
-  final playlist = BehaviorSubject.seeded(<InternalTrack>[]);
-
-  /// Index of the currently played (or paused) track within the playlist.
-  ///
-  /// This will be zero, if the player is not active!
-  final currentIndex = BehaviorSubject.seeded(0);
-
-  /// The currently played track.
-  ///
-  /// This will be null, if there is no  current track.
-  final currentTrack = BehaviorSubject<InternalTrack>.seeded(null);
-
-  /// Whether we are currently playing or not.
-  ///
-  /// This will be false, if the player is not active.
-  final playing = BehaviorSubject.seeded(false);
-
-  /// Current playback position.
-  ///
-  /// If the player is not active, this will default to zero.
-  final position = BehaviorSubject.seeded(const Duration());
-
-  /// Duration of the current track.
-  ///
-  /// If the player is not active, the duration will default to 1 s.
-  final duration = BehaviorSubject.seeded(const Duration(seconds: 1));
-
-  /// Playback position normalized to the range from zero to one.
-  final normalizedPosition = BehaviorSubject.seeded(0.0);
-
+class Playback extends MusicusPlayback {
   StreamSubscription _playbackServiceStateSubscription;
 
-  /// Set everything to its default because the playback service was stopped.
-  void _stop() {
-    active.add(false);
-    playlist.add([]);
-    currentIndex.add(0);
-    playing.add(false);
-    position.add(const Duration());
-    duration.add(const Duration(seconds: 1));
-    normalizedPosition.add(0.0);
-  }
-
   /// Start playback service.
-  Future<void> start() async {
+  Future<void> _start() async {
     if (!AudioService.running) {
       await AudioService.start(
         backgroundTaskEntrypoint: _playbackServiceEntrypoint,
@@ -109,8 +57,8 @@ class Player {
     currentTrack.add(playlist.value[index]);
   }
 
-  /// Connect listeners and initialize streams.
-  void setup() {
+  @override
+  Future<void> setup() async {
     if (_playbackServiceStateSubscription != null) {
       _playbackServiceStateSubscription.cancel();
     }
@@ -125,8 +73,12 @@ class Player {
     ).listen((msg) {
       // If state is null, the background audio service has stopped.
       if (msg == null) {
-        _stop();
+        dispose();
       } else {
+        if (!active.value) {
+          active.add(true);
+        }
+
         if (msg is _StatusMessage) {
           playing.add(msg.playing);
         } else if (msg is _PositionMessage) {
@@ -154,9 +106,23 @@ class Player {
     }
   }
 
-  /// Toggle whether the player is playing or paused.
-  ///
-  /// If the player is not active, this will do nothing.
+  @override
+  Future<void> addTracks(List<InternalTrack> tracks) async {
+    if (!AudioService.running) {
+      await _start();
+    }
+
+    await AudioService.customAction('addTracks', jsonEncode(tracks));
+  }
+
+  @override
+  Future<void> removeTrack(int index) async {
+    if (AudioService.running) {
+      await AudioService.customAction('removeTrack', index);
+    }
+  }
+
+  @override
   Future<void> playPause() async {
     if (active.value) {
       if (playing.value) {
@@ -167,29 +133,7 @@ class Player {
     }
   }
 
-  /// Add a list of tracks to the players playlist.
-  Future<void> addTracks(List<InternalTrack> tracks) async {
-    if (!AudioService.running) {
-      await start();
-    }
-
-    await AudioService.customAction('addTracks', jsonEncode(tracks));
-  }
-
-  /// Remove the track at [index] from the playlist.
-  ///
-  /// If the player is not active or an invalid value is provided, this will do
-  /// nothing.
-  Future<void> removeTrack(int index) async {
-    if (AudioService.running) {
-      await AudioService.customAction('removeTrack', index);
-    }
-  }
-
-  /// Seek to [pos], which is a value between (and including) zero and one.
-  ///
-  /// If the player is not active or an invalid value is provided, this will do
-  /// nothing.
+  @override
   Future<void> seekTo(double pos) async {
     if (active.value && pos >= 0.0 && pos <= 1.0) {
       final durationMs = duration.value.inMilliseconds;
@@ -197,45 +141,31 @@ class Player {
     }
   }
 
-  /// Play the previous track in the playlist.
-  ///
-  /// If the player is not active or there is no previous track, this will do
-  /// nothing.
-  Future<void> skipToNext() async {
-    if (AudioService.running) {
-      await AudioService.skipToNext();
-    }
-  }
-
-  /// Skip to the next track in the playlist.
-  ///
-  /// If the player is not active or there is no next track, this will do
-  /// nothing. If more than five seconds of the current track have been played,
-  /// this will go back to its beginning instead.
+  @override
   Future<void> skipToPrevious() async {
     if (AudioService.running) {
       await AudioService.skipToPrevious();
     }
   }
 
-  /// Switch to the track with the index [index] in the playlist.
+  @override
+  Future<void> skipToNext() async {
+    if (AudioService.running) {
+      await AudioService.skipToNext();
+    }
+  }
+
+  @override
   Future<void> skipTo(int index) async {
     if (AudioService.running) {
       await AudioService.customAction('skipTo', index);
     }
   }
 
-  /// Tidy up.
+  @override
   void dispose() {
+    super.dispose();
     _playbackServiceStateSubscription.cancel();
-    active.close();
-    playlist.close();
-    currentIndex.close();
-    currentTrack.close();
-    playing.close();
-    position.close();
-    duration.close();
-    normalizedPosition.close();
   }
 }
 
@@ -363,7 +293,7 @@ class _PlaybackService extends BackgroundAudioTask {
 
   /// Initialize database.
   Future<void> _load() async {
-    final moorPort = IsolateNameServer.lookupPortByName('moorPort');
+    final moorPort = IsolateNameServer.lookupPortByName('moor');
     final moorIsolate = MoorIsolate.fromConnectPort(moorPort);
     db = Database.connect(await moorIsolate.connect());
     _loading.complete();
@@ -397,7 +327,7 @@ class _PlaybackService extends BackgroundAudioTask {
       final title = workInfo.work.title;
 
       AudioServiceBackground.setMediaItem(MediaItem(
-        id: track.uri,
+        id: track.identifier,
         album: composers,
         title: title,
       ));
@@ -456,7 +386,7 @@ class _PlaybackService extends BackgroundAudioTask {
   /// Set the current track, update the player and notify the system.
   Future<void> _setCurrentTrack(int index) async {
     _currentTrack = index;
-    _durationMs = await _player.setUri(_playlist[_currentTrack].uri);
+    _durationMs = await _player.setUri(_playlist[_currentTrack].identifier);
     _setState();
   }
 
@@ -508,7 +438,7 @@ class _PlaybackService extends BackgroundAudioTask {
   }
 
   @override
-  void onCustomAction(String name, dynamic arguments) {
+  Future<void> onCustomAction(String name, dynamic arguments) async {
     super.onCustomAction(name, arguments);
 
     // addTracks expects a List<Map<String, dynamic>> as its argument.

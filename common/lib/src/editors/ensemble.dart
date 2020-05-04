@@ -3,18 +3,18 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 
-class InstrumentEditor extends StatefulWidget {
-  final Instrument instrument;
+class EnsembleEditor extends StatefulWidget {
+  final Ensemble ensemble;
 
-  InstrumentEditor({
-    this.instrument,
+  EnsembleEditor({
+    this.ensemble,
   });
 
   @override
-  _InstrumentEditorState createState() => _InstrumentEditorState();
+  _EnsembleEditorState createState() => _EnsembleEditorState();
 }
 
-class _InstrumentEditorState extends State<InstrumentEditor> {
+class _EnsembleEditorState extends State<EnsembleEditor> {
   final nameController = TextEditingController();
 
   bool uploading = false;
@@ -23,18 +23,18 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
   void initState() {
     super.initState();
 
-    if (widget.instrument != null) {
-      nameController.text = widget.instrument.name;
+    if (widget.ensemble != null) {
+      nameController.text = widget.ensemble.name;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Instrument/Role'),
+        title: Text('Ensemble'),
         actions: <Widget>[
           uploading
               ? Padding(
@@ -56,20 +56,19 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
                       uploading = true;
                     });
 
-                    final instrument = Instrument(
-                      id: widget.instrument?.id ?? generateId(),
+                    final ensemble = Ensemble(
+                      id: widget.ensemble?.id ?? generateId(),
                       name: nameController.text,
                     );
 
-                    final success =
-                        await backend.client.putInstrument(instrument);
+                    final success = await backend.client.putEnsemble(ensemble);
 
                     setState(() {
                       uploading = false;
                     });
 
                     if (success) {
-                      Navigator.pop(context, instrument);
+                      Navigator.pop(context, ensemble);
                     } else {
                       Scaffold.of(context).showSnackBar(SnackBar(
                         content: Text('Failed to upload'),

@@ -1,12 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
-import '../music_library.dart';
 import '../widgets/play_pause_button.dart';
-import '../widgets/recording_tile.dart';
 
 class ProgramScreen extends StatefulWidget {
   @override
@@ -14,7 +12,7 @@ class ProgramScreen extends StatefulWidget {
 }
 
 class _ProgramScreenState extends State<ProgramScreen> {
-  BackendState backend;
+  MusicusBackendState backend;
 
   StreamSubscription<bool> playerActiveSubscription;
 
@@ -29,14 +27,14 @@ class _ProgramScreenState extends State<ProgramScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    backend = Backend.of(context);
+    backend = MusicusBackend.of(context);
 
     if (playerActiveSubscription != null) {
       playerActiveSubscription.cancel();
     }
 
     // Close the program screen, if the player is no longer active.
-    playerActiveSubscription = backend.player.active.listen((active) {
+    playerActiveSubscription = backend.playback.active.listen((active) {
       if (!active) {
         Navigator.pop(context);
       }
@@ -46,7 +44,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
       playlistSubscription.cancel();
     }
 
-    playlistSubscription = backend.player.playlist.listen((playlist) {
+    playlistSubscription = backend.playback.playlist.listen((playlist) {
       updateProgram(playlist);
     });
 
@@ -54,7 +52,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
       positionSubscription.cancel();
     }
 
-    positionSubscription = backend.player.normalizedPosition.listen((pos) {
+    positionSubscription = backend.playback.normalizedPosition.listen((pos) {
       if (!seeking) {
         setState(() {
           position = pos;
@@ -154,7 +152,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
         title: Text('Program'),
       ),
       body: StreamBuilder<int>(
-        stream: backend.player.currentIndex,
+        stream: backend.playback.currentIndex,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
@@ -181,7 +179,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
                     ],
                   ),
                   onTap: () {
-                    backend.player.skipTo(index);
+                    backend.playback.skipTo(index);
                   },
                   onLongPress: () {
                     showDialog(
@@ -192,7 +190,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
                             ListTile(
                               title: Text('Remove from playlist'),
                               onTap: () {
-                                backend.player.removeTrack(index);
+                                backend.playback.removeTrack(index);
                                 Navigator.pop(context);
                               },
                             ),
@@ -220,7 +218,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
               },
               onChangeEnd: (pos) {
                 seeking = false;
-                backend.player.seekTo(pos);
+                backend.playback.seekTo(pos);
               },
               onChanged: (pos) {
                 setState(() {
@@ -233,7 +231,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: 24.0),
                   child: StreamBuilder<Duration>(
-                    stream: backend.player.position,
+                    stream: backend.playback.position,
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         return DurationText(snapshot.data);
@@ -247,21 +245,21 @@ class _ProgramScreenState extends State<ProgramScreen> {
                 IconButton(
                   icon: const Icon(Icons.skip_previous),
                   onPressed: () {
-                    backend.player.skipToPrevious();
+                    backend.playback.skipToPrevious();
                   },
                 ),
                 PlayPauseButton(),
                 IconButton(
                   icon: const Icon(Icons.skip_next),
                   onPressed: () {
-                    backend.player.skipToNext();
+                    backend.playback.skipToNext();
                   },
                 ),
                 Spacer(),
                 Padding(
                   padding: const EdgeInsets.only(right: 20.0),
                   child: StreamBuilder<Duration>(
-                    stream: backend.player.duration,
+                    stream: backend.playback.duration,
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         return DurationText(snapshot.data);

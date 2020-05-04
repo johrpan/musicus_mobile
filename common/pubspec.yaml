@@ -1,0 +1,18 @@
+name: musicus_common
+version: 0.1.0
+description: Common building blocks for Musicus client apps.
+
+environment:
+  sdk: ">=2.3.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  meta:
+  moor:
+  moor_ffi:
+  musicus_client:
+    path: ../client
+  musicus_database:
+    path: ../database
+  rxdart:

@@ -1,15 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:musicus_common/musicus_common.dart';
 
-import 'backend.dart';
 import 'screens/home.dart';
 import 'widgets/player_bar.dart';
 
 class App extends StatelessWidget {
+  static const _platform = MethodChannel('de.johrpan.musicus/platform');
+
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return MaterialApp(
       title: 'Musicus',
@@ -36,11 +39,11 @@ class App extends StatelessWidget {
       ),
       home: Builder(
         builder: (context) {
-          if (backend.status == BackendStatus.loading) {
+          if (backend.status == MusicusBackendStatus.loading) {
             return Material(
               color: Theme.of(context).scaffoldBackgroundColor,
             );
-          } else if (backend.status == BackendStatus.setup) {
+          } else if (backend.status == MusicusBackendStatus.setup) {
             return Material(
               color: Theme.of(context).scaffoldBackgroundColor,
               child: Column(
@@ -57,8 +60,13 @@ class App extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.folder_open),
                     title: Text('Choose path'),
-                    onTap: () {
-                      backend.settings.chooseMusicLibraryUri();
+                    onTap: () async {
+                      final uri =
+                          await _platform.invokeMethod<String>('openTree');
+
+                      if (uri != null) {
+                        backend.settings.setMusicLibraryPath(uri);
+                      }
                     },
                   ),
                 ],
@@ -82,7 +90,7 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
   final nestedNavigator = GlobalKey<NavigatorState>();
 
   AnimationController playerBarAnimation;
-  BackendState backend;
+  MusicusBackendState backend;
   StreamSubscription<bool> playerActiveSubscription;
 
   @override
@@ -99,14 +107,14 @@ class _ContentState extends State<Content> with SingleTickerProviderStateMixin {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    backend = Backend.of(context);
-    playerBarAnimation.value = backend.player.active.value ? 1.0 : 0.0;
+    backend = MusicusBackend.of(context);
+    playerBarAnimation.value = backend.playback.active.value ? 1.0 : 0.0;
 
     if (playerActiveSubscription != null) {
       playerActiveSubscription.cancel();
     }
 
-    playerActiveSubscription = backend.player.active.listen((active) =>
+    playerActiveSubscription = backend.playback.active.listen((active) =>
         active ? playerBarAnimation.forward() : playerBarAnimation.reverse());
   }
 

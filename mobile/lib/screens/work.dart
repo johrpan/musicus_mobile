@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_database/musicus_database.dart';
-
-import '../backend.dart';
-import '../editors/work.dart';
-import '../widgets/texts.dart';
-import '../widgets/lists.dart';
 
 class WorkScreen extends StatelessWidget {
   final WorkInfo workInfo;
@@ -15,7 +11,7 @@ class WorkScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,11 +42,11 @@ class WorkScreen extends StatelessWidget {
             performanceInfos: recordingInfo.performances,
           ),
           onTap: () {
-            final tracks = backend.ml.tracks[recordingInfo.recording.id];
+            final tracks = backend.library.tracks[recordingInfo.recording.id];
             tracks.sort((t1, t2) => t1.track.index.compareTo(t2.track.index));
 
-            backend.player
-                .addTracks(backend.ml.tracks[recordingInfo.recording.id]);
+            backend.playback
+                .addTracks(backend.library.tracks[recordingInfo.recording.id]);
           },
         ),
       ),

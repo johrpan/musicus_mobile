@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_database/musicus_database.dart';
-
-import '../backend.dart';
-import '../editors/person.dart';
-import '../widgets/lists.dart';
 
 import 'work.dart';
 
@@ -23,7 +20,7 @@ class _PersonScreenState extends State<PersonScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(

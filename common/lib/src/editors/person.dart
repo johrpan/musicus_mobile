@@ -3,19 +3,20 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 
-class EnsembleEditor extends StatefulWidget {
-  final Ensemble ensemble;
+class PersonEditor extends StatefulWidget {
+  final Person person;
 
-  EnsembleEditor({
-    this.ensemble,
+  PersonEditor({
+    this.person,
   });
 
   @override
-  _EnsembleEditorState createState() => _EnsembleEditorState();
+  _PersonEditorState createState() => _PersonEditorState();
 }
 
-class _EnsembleEditorState extends State<EnsembleEditor> {
-  final nameController = TextEditingController();
+class _PersonEditorState extends State<PersonEditor> {
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
 
   bool uploading = false;
 
@@ -23,18 +24,19 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
   void initState() {
     super.initState();
 
-    if (widget.ensemble != null) {
-      nameController.text = widget.ensemble.name;
+    if (widget.person != null) {
+      firstNameController.text = widget.person.firstName;
+      lastNameController.text = widget.person.lastName;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final backend = Backend.of(context);
+    final backend = MusicusBackend.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ensemble'),
+        title: Text('Person'),
         actions: <Widget>[
           uploading
               ? Padding(
@@ -56,19 +58,20 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
                       uploading = true;
                     });
 
-                    final ensemble = Ensemble(
-                      id: widget.ensemble?.id ?? generateId(),
-                      name: nameController.text,
+                    final person = Person(
+                      id: widget.person?.id ?? generateId(),
+                      firstName: firstNameController.text,
+                      lastName: lastNameController.text,
                     );
 
-                    final success = await backend.client.putEnsemble(ensemble);
+                    final success = await backend.client.putPerson(person);
 
                     setState(() {
                       uploading = false;
                     });
 
                     if (success) {
-                      Navigator.pop(context, ensemble);
+                      Navigator.pop(context, person);
                     } else {
                       Scaffold.of(context).showSnackBar(SnackBar(
                         content: Text('Failed to upload'),
@@ -83,9 +86,18 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
-              controller: nameController,
+              controller: firstNameController,
               decoration: InputDecoration(
-                labelText: 'Name',
+                labelText: 'First name',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: lastNameController,
+              decoration: InputDecoration(
+                labelText: 'Last name',
               ),
             ),
           ),

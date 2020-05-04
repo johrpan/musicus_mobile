@@ -24,7 +24,7 @@ class FilesSelector extends StatefulWidget {
 }
 
 class _FilesSelectorState extends State<FilesSelector> {
-  BackendState backend;
+  MusicusBackendState backend;
   List<Document> history = [];
   List<Document> children = [];
   Set<Document> selection = {};
@@ -33,7 +33,7 @@ class _FilesSelectorState extends State<FilesSelector> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    backend = Backend.of(context);
+    backend = MusicusBackend.of(context);
     loadChildren();
   }
 
@@ -130,9 +130,8 @@ class _FilesSelectorState extends State<FilesSelector> {
       selection = {};
     });
 
-    final newChildren = await Platform.getChildren(
-        backend.settings.musicLibraryUri.value,
-        history.isNotEmpty ? history.last.id : null);
+    final newChildren = await backend.platform
+        .getChildren(history.isNotEmpty ? history.last.id : null);
 
     newChildren.sort((d1, d2) {
       if (d1.isDirectory != d2.isDirectory) {
