@@ -3,50 +3,6 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
 
-class EnsembleText extends StatelessWidget {
-  final int ensembleId;
-
-  EnsembleText(this.ensembleId);
-
-  @override
-  Widget build(BuildContext context) {
-    final backend = Backend.of(context);
-
-    return StreamBuilder<Ensemble>(
-      stream: backend.db.ensembleById(ensembleId).watchSingle(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return Text(snapshot.data.name);
-        } else {
-          return Container();
-        }
-      },
-    );
-  }
-}
-
-class PersonText extends StatelessWidget {
-  final int personId;
-
-  PersonText(this.personId);
-
-  @override
-  Widget build(BuildContext context) {
-    final backend = Backend.of(context);
-
-    return StreamBuilder<Person>(
-      stream: backend.db.personById(personId).watchSingle(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return Text('${snapshot.data.firstName} ${snapshot.data.lastName}');
-        } else {
-          return Container();
-        }
-      },
-    );
-  }
-}
-
 /// A widget showing information on a list of performances.
 class PerformancesText extends StatelessWidget {
   /// The information to show.
