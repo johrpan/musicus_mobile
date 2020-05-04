@@ -37,10 +37,25 @@ class FilesSelector extends StatefulWidget {
 }
 
 class _FilesSelectorState extends State<FilesSelector> {
+  final _searchController = TextEditingController();
+  
   MusicusBackendState backend;
   List<Document> history = [];
   List<Document> children = [];
   Set<Document> selection = {};
+
+  String _search = '';
+
+  @override
+  void initState() {
+    super.initState();
+
+    _searchController.addListener(() {
+      setState(() {
+        _search = _searchController.text;
+      });
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -52,6 +67,11 @@ class _FilesSelectorState extends State<FilesSelector> {
 
   @override
   Widget build(BuildContext context) {
+    final title = history.isNotEmpty ? history.last.name : 'base path';
+    final filteredChildren = children
+        .where((d) => d.name.toLowerCase().contains(_search.toLowerCase()))
+        .toList();
+
     return WillPopScope(
       child: Scaffold(
         appBar: AppBar(
@@ -88,21 +108,26 @@ class _FilesSelectorState extends State<FilesSelector> {
                   icon: const Icon(Icons.arrow_upward),
                   onPressed: history.isNotEmpty ? up : null,
                 ),
-                title: Text(
-                    history.isNotEmpty ? history.last.name : 'Music library'),
+                title: TextField(
+                  autofocus: true,
+                  controller: _searchController,
+                  decoration: InputDecoration.collapsed(
+                      hintText: 'Search in $title...'),
+                ),
               ),
             ),
             Expanded(
               child: ListView.builder(
-                itemCount: children.length,
+                itemCount: filteredChildren.length,
                 itemBuilder: (context, index) {
-                  final document = children[index];
+                  final document = filteredChildren[index];
 
                   if (document.isDirectory) {
                     return ListTile(
                       leading: const Icon(Icons.folder),
                       title: Text(document.name),
                       onTap: () {
+                        _searchController.text = '';
                         setState(() {
                           history.add(document);
                         });
@@ -110,21 +135,28 @@ class _FilesSelectorState extends State<FilesSelector> {
                       },
                     );
                   } else {
-                    return CheckboxListTile(
-                      controlAffinity: ListTileControlAffinity.trailing,
-                      secondary: const Icon(Icons.insert_drive_file),
-                      title: Text(document.name),
-                      value: selection.contains(document),
-                      onChanged: (selected) {
-                        setState(() {
-                          if (selected) {
-                            selection.add(document);
-                          } else {
-                            selection.remove(document);
-                          }
-                        });
-                      },
-                    );
+                    if (widget.chooseDirectory) {
+                      return ListTile(
+                        leading: const Icon(Icons.insert_drive_file),
+                        title: Text(document.name),
+                      );
+                    } else {
+                      return CheckboxListTile(
+                        controlAffinity: ListTileControlAffinity.trailing,
+                        secondary: const Icon(Icons.insert_drive_file),
+                        title: Text(document.name),
+                        value: selection.contains(document),
+                        onChanged: (selected) {
+                          setState(() {
+                            if (selected) {
+                              selection.add(document);
+                            } else {
+                              selection.remove(document);
+                            }
+                          });
+                        },
+                      );
+                    }
                   }
                 },
               ),
