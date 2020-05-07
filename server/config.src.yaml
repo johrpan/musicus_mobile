@@ -1,3 +1,4 @@
-# A dbPath of null means that we want an in-memory database.
+# A dbPath and serverDbPath of null means that we want in-memory databases.
 host: localhost
 port: 1833
+secret: vulnerable

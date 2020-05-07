@@ -3,18 +3,22 @@ import 'dart:io';
 import 'package:aqueduct/aqueduct.dart';
 import 'package:moor_ffi/moor_ffi.dart';
 import 'package:musicus_database/musicus_database.dart';
-import 'package:musicus_server/src/work_recordings.dart';
 
+import 'auth.dart';
 import 'compositions.dart';
 import 'configuration.dart';
+import 'database.dart';
 import 'ensembles.dart';
 import 'instruments.dart';
 import 'persons.dart';
 import 'recordings.dart';
 import 'works.dart';
+import 'work_recordings.dart';
 
 class MusicusServer extends ApplicationChannel {
   Database db;
+  ServerDatabase serverDb;
+  String secret;
 
   @override
   Future<void> prepare() async {
@@ -25,15 +29,35 @@ class MusicusServer extends ApplicationChannel {
     } else {
       db = Database(VmDatabase.memory());
     }
+
+    if (config.serverDbPath != null) {
+      serverDb = ServerDatabase(VmDatabase(File(config.serverDbPath)));
+    } else {
+      serverDb = ServerDatabase(VmDatabase.memory());
+    }
+
+    secret = config.secret;
   }
 
   @override
   Controller get entryPoint => Router()
-    ..route('/persons/[:id]').link(() => PersonsController(db))
+    ..route('/login').link(() => LoginController(serverDb, secret))
+    ..route('/register').link(() => RegisterController(serverDb))
+    ..route('/persons/[:id]')
+        .link(() => AuthorizationController(serverDb, secret))
+        .link(() => PersonsController(db))
     ..route('/persons/:id/works').link(() => CompositionsController(db))
-    ..route('/instruments/[:id]').link(() => InstrumentsController(db))
-    ..route('/works/:id').link(() => WorksController(db))
+    ..route('/instruments/[:id]')
+        .link(() => AuthorizationController(serverDb, secret))
+        .link(() => InstrumentsController(db))
+    ..route('/works/:id')
+        .link(() => AuthorizationController(serverDb, secret))
+        .link(() => WorksController(db))
     ..route('/works/:id/recordings').link(() => WorkRecordingsController(db))
-    ..route('/ensembles/[:id]').link(() => EnsemblesController(db))
-    ..route('/recordings/:id').link(() => RecordingsController(db));
+    ..route('/ensembles/[:id]')
+        .link(() => AuthorizationController(serverDb, secret))
+        .link(() => EnsemblesController(db))
+    ..route('/recordings/:id')
+        .link(() => AuthorizationController(serverDb, secret))
+        .link(() => RecordingsController(db));
 }

@@ -1,6 +1,8 @@
 import 'package:aqueduct/aqueduct.dart';
 import 'package:musicus_database/musicus_database.dart';
 
+import 'auth.dart';
+
 class WorksController extends ResourceController {
   final Database db;
 
@@ -19,6 +21,16 @@ class WorksController extends ResourceController {
   @Operation.put('id')
   Future<Response> putWork(
       @Bind.path('id') int id, @Bind.body() Map<String, dynamic> json) async {
+    if (await db.workById(id).getSingle() != null) {
+      if (!request.mayEdit) {
+        return Response.forbidden();
+      }
+    } else {
+      if (!request.mayUpload) {
+        return Response.forbidden();
+      }
+    }
+    
     final workInfo = WorkInfo.fromJson(json);
     await db.updateWork(workInfo);
 
@@ -27,6 +39,10 @@ class WorksController extends ResourceController {
 
   @Operation.delete('id')
   Future<Response> deleteWork(@Bind.path('id') int id) async {
+    if (!request.mayDelete) {
+      return Response.forbidden();
+    }
+
     await db.deleteWork(id);
     return Response.ok(null);
   }

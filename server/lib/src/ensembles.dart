@@ -1,6 +1,8 @@
 import 'package:aqueduct/aqueduct.dart';
 import 'package:musicus_database/musicus_database.dart';
 
+import 'auth.dart';
+
 class EnsemblesController extends ResourceController {
   final Database db;
 
@@ -26,6 +28,16 @@ class EnsemblesController extends ResourceController {
   @Operation.put('id')
   Future<Response> putEnsemble(
       @Bind.path('id') int id, @Bind.body() Map<String, dynamic> json) async {
+    if (await db.ensembleById(id).getSingle() != null) {
+      if (!request.mayEdit) {
+        return Response.forbidden();
+      }
+    } else {
+      if (!request.mayUpload) {
+        return Response.forbidden();
+      }
+    }
+
     final ensemble = Ensemble.fromJson(json).copyWith(
       id: id,
     );
@@ -37,6 +49,10 @@ class EnsemblesController extends ResourceController {
 
   @Operation.delete('id')
   Future<Response> deleteEnsemble(@Bind.path('id') int id) async {
+    if (!request.mayDelete) {
+      return Response.forbidden();
+    }
+
     await db.deleteEnsemble(id);
     return Response.ok(null);
   }

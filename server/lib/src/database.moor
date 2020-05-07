@@ -1,0 +1,9 @@
+CREATE TABLE users (
+    name TEXT PRIMARY KEY,
+    email TEXT,
+    salt TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    may_upload BOOLEAN NOT NULL DEFAULT TRUE,
+    may_edit BOOLEAN NOT NULL DEFAULT FALSE,
+    may_delete BOOLEAN NOT NULL DEFAULT FALSE
+);

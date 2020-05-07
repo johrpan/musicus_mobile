@@ -15,5 +15,6 @@ Future<void> main() async {
   );
 
   print('Database: ${config.dbPath ?? 'memory'}');
+  print('Server database: ${config.serverDbPath ?? 'memory'}');
   print('Listening on ${config.host}:${config.port}');
 }

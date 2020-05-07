@@ -7,7 +7,11 @@ class MusicusServerConfiguration extends Configuration {
 
   String host;
   int port;
+  String secret;
 
   @optionalConfiguration
   String dbPath;
+
+  @optionalConfiguration
+  String serverDbPath;
 }
