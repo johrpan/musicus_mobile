@@ -61,34 +61,38 @@ class RegisterController extends Controller {
 
   @override
   Future<Response> handle(Request request) async {
-    final json = await request.body.decode<Map<String, dynamic>>();
-    final requestUser = RequestUser.fromJson(json);
+    if (request.method == 'POST') {
+      final json = await request.body.decode<Map<String, dynamic>>();
+      final requestUser = RequestUser.fromJson(json);
 
-    // Check if we already have a user with that name.
-    final existingUser = await db.getUser(requestUser.name);
-    if (existingUser != null) {
-      // Returning something different than 200 here has the security
-      // implication that an attacker can check for existing user names. At the
-      // moment, I don't see any alternatives, because we don't use email
-      // addresses for identification. The client needs to know, whether the
-      // user name is already given.
-      return Response.conflict();
+      // Check if we already have a user with that name.
+      final existingUser = await db.getUser(requestUser.name);
+      if (existingUser != null) {
+        // Returning something different than 200 here has the security
+        // implication that an attacker can check for existing user names. At the
+        // moment, I don't see any alternatives, because we don't use email
+        // addresses for identification. The client needs to know, whether the
+        // user name is already given.
+        return Response.conflict();
+      } else {
+        final bytes = List.generate(32, (i) => _rand.nextInt(256));
+        final salt = base64UrlEncode(bytes);
+        final hash = _crypt.hashPass(salt, requestUser.password);
+
+        db.updateUser(User(
+          name: requestUser.name,
+          email: requestUser.email,
+          salt: salt,
+          hash: hash,
+          mayUpload: true,
+          mayEdit: false,
+          mayDelete: false,
+        ));
+
+        return Response.ok(null);
+      }
     } else {
-      final bytes = List.generate(32, (i) => _rand.nextInt(256));
-      final salt = base64UrlEncode(bytes);
-      final hash = _crypt.hashPass(salt, requestUser.password);
-
-      db.updateUser(User(
-        name: requestUser.name,
-        email: requestUser.email,
-        salt: salt,
-        hash: hash,
-        mayUpload: true,
-        mayEdit: false,
-        mayDelete: false,
-      ));
-
-      return Response.ok(null);
+      return Response(HttpStatus.methodNotAllowed, null, null);
     }
   }
 }
@@ -166,11 +170,19 @@ class AuthorizationController extends Controller {
             request.mayUpload = user.mayUpload;
             request.mayEdit = user.mayEdit;
             request.mayDelete = user.mayDelete;
-          }
-        }
-      }
-    }
 
-    return request;
+            return request;
+          } else {
+            return Response.unauthorized();
+          }
+        } else {
+          return Response.unauthorized();
+        }
+      } else {
+        return Response.badRequest();
+      }
+    } else {
+      return request;
+    }
   }
 }
