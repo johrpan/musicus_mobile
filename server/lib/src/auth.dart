@@ -127,7 +127,7 @@ class LoginController extends Controller {
 
           final token = builder.getSignedToken(_signer).toString();
 
-          return Response.ok(token);
+          return Response.ok(token, headers: {'Content-Type': 'text/plain'});
         }
       }
 
