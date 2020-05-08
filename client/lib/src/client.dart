@@ -5,6 +5,30 @@ import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:musicus_database/musicus_database.dart';
 
+/// A user of the Musicus API.
+class User {
+  /// Username.
+  final String name;
+
+  /// An optional email address.
+  final String email;
+
+  /// The user's password.
+  final String password;
+
+  User({
+    this.name,
+    this.email,
+    this.password,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'email': email,
+        'password': password,
+      };
+}
+
 /// A simple http client for the Musicus server.
 class MusicusClient {
   /// URI scheme to use for the connection.
@@ -23,16 +47,30 @@ class MusicusClient {
   /// Base path to the root location of the Musicus API.
   final String basePath;
 
+  User _user;
+
+  /// The user to login.
+  User get user => _user;
+  set user(User user) {
+    _user = user;
+    _token = null;
+  }
+
   final _client = http.Client();
+
+  /// The last retrieved access token.
+  String _token;
 
   MusicusClient({
     this.scheme = 'https',
     @required this.host,
     this.port = 443,
     this.basePath,
+    User user,
   })  : assert(scheme != null),
         assert(port != null),
-        assert(host != null);
+        assert(host != null),
+        _user = user;
 
   /// Create an URI using member variables and parameters.
   Uri createUri({
@@ -46,6 +84,91 @@ class MusicusClient {
       path: basePath != null ? basePath + path : path,
       queryParameters: params,
     );
+  }
+
+  /// Register a new user.
+  /// 
+  /// This will return true, if the action was successful. Subsequent requests
+  /// will automatically be made as the new user.
+  Future<bool> register(User newUser) async {
+    final response = await _client.post(
+      createUri(
+        path: '/register',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(newUser.toJson()),
+    );
+
+    if (response.statusCode == HttpStatus.ok) {
+      _user = newUser;
+      _token = null;
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /// Retrieve an access token for [user].
+  ///
+  /// The token will land in [_token]. If the login failed, a
+  /// [MusicusLoginFailedException] will be thrown.
+  Future<void> _login() async {
+    final response = await _client.post(
+      createUri(
+        path: '/login',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(user.toJson()),
+    );
+
+    if (response.statusCode == HttpStatus.ok) {
+      _token = response.body;
+    } else {
+      throw MusicusLoginFailedException();
+    }
+  }
+
+  /// Make a request with authorization.
+  ///
+  /// This will ensure, that the request will be made with a valid
+  /// authorization header. If [user] is null, this will throw a
+  /// [MusicusNotLoggedInException]. If it is neccessary, this will login the
+  /// user and throw a [MusicusLoginFailedException] if that failed. If the
+  /// user is not authorized to perform the requested action, this will throw
+  /// a [MusicusNotAuthorizedException].
+  Future<http.Response> _authorized(String method, Uri uri,
+      {Map<String, String> headers, String body}) async {
+    if (_user != null) {
+      Future<http.Response> _request() async {
+        final request = http.Request(method, uri);
+        request.headers.addAll(headers);
+        request.headers['Authorization'] = 'Bearer $_token';
+        request.body = body;
+
+        return await http.Response.fromStream(await _client.send(request));
+      }
+
+      http.Response response;
+
+      if (_token != null) {
+        response = await _request();
+        if (response.statusCode == HttpStatus.unauthorized) {
+          await _login();
+          response = await _request();
+        }
+      } else {
+        await _login();
+        response = await _request();
+      }
+
+      if (response.statusCode == HttpStatus.forbidden) {
+        throw MusicusNotAuthorizedException();
+      } else {
+        return response;
+      }
+    } else {
+      throw MusicusNotLoggedInException();
+    }
   }
 
   /// Get a list of persons.
@@ -85,28 +208,28 @@ class MusicusClient {
 
   /// Delete a person by ID.
   Future<void> deletePerson(int id) async {
-    await _client.delete(createUri(
-      path: '/persons/$id',
-    ));
+    await _authorized(
+      'DELETE',
+      createUri(
+        path: '/persons/$id',
+      ),
+    );
   }
 
   /// Create or update a person.
   ///
   /// Returns true, if the operation was successful.
   Future<bool> putPerson(Person person) async {
-    try {
-      final response = await _client.put(
-        createUri(
-          path: '/persons/${person.id}',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(person.toJson()),
-      );
+    final response = await _authorized(
+      'PUT',
+      createUri(
+        path: '/persons/${person.id}',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(person.toJson()),
+    );
 
-      return response.statusCode == HttpStatus.ok;
-    } on Exception {
-      return false;
-    }
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Get a list of instruments.
@@ -148,26 +271,26 @@ class MusicusClient {
   ///
   /// Returns true, if the operation was successful.
   Future<bool> putInstrument(Instrument instrument) async {
-    try {
-      final response = await _client.put(
-        createUri(
-          path: '/instruments/${instrument.id}',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(instrument.toJson()),
-      );
+    final response = await _authorized(
+      'PUT',
+      createUri(
+        path: '/instruments/${instrument.id}',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(instrument.toJson()),
+    );
 
-      return response.statusCode == HttpStatus.ok;
-    } on Exception {
-      return false;
-    }
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Delete an instrument by ID.
   Future<void> deleteInstrument(int id) async {
-    await _client.delete(createUri(
-      path: '/instruments/$id',
-    ));
+    await _authorized(
+      'DELETE',
+      createUri(
+        path: '/instruments/$id',
+      ),
+    );
   }
 
   /// Get a list of works written by the person with the ID [personId].
@@ -208,9 +331,12 @@ class MusicusClient {
 
   /// Delete a work by ID.
   Future<void> deleteWork(int id) async {
-    await _client.delete(createUri(
-      path: '/works/$id',
-    ));
+    await _authorized(
+      'DELETE',
+      createUri(
+        path: '/works/$id',
+      ),
+    );
   }
 
   /// Get a list of recordings of the work with the ID [workId].
@@ -236,19 +362,16 @@ class MusicusClient {
   ///
   /// Returns true, if the operation was successful.
   Future<bool> putWork(WorkInfo workInfo) async {
-    try {
-      final response = await _client.put(
-        createUri(
-          path: '/works/${workInfo.work.id}',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(workInfo.toJson()),
-      );
+    final response = await _authorized(
+      'PUT',
+      createUri(
+        path: '/works/${workInfo.work.id}',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(workInfo.toJson()),
+    );
 
-      return response.statusCode == HttpStatus.ok;
-    } on Exception {
-      return false;
-    }
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Get a list of ensembles.
@@ -290,26 +413,26 @@ class MusicusClient {
   ///
   /// Returns true, if the operation was successful.
   Future<bool> putEnsemble(Ensemble ensemble) async {
-    try {
-      final response = await _client.put(
-        createUri(
-          path: '/ensembles/${ensemble.id}',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(ensemble.toJson()),
-      );
+    final response = await _authorized(
+      'PUT',
+      createUri(
+        path: '/ensembles/${ensemble.id}',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(ensemble.toJson()),
+    );
 
-      return response.statusCode == HttpStatus.ok;
-    } on Exception {
-      return false;
-    }
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Delete an ensemble by ID.
   Future<void> deleteEnsemble(int id) async {
-    await _client.delete(createUri(
-      path: '/ensembles/$id',
-    ));
+    await _authorized(
+      'DELETE',
+      createUri(
+        path: '/ensembles/$id',
+      ),
+    );
   }
 
   /// Get a recording by ID.
@@ -326,30 +449,53 @@ class MusicusClient {
   ///
   /// Returns true, if the operation was successful.
   Future<bool> putRecording(RecordingInfo recordingInfo) async {
-    try {
-      final response = await _client.put(
-        createUri(
-          path: '/recordings/${recordingInfo.recording.id}',
-        ),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(recordingInfo.toJson()),
-      );
+    final response = await _authorized(
+      'PUT',
+      createUri(
+        path: '/recordings/${recordingInfo.recording.id}',
+      ),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(recordingInfo.toJson()),
+    );
 
-      return response.statusCode == HttpStatus.ok;
-    } on Exception {
-      return false;
-    }
+    return response.statusCode == HttpStatus.ok;
   }
 
   /// Delete a recording by ID.
   Future<void> deleteRecording(int id) async {
-    await _client.delete(createUri(
-      path: '/recordings/$id',
-    ));
+    await _authorized(
+      'DELETE',
+      createUri(
+        path: '/recordings/$id',
+      ),
+    );
   }
 
   /// Close the internal http client.
   void dispose() {
     _client.close();
   }
+}
+
+class MusicusLoginFailedException implements Exception {
+  MusicusLoginFailedException();
+
+  String toString() => 'MusicusLoginFailedException: The username or password '
+      'was wrong.';
+}
+
+class MusicusNotLoggedInException implements Exception {
+  MusicusNotLoggedInException();
+
+  String toString() =>
+      'MusicusNotLoggedInException: The user must be logged in to perform '
+      'this action.';
+}
+
+class MusicusNotAuthorizedException implements Exception {
+  MusicusNotAuthorizedException();
+
+  String toString() =>
+      'MusicusNotAuthorizedException: The logged in user is not allowed to '
+      'perform this action.';
 }
