@@ -1,8 +1,10 @@
+import 'dart:convert';
+
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Interface for persisting settings.
-/// 
+///
 /// The methods should return null, if there is no value associated with the
 /// provided key.
 abstract class MusicusSettingsStorage {
@@ -36,6 +38,24 @@ class MusicusServerSettings {
   });
 }
 
+/// Settings concerning the Musicus account.
+class MusicusAccountSettings {
+  /// The user name to login as.
+  final String username;
+
+  /// An optional email address.
+  final String email;
+
+  /// The password for authentication.
+  final String password;
+
+  MusicusAccountSettings({
+    this.username,
+    this.email,
+    this.password,
+  });
+}
+
 /// Manager for all settings that are persisted.
 class MusicusSettings {
   static const defaultHost = 'musicus.johrpan.de';
@@ -46,7 +66,7 @@ class MusicusSettings {
   final MusicusSettingsStorage storage;
 
   /// A identifier for the base path of the music library.
-  /// 
+  ///
   /// This could be a file path on destop systems or a tree URI in terms of the
   /// Android storage access framework.
   final musicLibraryPath = BehaviorSubject<String>();
@@ -54,13 +74,16 @@ class MusicusSettings {
   /// Musicus server to connect to.
   final server = BehaviorSubject<MusicusServerSettings>();
 
+  /// Musicus account to login with.
+  final account = BehaviorSubject<MusicusAccountSettings>();
+
   /// Create a settings instance.
   MusicusSettings(this.storage);
 
   /// Initialize the settings.
   Future<void> load() async {
     await storage.load();
-    
+
     final path = await storage.getString('musicLibraryPath');
     if (path != null) {
       musicLibraryPath.add(path);
@@ -75,10 +98,22 @@ class MusicusSettings {
       port: port,
       apiPath: apiPath,
     ));
+
+    final username = await storage.getString('accountUsername');
+    final email = await storage.getString('accountEmail');
+    final passwordBase64 = await storage.getString('accountPassword');
+
+    if (username != null) {
+      account.add(MusicusAccountSettings(
+        username: username,
+        email: email,
+        password: utf8.decode(base64Decode(passwordBase64)),
+      ));
+    }
   }
 
   /// Set a new music library path.
-  /// 
+  ///
   /// This will persist the new value and update the stream.
   Future<void> setMusicLibraryPath(String path) async {
     await storage.setString('musicLibraryPath', path);
@@ -86,7 +121,7 @@ class MusicusSettings {
   }
 
   /// Update the server settings.
-  /// 
+  ///
   /// This will persist the new values and update the stream.
   Future<void> setServer(MusicusServerSettings serverSettings) async {
     await storage.setString('serverHost', serverSettings.host);
@@ -104,9 +139,37 @@ class MusicusSettings {
     ));
   }
 
+  /// Update the account settings.
+  ///
+  /// This will persist the new values and update the stream.
+  Future<void> setAccount(MusicusAccountSettings accountSettings) async {
+    await storage.setString('accountUsername', accountSettings.username);
+    await storage.setString('accountEmail', accountSettings.email);
+
+    // IMPORTANT NOTE: We encode the password using Base64 to defend just the
+    // simplest of simplest attacks. This provides no additional security
+    // besides the fact that the password looks a little bit encrypted.
+    await storage.setString(
+      'accountPassword',
+      base64Encode(utf8.encode(accountSettings.password)),
+    );
+
+    account.add(accountSettings);
+  }
+
+  /// Delete the current account settings.
+  Future<void> clearAccount() async {
+    await storage.setString('accountUsername', null);
+    await storage.setString('accountEmail', null);
+    await storage.setString('accountPassword', null);
+
+    account.add(null);
+  }
+
   /// Tidy up.
   void dispose() {
     musicLibraryPath.close();
     server.close();
+    account.close();
   }
 }
