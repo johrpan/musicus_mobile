@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:aqueduct/aqueduct.dart';
 import 'package:corsac_jwt/corsac_jwt.dart';
-import 'package:steel_crypt/steel_crypt.dart';
 
+import 'compute.dart';
+import 'crypt.dart';
 import 'database.dart';
 
 /// Information on the rights of the user making the request.
@@ -54,9 +53,6 @@ class RequestUser {
 class RegisterController extends Controller {
   final ServerDatabase db;
 
-  final _crypt = PassCrypt();
-  final _rand = Random.secure();
-
   RegisterController(this.db);
 
   @override
@@ -69,21 +65,20 @@ class RegisterController extends Controller {
       final existingUser = await db.getUser(requestUser.name);
       if (existingUser != null) {
         // Returning something different than 200 here has the security
-        // implication that an attacker can check for existing user names. At the
-        // moment, I don't see any alternatives, because we don't use email
+        // implication that an attacker can check for existing user names. At
+        // the moment, I don't see any alternatives, because we don't use email
         // addresses for identification. The client needs to know, whether the
         // user name is already given.
         return Response.conflict();
       } else {
-        final bytes = List.generate(32, (i) => _rand.nextInt(256));
-        final salt = base64UrlEncode(bytes);
-        final hash = _crypt.hashPass(salt, requestUser.password);
+        // This will take a long time, so we run it in a new isolate.
+        final result = await compute(Crypt.hashPassword, requestUser.password);
 
         db.updateUser(User(
           name: requestUser.name,
           email: requestUser.email,
-          salt: salt,
-          hash: hash,
+          salt: result.salt,
+          hash: result.hash,
           mayUpload: true,
           mayEdit: false,
           mayDelete: false,
@@ -106,7 +101,6 @@ class LoginController extends Controller {
   /// The secret that will be used for signing the token.
   final String secret;
 
-  final _crypt = PassCrypt();
   final JWTHmacSha256Signer _signer;
 
   LoginController(this.db, this.secret) : _signer = JWTHmacSha256Signer(secret);
@@ -119,8 +113,16 @@ class LoginController extends Controller {
 
       final realUser = await db.getUser(requestUser.name);
       if (realUser != null) {
-        if (_crypt.checkPassKey(
-            realUser.salt, requestUser.password, realUser.hash)) {
+        // We check the password in a new isolate, because this can take a long
+        // time.
+        if (await compute(
+          Crypt.checkPassword,
+          CheckPasswordRequest(
+            password: requestUser.password,
+            salt: realUser.salt,
+            hash: realUser.hash,
+          ),
+        )) {
           final builder = JWTBuilder()
             ..expiresAt = DateTime.now().add(Duration(minutes: 30))
             ..setClaim('user', requestUser.name);
