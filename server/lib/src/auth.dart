@@ -166,7 +166,10 @@ class AuthorizationController extends Controller {
       if (authHeaderParts.length == 2 && authHeaderParts[0] == 'Bearer') {
         final jwt = JWT.parse(authHeaderParts[1]);
 
-        if (jwt.verify(_signer)) {
+        /// The JWTValidator will automatically use the current time. An empty
+        /// result will mean that the token is valid and its signature was
+        /// verified.
+        if (JWTValidator().validate(jwt, signer: _signer).isEmpty) {
           final user = await db.getUser(jwt.claims['user']);
           if (user != null) {
             request.mayUpload = user.mayUpload;
