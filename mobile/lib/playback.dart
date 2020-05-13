@@ -39,14 +39,25 @@ class Playback extends MusicusPlayback {
   /// Requires [duration] to be up to date
   void _updatePosition(int positionMs) {
     position.add(Duration(milliseconds: positionMs));
-    normalizedPosition.add(positionMs / duration.value.inMilliseconds);
+    _setNormalizedPosition(positionMs / duration.value.inMilliseconds);
   }
 
   /// Update [position], [duration] and [normalizedPosition].
   void _updateDuration(int positionMs, int durationMs) {
     position.add(Duration(milliseconds: positionMs));
     duration.add(Duration(milliseconds: durationMs));
-    normalizedPosition.add(positionMs / durationMs);
+    _setNormalizedPosition(positionMs / durationMs);
+  }
+
+  /// Update [normalizedPosition] ensuring its value is between 0.0 and 1.0.
+  void _setNormalizedPosition(double value) {
+    if (value <= 0.0) {
+      normalizedPosition.add(0.0);
+    } else if (value >= 1.0) {
+      normalizedPosition.add(1.0);
+    } else {
+      normalizedPosition.add(value);
+    }
   }
 
   /// Update [currentIndex] and [currentTrack].
