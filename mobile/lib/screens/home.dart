@@ -85,6 +85,31 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          onLongPress: () {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return SimpleDialog(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text('Edit person'),
+                      onTap: () async {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PersonEditor(
+                              person: person,
+                            ),
+                            fullscreenDialog: true,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       ),
     );

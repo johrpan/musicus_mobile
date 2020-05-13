@@ -36,22 +36,6 @@ class _PersonScreenState extends State<PersonScreen> {
                 'Works by ${widget.person.firstName} ${widget.person.lastName}',
           ),
         ),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PersonEditor(
-                    person: widget.person,
-                  ),
-                  fullscreenDialog: true,
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: PagedListView<WorkInfo>(
         search: _search,
@@ -68,6 +52,31 @@ class _PersonScreenState extends State<PersonScreen> {
               ),
             ),
           ),
+          onLongPress: () {
+            showDialog(
+              context: context,
+              builder: (context) {
+                return SimpleDialog(
+                  children: <Widget>[
+                    ListTile(
+                      title: Text('Edit work'),
+                      onTap: () async {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => WorkEditor(
+                              workInfo: workInfo,
+                            ),
+                            fullscreenDialog: true,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
         ),
       ),
     );

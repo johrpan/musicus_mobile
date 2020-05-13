@@ -16,39 +16,50 @@ class WorkScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(workInfo.work.title),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => WorkEditor(
-                    workInfo: workInfo,
-                  ),
-                  fullscreenDialog: true,
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: PagedListView<RecordingInfo>(
         fetch: (page, _) async {
           return await backend.db.getRecordings(workInfo.work.id, page);
         },
-        builder: (context, recordingInfo) => ListTile(
-          title: PerformancesText(
-            performanceInfos: recordingInfo.performances,
-          ),
-          onTap: () {
-            final tracks = backend.library.tracks[recordingInfo.recording.id];
-            tracks.sort((t1, t2) => t1.track.index.compareTo(t2.track.index));
+        builder: (context, recordingInfo) {
+          final recordingId = recordingInfo.recording.id;
 
-            backend.playback
-                .addTracks(backend.library.tracks[recordingInfo.recording.id]);
-          },
-        ),
+          return ListTile(
+            title: PerformancesText(
+              performanceInfos: recordingInfo.performances,
+            ),
+            onTap: () {
+              final tracks = backend.library.tracks[recordingId];
+              tracks.sort((t1, t2) => t1.track.index.compareTo(t2.track.index));
+              backend.playback.addTracks(tracks);
+            },
+            onLongPress: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return SimpleDialog(
+                    children: <Widget>[
+                      ListTile(
+                        title: Text('Edit recording'),
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RecordingEditor(
+                                recordingInfo: recordingInfo,
+                              ),
+                              fullscreenDialog: true,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
