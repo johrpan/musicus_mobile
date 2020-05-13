@@ -41,8 +41,12 @@ class MusicusServer extends ApplicationChannel {
 
   @override
   Controller get entryPoint => Router()
-    ..route('/login').link(() => LoginController(serverDb, secret))
-    ..route('/register').link(() => RegisterController(serverDb))
+    ..route('/account/register').link(() => RegisterController(serverDb))
+    ..route('/account/details')
+        .link(() => AuthorizationController(serverDb, secret))
+        .link(() => AccountDetailsController(serverDb))
+    ..route('/account/delete').link(() => AccountDeleteController(serverDb))
+    ..route('/account/login').link(() => LoginController(serverDb, secret))
     ..route('/persons/[:id]')
         .link(() => AuthorizationController(serverDb, secret))
         .link(() => PersonsController(db))

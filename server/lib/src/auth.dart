@@ -8,43 +8,31 @@ import 'compute.dart';
 import 'crypt.dart';
 import 'database.dart';
 
-/// Information on the rights of the user making the request.
+/// Information on the user making the request.
 extension AuthorizationInfo on Request {
+  /// The username of the logged in user.
+  ///
+  /// If this is a non null value, the user was authenticated.
+  String get username => this.attachments['username'];
+  set username(String value) => this.attachments['username'] = value;
+
   /// Whether the user may create new resources.
-  set mayUpload(bool value) => this.attachments['mayUpload'] = value;
+  ///
+  /// This can only be true if the user was authenticated.
   bool get mayUpload => this.attachments['mayUpload'] ?? false;
+  set mayUpload(bool value) => this.attachments['mayUpload'] = value;
 
   /// Whether the user may edit existing resources.
-  set mayEdit(bool value) => this.attachments['mayEdit'] = value;
+  ///
+  /// This can only be true if the user was authenticated.
   bool get mayEdit => this.attachments['mayEdit'] ?? false;
+  set mayEdit(bool value) => this.attachments['mayEdit'] = value;
 
   /// Whether the user may delete resources.
-  set mayDelete(bool value) => this.attachments['mayDelete'] = value;
+  ///
+  /// This can only be true if the user was authenticated.
   bool get mayDelete => this.attachments['mayDelete'] ?? false;
-}
-
-/// A user as presented within a request.
-class RequestUser {
-  /// The unique user name.
-  final String name;
-
-  /// An optional email address.
-  final String email;
-
-  /// The password in clear text.
-  final String password;
-
-  RequestUser({
-    this.name,
-    this.email,
-    this.password,
-  });
-
-  factory RequestUser.fromJson(Map<String, dynamic> json) => RequestUser(
-        name: json['name'],
-        email: json['email'],
-        password: json['password'],
-      );
+  set mayDelete(bool value) => this.attachments['mayDelete'] = value;
 }
 
 /// Endpoint controller for user registration.
@@ -59,10 +47,13 @@ class RegisterController extends Controller {
   Future<Response> handle(Request request) async {
     if (request.method == 'POST') {
       final json = await request.body.decode<Map<String, dynamic>>();
-      final requestUser = RequestUser.fromJson(json);
+
+      final String username = json['username'];
+      final String email = json['email'];
+      final String password = json['password'];
 
       // Check if we already have a user with that name.
-      final existingUser = await db.getUser(requestUser.name);
+      final existingUser = await db.getUser(username);
       if (existingUser != null) {
         // Returning something different than 200 here has the security
         // implication that an attacker can check for existing user names. At
@@ -72,11 +63,11 @@ class RegisterController extends Controller {
         return Response.conflict();
       } else {
         // This will take a long time, so we run it in a new isolate.
-        final result = await compute(Crypt.hashPassword, requestUser.password);
+        final result = await compute(Crypt.hashPassword, password);
 
         db.updateUser(User(
-          name: requestUser.name,
-          email: requestUser.email,
+          name: username,
+          email: email,
           salt: result.salt,
           hash: result.hash,
           mayUpload: true,
@@ -109,23 +100,25 @@ class LoginController extends Controller {
   Future<Response> handle(Request request) async {
     if (request.method == 'POST') {
       final json = await request.body.decode<Map<String, dynamic>>();
-      final requestUser = RequestUser.fromJson(json);
 
-      final realUser = await db.getUser(requestUser.name);
-      if (realUser != null) {
+      final String username = json['username'];
+      final String password = json['password'];
+
+      final user = await db.getUser(username);
+      if (user != null) {
         // We check the password in a new isolate, because this can take a long
         // time.
         if (await compute(
           Crypt.checkPassword,
           CheckPasswordRequest(
-            password: requestUser.password,
-            salt: realUser.salt,
-            hash: realUser.hash,
+            password: password,
+            salt: user.salt,
+            hash: user.hash,
           ),
         )) {
           final builder = JWTBuilder()
             ..expiresAt = DateTime.now().add(Duration(minutes: 30))
-            ..setClaim('user', requestUser.name);
+            ..setClaim('user', username);
 
           final token = builder.getSignedToken(_signer).toString();
 
@@ -137,6 +130,103 @@ class LoginController extends Controller {
     }
 
     return Response(HttpStatus.methodNotAllowed, null, null);
+  }
+}
+
+/// An endpoint controller for retrieving and changing account details.
+class AccountDetailsController extends Controller {
+  final ServerDatabase db;
+
+  AccountDetailsController(this.db);
+
+  @override
+  Future<Response> handle(Request request) async {
+    if (request.method == 'GET') {
+      if (request.username != null) {
+        final user = await db.getUser(request.username);
+        return Response.ok({
+          'email': user.email,
+        });
+      } else {
+        return Response.forbidden();
+      }
+    } else if (request.method == 'POST') {
+      final json = await request.body.decode<Map<String, dynamic>>();
+
+      final String username = json['username'];
+      final String password = json['password'];
+      final String newEmail = json['newEmail'];
+      final String newPassword = json['newPassword'];
+
+      final user = await db.getUser(username);
+
+      // Check whether the user exists and the password was right.
+      if (user != null &&
+          await compute(
+            Crypt.checkPassword,
+            CheckPasswordRequest(
+              password: password,
+              salt: user.salt,
+              hash: user.hash,
+            ),
+          )) {
+        final hashResult = await compute(Crypt.hashPassword, newPassword);
+
+        db.updateUser(User(
+          name: username,
+          email: newEmail,
+          salt: hashResult.salt,
+          hash: hashResult.hash,
+          mayUpload: user.mayUpload,
+          mayEdit: user.mayEdit,
+          mayDelete: user.mayDelete,
+        ));
+
+        return Response.ok(null);
+      } else {
+        return Response.forbidden();
+      }
+    } else {
+      return Response(HttpStatus.methodNotAllowed, null, null);
+    }
+  }
+}
+
+/// An endpoint controller for deleting an account.
+class AccountDeleteController extends Controller {
+  final ServerDatabase db;
+
+  AccountDeleteController(this.db);
+
+  @override
+  Future<Response> handle(Request request) async {
+    if (request.method == 'POST') {
+      final json = await request.body.decode<Map<String, dynamic>>();
+
+      final String username = json['username'];
+      final String password = json['password'];
+
+      final user = await db.getUser(username);
+
+      // Check whether the user exists and the password was right.
+      if (user != null &&
+          await compute(
+            Crypt.checkPassword,
+            CheckPasswordRequest(
+              password: password,
+              salt: user.salt,
+              hash: user.hash,
+            ),
+          )) {
+        await db.deleteUser(username);
+
+        return Response.ok(null);
+      } else {
+        return Response.forbidden();
+      }
+    } else {
+      return Response(HttpStatus.methodNotAllowed, null, null);
+    }
   }
 }
 
@@ -172,6 +262,7 @@ class AuthorizationController extends Controller {
         if (JWTValidator().validate(jwt, signer: _signer).isEmpty) {
           final user = await db.getUser(jwt.claims['user']);
           if (user != null) {
+            request.username = user.name;
             request.mayUpload = user.mayUpload;
             request.mayEdit = user.mayEdit;
             request.mayDelete = user.mayDelete;

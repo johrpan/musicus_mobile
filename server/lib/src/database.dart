@@ -16,4 +16,8 @@ class ServerDatabase extends _$ServerDatabase {
   Future<void> updateUser(User user) async {
     await into(users).insert(user, mode: InsertMode.insertOrReplace);
   }
+
+  Future<void> deleteUser(String name) async {
+    await (delete(users)..where((u) => u.name.equals(name))).go();
+  }
 }

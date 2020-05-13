@@ -38,17 +38,17 @@ class CheckPasswordRequest {
 
 /// Methods for handling passwords.
 class Crypt {
-  static final _crypt = PassCrypt();
+  static final _crypt = PassCrypt('SHA-512/HMAC/PBKDF2');
   static final _rand = Random.secure();
 
   /// Compute a hash for a password.
-  /// 
+  ///
   /// The result will contain the hash and a randomly generated salt.
   static HashPasswordResult hashPassword(String password) {
     final bytes = List.generate(32, (i) => _rand.nextInt(256));
     final salt = base64UrlEncode(bytes);
     final hash = _crypt.hashPass(salt, password);
-    
+
     return HashPasswordResult(
       hash: hash,
       salt: salt,
