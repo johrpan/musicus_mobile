@@ -25,30 +25,37 @@ class RecordingEditor extends StatefulWidget {
 }
 
 class _RecordingEditorState extends State<RecordingEditor> {
-  final commentController = TextEditingController();
+  final _commentController = TextEditingController();
 
-  bool uploading = false;
-  WorkInfo workInfo;
-  List<PerformanceInfo> performanceInfos = [];
+  MusicusBackendState _backend;
+  bool _uploading = false;
+  WorkInfo _workInfo;
+  List<PerformanceInfo> _performanceInfos = [];
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-    if (widget.recordingInfo != null) {
-      final backend = MusicusBackend.of(context);
-
-      () async {
-        workInfo = await backend.db.getWork(widget.recordingInfo.recording.id);
-        performanceInfos = List.from(widget.recordingInfo.performances);
-      }();
+    _backend = MusicusBackend.of(context);
+    if (widget.recordingInfo != null &&
+        _workInfo == null &&
+        _performanceInfos.isEmpty) {
+      _init();
     }
+  }
+
+  Future<void> _init() async {
+    _workInfo = await _backend.db.getWork(widget.recordingInfo.recording.work);
+    _performanceInfos = List.from(widget.recordingInfo.performances);
+
+    setState(() {
+      this._workInfo = _workInfo;
+      this._performanceInfos = _performanceInfos;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final backend = MusicusBackend.of(context);
-
     Future<void> selectWork() async {
       final WorkInfo newWorkInfo = await Navigator.push(
           context,
@@ -59,14 +66,14 @@ class _RecordingEditorState extends State<RecordingEditor> {
 
       if (newWorkInfo != null) {
         setState(() {
-          workInfo = newWorkInfo;
+          _workInfo = newWorkInfo;
         });
       }
     }
 
     final List<Widget> performanceTiles = [];
-    for (var i = 0; i < performanceInfos.length; i++) {
-      final p = performanceInfos[i];
+    for (var i = 0; i < _performanceInfos.length; i++) {
+      final p = _performanceInfos[i];
 
       performanceTiles.add(ListTile(
         title: Text(p.person != null
@@ -77,7 +84,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
           icon: const Icon(Icons.delete),
           onPressed: () {
             setState(() {
-              performanceInfos.remove(p);
+              _performanceInfos.remove(p);
             });
           },
         ),
@@ -93,7 +100,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
 
           if (performanceInfo != null) {
             setState(() {
-              performanceInfos[i] = performanceInfo;
+              _performanceInfos[i] = performanceInfo;
             });
           }
         },
@@ -104,7 +111,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
       appBar: AppBar(
         title: Text('Recording'),
         actions: <Widget>[
-          uploading
+          _uploading
               ? Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Center(
@@ -121,31 +128,31 @@ class _RecordingEditorState extends State<RecordingEditor> {
                   child: Text('DONE'),
                   onPressed: () async {
                     setState(() {
-                      uploading = true;
+                      _uploading = true;
                     });
 
                     final recordingInfo = RecordingInfo(
                       recording: Recording(
                         id: widget?.recordingInfo?.recording?.id ??
                             generateId(),
-                        work: workInfo.work.id,
-                        comment: commentController.text,
+                        work: _workInfo.work.id,
+                        comment: _commentController.text,
                       ),
-                      performances: performanceInfos,
+                      performances: _performanceInfos,
                     );
 
                     final success =
-                        await backend.client.putRecording(recordingInfo);
+                        await _backend.client.putRecording(recordingInfo);
 
                     setState(() {
-                      uploading = false;
+                      _uploading = false;
                     });
 
                     if (success) {
                       Navigator.pop(
                         context,
                         RecordingSelectorResult(
-                          workInfo: workInfo,
+                          workInfo: _workInfo,
                           recordingInfo: recordingInfo,
                         ),
                       );
@@ -160,10 +167,10 @@ class _RecordingEditorState extends State<RecordingEditor> {
       ),
       body: ListView(
         children: <Widget>[
-          workInfo != null
+          _workInfo != null
               ? ListTile(
-                  title: Text(workInfo.work.title),
-                  subtitle: Text(workInfo.composers
+                  title: Text(_workInfo.work.title),
+                  subtitle: Text(_workInfo.composers
                       .map((p) => '${p.firstName} ${p.lastName}')
                       .join(', ')),
                   onTap: selectWork,
@@ -181,7 +188,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
               bottom: 16.0,
             ),
             child: TextField(
-              controller: commentController,
+              controller: _commentController,
               decoration: InputDecoration(
                 labelText: 'Comment',
               ),
@@ -201,7 +208,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
 
                 if (model != null) {
                   setState(() {
-                    performanceInfos.add(model);
+                    _performanceInfos.add(model);
                   });
                 }
               },
