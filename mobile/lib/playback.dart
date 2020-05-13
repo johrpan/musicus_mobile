@@ -377,9 +377,9 @@ class _PlaybackService extends BackgroundAudioTask {
   /// Notify the UI of the new playback position periodically.
   Future<void> _updatePosition() async {
     while (_playing) {
+      _sendPosition();
       await Future.delayed(
           const Duration(milliseconds: positionUpdateInterval));
-      _sendPosition();
     }
   }
 
