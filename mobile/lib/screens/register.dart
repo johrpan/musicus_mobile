@@ -34,11 +34,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         _loading = true;
                       });
 
-                      final success = await backend.client.register(User(
-                        name: nameController.text,
+                      final success = await backend.client.registerAccount(
+                        username: nameController.text,
                         email: emailController.text,
                         password: passwordController.text,
-                      ));
+                      );
 
                       setState(() {
                         _loading = false;
@@ -46,9 +46,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                       if (success) {
                         await backend.settings
-                            .setAccount(MusicusAccountSettings(
+                            .setAccount(MusicusAccountCredentials(
                           username: nameController.text,
-                          email: emailController.text,
                           password: passwordController.text,
                         ));
 

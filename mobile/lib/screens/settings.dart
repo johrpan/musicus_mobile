@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_common/musicus_common.dart';
 
 import 'account_settings.dart';
@@ -61,14 +62,15 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          StreamBuilder<MusicusAccountSettings>(
+          StreamBuilder<MusicusAccountCredentials>(
             stream: settings.account,
             builder: (context, snapshot) {
-              final a = snapshot.data;
+              final credentials = snapshot.data;
 
               return ListTile(
                 title: Text('Account settings'),
-                subtitle: Text(a != null ? a.username : 'No account'),
+                subtitle: Text(
+                    credentials != null ? credentials.username : 'No account'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.push(
