@@ -62,9 +62,11 @@ class _PlayerBarState extends State<PlayerBar> {
       if (_partIds.isNotEmpty) {
         subtitleBuffer.write(': ');
 
-        final section = _workInfo.sections
-            .lastWhere((s) => s.beforePartIndex <= _partIds[0]);
-        
+        final section = _workInfo.sections.lastWhere(
+          (s) => s.beforePartIndex <= _partIds[0],
+          orElse: () => null,
+        );
+
         if (section != null) {
           subtitleBuffer.write(section.title);
           subtitleBuffer.write(': ');

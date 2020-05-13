@@ -100,6 +100,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
         if (recordingInfo.recording.work != lastWorkId) {
           lastWorkId = recordingInfo.recording.work;
           workInfo = await backend.db.getWork(lastWorkId);
+          lastSectionIndex = null;
         }
 
         children.addAll([
@@ -118,7 +119,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
 
         final sectionIndex = workInfo.sections
             .lastIndexWhere((s) => s.beforePartIndex <= partId);
-        if (sectionIndex != lastSectionIndex) {
+        if (sectionIndex != lastSectionIndex && sectionIndex >= 0) {
           lastSectionIndex = sectionIndex;
           children.add(Padding(
             padding: const EdgeInsets.only(

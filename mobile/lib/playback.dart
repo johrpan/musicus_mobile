@@ -341,8 +341,10 @@ class _PlaybackService extends BackgroundAudioTask {
       if (partIds.isNotEmpty) {
         subtitleBuffer.write(': ');
 
-        final section =
-            workInfo.sections.lastWhere((s) => s.beforePartIndex <= partIds[0]);
+        final section = workInfo.sections.lastWhere(
+          (s) => s.beforePartIndex <= partIds[0],
+          orElse: () => null,
+        );
 
         if (section != null) {
           subtitleBuffer.write(section.title);
