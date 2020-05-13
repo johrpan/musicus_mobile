@@ -112,11 +112,17 @@ class Database extends _$Database {
       ));
     }
 
+    final List<WorkSection> sections = [];
+    for (final section in await sectionsByWork(id).get()) {
+      sections.add(section);
+    }
+
     return WorkInfo(
       work: work,
       instruments: instruments,
       composers: composers,
       parts: parts,
+      sections: sections,
     );
   }
 
@@ -160,8 +166,8 @@ class Database extends _$Database {
     await transaction(() async {
       final workId = workInfo.work.id;
 
-      // Delete old work data first. The parts and instrumentations will be
-      // deleted automatically due to their foreign key constraints.
+      // Delete old work data first. The parts, sections and instrumentations
+      // will be deleted automatically due to their foreign key constraints.
       await deleteWork(workId);
 
       // This will also include the composers of the work's parts.
@@ -193,6 +199,10 @@ class Database extends _$Database {
             instrument: instrument.id,
           ));
         }
+      }
+
+      for (final section in workInfo.sections) {
+        await into(workSections).insert(section);
       }
     });
   }

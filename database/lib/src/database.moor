@@ -35,6 +35,13 @@ CREATE TABLE part_instrumentations (
     instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
 );
 
+CREATE TABLE work_sections (
+    id INTEGER NOT NULL PRIMARY KEY,
+    work INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    before_part_index INTEGER NOT NULL
+);
+
 CREATE TABLE ensembles (
     id INTEGER NOT NULL PRIMARY KEY,
     name TEXT NOT NULL
@@ -79,6 +86,9 @@ SELECT * FROM works WHERE id = :id LIMIT 1;
 
 partsByWork:
 SELECT * FROM work_parts WHERE part_of = :id ORDER BY part_index;
+
+sectionsByWork:
+SELECT * FROM work_sections WHERE work = :id ORDER BY before_part_index;
 
 worksByComposer:
 SELECT DISTINCT works.* FROM works

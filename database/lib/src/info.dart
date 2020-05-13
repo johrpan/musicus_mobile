@@ -11,7 +11,7 @@ class PartInfo {
   final List<Instrument> instruments;
 
   /// The composer of this part.
-  /// 
+  ///
   /// This is null, if this part doesn't have a specific composer.
   final Person composer;
 
@@ -45,7 +45,7 @@ class WorkInfo {
   final Work work;
 
   /// A list of instruments.
-  /// 
+  ///
   /// This will not the include the instruments, that are specific to the work
   /// parts.
   final List<Instrument> instruments;
@@ -56,11 +56,15 @@ class WorkInfo {
   /// All available information on the work parts.
   final List<PartInfo> parts;
 
+  /// The sections of this work.
+  final List<WorkSection> sections;
+
   WorkInfo({
     this.work,
     this.instruments,
     this.composers,
     this.parts,
+    this.sections,
   });
 
   factory WorkInfo.fromJson(Map<String, dynamic> json) => WorkInfo(
@@ -72,6 +76,9 @@ class WorkInfo {
             json['composers'].map<Person>((j) => Person.fromJson(j)).toList(),
         parts:
             json['parts'].map<PartInfo>((j) => PartInfo.fromJson(j)).toList(),
+        sections: json['sections']
+            .map<WorkSection>((j) => WorkSection.fromJson(j))
+            .toList(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -79,6 +86,7 @@ class WorkInfo {
         'instruments': instruments.map((i) => i.toJson()).toList(),
         'composers': composers.map((c) => c.toJson()).toList(),
         'parts': parts.map((c) => c.toJson()).toList(),
+        'sections': sections.map((s) => s.toJson()).toList(),
       };
 }
 

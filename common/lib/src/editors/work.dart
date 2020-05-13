@@ -6,12 +6,14 @@ import '../selectors/instruments.dart';
 import '../selectors/person.dart';
 
 class PartData {
+  final bool isSection;
   final titleController = TextEditingController();
 
   Person composer;
   List<Instrument> instruments;
 
   PartData({
+    this.isSection = false,
     String title,
     this.composer,
     this.instruments = const [],
@@ -111,7 +113,7 @@ class PartTile extends StatefulWidget {
   PartTile({
     Key key,
     @required this.part,
-    @required this.onMore,
+    this.onMore,
     @required this.onDelete,
   }) : super(key: key);
 
@@ -122,10 +124,12 @@ class PartTile extends StatefulWidget {
 class _PartTileState extends State<PartTile> {
   @override
   Widget build(BuildContext context) {
+    final isSection = widget.part.isSection;
+
     return Row(
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(left: 16.0, right: 8.0),
+          padding: EdgeInsets.only(left: isSection ? 8.0 : 24.0, right: 8.0),
           child: Icon(
             Icons.drag_handle,
           ),
@@ -135,14 +139,15 @@ class _PartTileState extends State<PartTile> {
             controller: widget.part.titleController,
             decoration: InputDecoration(
               border: InputBorder.none,
-              hintText: 'Part title',
+              hintText: isSection ? 'Section title' : 'Part title',
             ),
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.more_horiz),
-          onPressed: widget.onMore,
-        ),
+        if (!isSection)
+          IconButton(
+            icon: const Icon(Icons.more_horiz),
+            onPressed: widget.onMore,
+          ),
         IconButton(
           icon: const Icon(Icons.delete),
           onPressed: widget.onDelete,
@@ -273,19 +278,31 @@ class _WorkEditorState extends State<WorkEditor> {
                     final workId = widget?.workInfo?.work?.id ?? generateId();
 
                     List<PartInfo> partInfos = [];
+                    List<WorkSection> sections = [];
+                    int sectionCount = 0;
                     for (var i = 0; i < parts.length; i++) {
                       final part = parts[i];
-                      partInfos.add(PartInfo(
-                        part: WorkPart(
+                      if (part.isSection) {
+                        sections.add(WorkSection(
                           id: generateId(),
+                          work: workId,
                           title: part.titleController.text,
-                          composer: part.composer?.id,
-                          partOf: workId,
-                          partIndex: i,
-                        ),
-                        instruments: part.instruments,
-                        composer: part.composer,
-                      ));
+                          beforePartIndex: i - sectionCount,
+                        ));
+                        sectionCount++;
+                      } else {
+                        partInfos.add(PartInfo(
+                          part: WorkPart(
+                            id: generateId(),
+                            title: part.titleController.text,
+                            composer: part.composer?.id,
+                            partOf: workId,
+                            partIndex: i - sectionCount,
+                          ),
+                          instruments: part.instruments,
+                          composer: part.composer,
+                        ));
+                      }
                     }
 
                     final workInfo = WorkInfo(
@@ -299,6 +316,7 @@ class _WorkEditorState extends State<WorkEditor> {
                       // from the parts.
                       composers: [composer],
                       parts: partInfos,
+                      sections: sections,
                     );
 
                     final success = await backend.client.putWork(workInfo);
@@ -337,14 +355,37 @@ class _WorkEditorState extends State<WorkEditor> {
                 });
               },
             ),
-            if (parts.length > 0)
-              Padding(
-                padding: const EdgeInsets.only(left: 16.0, top: 16.0),
-                child: Text(
-                  'Parts',
-                  style: Theme.of(context).textTheme.subtitle1,
-                ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0, top: 16.0),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      'Parts',
+                      style: Theme.of(context).textTheme.subtitle1,
+                    ),
+                  ),
+                  FlatButton(
+                    child: Text('ADD SECTION'),
+                    onPressed: () {
+                      setState(() {
+                        parts.add(PartData(
+                          isSection: true,
+                        ));
+                      });
+                    },
+                  ),
+                  FlatButton(
+                    child: Text('ADD PART'),
+                    onPressed: () {
+                      setState(() {
+                        parts.add(PartData());
+                      });
+                    },
+                  ),
+                ],
               ),
+            ),
           ],
         ),
         children: partTiles,
@@ -354,15 +395,6 @@ class _WorkEditorState extends State<WorkEditor> {
             final newIndex = i2 > i1 ? i2 - 1 : i2;
 
             parts.insert(newIndex, part);
-          });
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: Text('Add part'),
-        onPressed: () {
-          setState(() {
-            parts.add(PartData());
           });
         },
       ),

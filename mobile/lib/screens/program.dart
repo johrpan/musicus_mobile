@@ -79,6 +79,9 @@ class _ProgramScreenState extends State<ProgramScreen> {
     // This will contain information on the last new work.
     WorkInfo workInfo;
 
+    // The index of the last displayed section.
+    int lastSectionIndex;
+
     for (var i = 0; i < playlist.length; i++) {
       // The widgets displayed for this track.
       List<Widget> children = [];
@@ -112,6 +115,18 @@ class _ProgramScreenState extends State<ProgramScreen> {
 
       for (final partId in partIds) {
         final partInfo = workInfo.parts[partId];
+
+        final sectionIndex = workInfo.sections
+            .lastIndexWhere((s) => s.beforePartIndex <= partId);
+        if (sectionIndex != lastSectionIndex) {
+          lastSectionIndex = sectionIndex;
+          children.add(Padding(
+            padding: const EdgeInsets.only(
+              bottom: 8.0,
+            ),
+            child: Text(workInfo.sections[sectionIndex].title),
+          ));
+        }
 
         children.add(Padding(
           padding: const EdgeInsets.only(
@@ -183,21 +198,20 @@ class _ProgramScreenState extends State<ProgramScreen> {
                   },
                   onLongPress: () {
                     showDialog(
-                      context: context,
-                      builder: (context) {
-                        return SimpleDialog(
-                          children: <Widget>[
-                            ListTile(
-                              title: Text('Remove from playlist'),
-                              onTap: () {
-                                backend.playback.removeTrack(index);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        );
-                      }
-                    );
+                        context: context,
+                        builder: (context) {
+                          return SimpleDialog(
+                            children: <Widget>[
+                              ListTile(
+                                title: Text('Remove from playlist'),
+                                onTap: () {
+                                  backend.playback.removeTrack(index);
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          );
+                        });
                   },
                 );
               },
