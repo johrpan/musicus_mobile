@@ -4,6 +4,14 @@ import 'package:musicus_common/musicus_common.dart';
 
 /// A screen for creating a new Musicus account.
 class RegisterScreen extends StatefulWidget {
+  final String username;
+  final String password;
+
+  RegisterScreen({
+    this.username,
+    this.password,
+  });
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -15,6 +23,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final repeatController = TextEditingController();
 
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.username != null) {
+      nameController.text = widget.username;
+    }
+
+    if (widget.password != null) {
+      passwordController.text = widget.password;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

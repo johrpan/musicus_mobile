@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_common/musicus_common.dart';
 
+import 'delete_account.dart';
 import 'email.dart';
 import 'password.dart';
 import 'register.dart';
@@ -114,30 +115,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         ),
         ListTile(
           title: Text('Delete this account'),
-          onTap: () async {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Delete account'),
-                content: Text(
-                    'Do you really want to delete the account with the '
-                    'username $_username?'),
-                actions: <Widget>[
-                  FlatButton(
-                    child: Text('DELETE'),
-                    onPressed: () async {
-                      await _backend.client.deleteAccount();
-                      await _backend.settings.clearAccount();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  FlatButton(
-                    child: Text('CANCEL'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                ],
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DeleteAccountScreen(),
               ),
             );
           },
@@ -199,7 +181,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => RegisterScreen(),
+                builder: (context) => RegisterScreen(
+                  username: _usernameController.text,
+                  password: _passwordController.text,
+                ),
               ),
             );
           },
