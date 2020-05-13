@@ -47,7 +47,9 @@ class _TracksEditorState extends State<TracksEditor> {
                   fileName: trackModel.fileName,
                   recordingId: recordingInfo.recording.id,
                   index: i,
-                  partIds: [trackModel.workPartIndex],
+                  partIds: trackModel.workPartIndex != null
+                      ? [trackModel.workPartIndex]
+                      : [],
                 ));
               }
 
