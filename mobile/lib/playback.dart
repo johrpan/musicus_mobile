@@ -331,16 +331,36 @@ class _PlaybackService extends BackgroundAudioTask {
       final recordingInfo = await db.getRecording(track.track.recordingId);
       final workInfo = await db.getWork(recordingInfo.recording.work);
 
-      final composers = workInfo.composers
+      final title = workInfo.composers
           .map((p) => '${p.firstName} ${p.lastName}')
           .join(', ');
 
-      final title = workInfo.work.title;
+      final subtitleBuffer = StringBuffer(workInfo.work.title);
+
+      final partIds = track.track.partIds;
+      if (partIds.isNotEmpty) {
+        subtitleBuffer.write(': ');
+
+        final section =
+            workInfo.sections.lastWhere((s) => s.beforePartIndex <= partIds[0]);
+
+        if (section != null) {
+          subtitleBuffer.write(section.title);
+          subtitleBuffer.write(': ');
+        }
+
+        subtitleBuffer
+            .write(partIds.map((i) => workInfo.parts[i].part.title).join(', '));
+      }
+
+      final subtitle = subtitleBuffer.toString();
 
       AudioServiceBackground.setMediaItem(MediaItem(
         id: track.identifier,
-        album: composers,
+        album: subtitle,
         title: title,
+        displayTitle: title,
+        displaySubtitle: subtitle,
       ));
     }
   }
