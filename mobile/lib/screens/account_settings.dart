@@ -42,11 +42,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   }
 
   Future<void> _setCredentials(MusicusAccountCredentials credentials) async {
-    if (credentials != null) {
-      if (mounted) {
+    if (mounted) {
+      if (credentials != null) {
         setState(() {
           _loggedIn = true;
           _username = credentials.username;
+        });
+      } else {
+        setState(() {
+          _loggedIn = false;
         });
       }
     }
@@ -104,6 +108,36 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => PasswordScreen(),
+              ),
+            );
+          },
+        ),
+        ListTile(
+          title: Text('Delete this account'),
+          onTap: () async {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Delete account'),
+                content: Text(
+                    'Do you really want to delete the account with the '
+                    'username $_username?'),
+                actions: <Widget>[
+                  FlatButton(
+                    child: Text('DELETE'),
+                    onPressed: () async {
+                      await _backend.client.deleteAccount();
+                      await _backend.settings.clearAccount();
+                      Navigator.pop(context);
+                    },
+                  ),
+                  FlatButton(
+                    child: Text('CANCEL'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
               ),
             );
           },
