@@ -14,13 +14,24 @@ CREATE TABLE instruments (
 CREATE TABLE works (
     id INTEGER NOT NULL PRIMARY KEY,
     composer INTEGER REFERENCES persons(id) ON DELETE SET NULL,
-    title TEXT NOT NULL,
-    part_of INTEGER REFERENCES works(id) ON DELETE CASCADE,
-    part_index INTEGER
+    title TEXT NOT NULL
 );
 
 CREATE TABLE instrumentations (
     work INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE work_parts (
+    id INTEGER NOT NULL PRIMARY KEY,
+    composer INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    part_of INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    part_index INTEGER NOT NULL
+);
+
+CREATE TABLE part_instrumentations (
+    work_part INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
     instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
 );
 
@@ -66,28 +77,36 @@ SELECT * FROM instruments WHERE id = :id LIMIT 1;
 workById:
 SELECT * FROM works WHERE id = :id LIMIT 1;
 
-workParts:
-SELECT * FROM works WHERE part_of = :id ORDER BY part_index;
+partsByWork:
+SELECT * FROM work_parts WHERE part_of = :id ORDER BY part_index;
 
 worksByComposer:
-SELECT DISTINCT A.* FROM works A LEFT JOIN works B ON A.id = B.part_of
-    WHERE (A.part_of IS NULL AND A.composer = :id) OR B.composer = :id
-    ORDER BY A.title LIMIT :limit OFFSET :offset;
+SELECT DISTINCT works.* FROM works
+    JOIN work_parts ON work_parts.part_of = works.id
+    WHERE works.composer = :id OR work_parts.composer = :id
+    ORDER BY works.title LIMIT :limit OFFSET :offset;
 
 searchWorksByComposer:
-SELECT DISTINCT A.* FROM works A LEFT JOIN works B ON A.id = B.part_of
-    WHERE ((A.part_of IS NULL AND A.composer = :id) OR B.composer = :id)
-    AND A.title LIKE :search ORDER BY A.title LIMIT :limit OFFSET :offset;
+SELECT DISTINCT works.* FROM works
+    JOIN work_parts ON work_parts.part_of = works.id
+    WHERE (works.composer = :id OR work_parts.composer = :id)
+    AND works.title LIKE :search
+    ORDER BY works.title LIMIT :limit OFFSET :offset;
 
-composersByWork:
+partComposersByWork:
 SELECT DISTINCT persons.* FROM persons
-    JOIN works ON works.composer = persons.id
-    WHERE works.id = :id OR works.part_of = :id;
+    JOIN work_parts ON work_parts.composer = persons.id
+    WHERE work_parts.part_of = :id;
 
 instrumentsByWork:
 SELECT instruments.* FROM instrumentations
-    JOIN instruments ON instrumentations.instrument=instruments.id
+    JOIN instruments ON instrumentations.instrument = instruments.id
     WHERE instrumentations.work = :workId;
+
+instrumentsByWorkPart:
+SELECT instruments.* FROM part_instrumentations
+    JOIN instruments ON part_instrumentations.instrument = instruments.id
+    WHERE part_instrumentations.work_part = :id;
 
 allEnsembles:
 SELECT * FROM ensembles ORDER BY name LIMIT :limit OFFSET :offset;

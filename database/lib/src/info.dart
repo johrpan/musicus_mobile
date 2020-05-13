@@ -3,7 +3,7 @@ import 'database.dart';
 /// A bundle of all available information on a work part.
 class PartInfo {
   /// The work part itself.
-  final Work work;
+  final WorkPart part;
 
   /// A list of instruments.
   ///
@@ -16,13 +16,13 @@ class PartInfo {
   final Person composer;
 
   PartInfo({
-    this.work,
+    this.part,
     this.instruments,
     this.composer,
   });
 
   factory PartInfo.fromJson(Map<String, dynamic> json) => PartInfo(
-        work: Work.fromJson(json['work']),
+        part: WorkPart.fromJson(json['part']),
         instruments: json['instruments']
             .map<Instrument>((j) => Instrument.fromJson(j))
             .toList(),
@@ -31,7 +31,7 @@ class PartInfo {
       );
 
   Map<String, dynamic> toJson() => {
-        'work': work.toJson(),
+        'part': part.toJson(),
         'instruments': instruments.map((i) => i.toJson()).toList(),
         'composers': composer?.toJson(),
       };

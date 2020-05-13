@@ -97,17 +97,18 @@ class Database extends _$Database {
   Future<WorkInfo> getWorkInfo(Work work) async {
     final id = work.id;
 
-    final composers = await composersByWork(id).get();
+    final composers = await partComposersByWork(id).get();
+    composers.insert(0, await personById(work.composer).getSingle());
     final instruments = await instrumentsByWork(id).get();
 
     final List<PartInfo> parts = [];
-    for (final part in await workParts(id).get()) {
+    for (final part in await partsByWork(id).get()) {
       parts.add(PartInfo(
-        work: part,
+        part: part,
         composer: part.composer != null
             ? await personById(part.composer).getSingle()
             : null,
-        instruments: await instrumentsByWork(id).get(),
+        instruments: await instrumentsByWorkPart(part.id).get(),
       ));
     }
 
@@ -163,32 +164,35 @@ class Database extends _$Database {
       // deleted automatically due to their foreign key constraints.
       await deleteWork(workId);
 
-      /// Insert instrumentations for a work.
-      ///
-      /// At the moment, this will also update all provided instruments, even
-      /// if they were already there previously.
-      Future<void> insertInstrumentations(
-          int workId, List<Instrument> instruments) async {
-        for (final instrument in instruments) {
-          await updateInstrument(instrument);
-          await into(instrumentations).insert(Instrumentation(
-            work: workId,
-            instrument: instrument.id,
-          ));
-        }
-      }
-
       // This will also include the composers of the work's parts.
       for (final person in workInfo.composers) {
         await updatePerson(person);
       }
 
       await into(works).insert(workInfo.work);
-      await insertInstrumentations(workId, workInfo.instruments);
+
+      // At the moment, this will also update all provided instruments, even if
+      // they were already there previously.
+      for (final instrument in workInfo.instruments) {
+        await updateInstrument(instrument);
+        await into(instrumentations).insert(Instrumentation(
+          work: workId,
+          instrument: instrument.id,
+        ));
+      }
 
       for (final partInfo in workInfo.parts) {
-        await into(works).insert(partInfo.work);
-        await insertInstrumentations(partInfo.work.id, partInfo.instruments);
+        final part = partInfo.part;
+
+        await into(workParts).insert(part);
+
+        for (final instrument in workInfo.instruments) {
+          await updateInstrument(instrument);
+          await into(partInstrumentations).insert(PartInstrumentation(
+            workPart: part.id,
+            instrument: instrument.id,
+          ));
+        }
       }
     });
   }
