@@ -141,16 +141,8 @@ class MusicusBackendState extends State<MusicusBackend> {
       _updateClient(serverSettings);
     });
 
-    settings.account.listen((accountSettings) {
-      if (accountSettings != null) {
-        client.user = User(
-          name: accountSettings.username,
-          email: accountSettings.email,
-          password: accountSettings.password,
-        );
-      } else {
-        client.user = null;
-      }
+    settings.account.listen((credentials) {
+      client.credentials = credentials;
     });
 
     // This will also check for existing account settings.
@@ -184,23 +176,11 @@ class MusicusBackendState extends State<MusicusBackend> {
   /// Create a new client based on [serverSettings].
   void _updateClient(MusicusServerSettings serverSettings) {
     client?.dispose();
-
-    User user;
-
-    final accountSettings = settings.account.value;
-    if (accountSettings != null) {
-      user = User(
-        name: accountSettings.username,
-        email: accountSettings.email,
-        password: accountSettings.password,
-      );
-    }
-
     client = MusicusClient(
       host: serverSettings.host,
       port: serverSettings.port,
       basePath: serverSettings.apiPath,
-      user: user,
+      credentials: settings.account.value,
     );
   }
 

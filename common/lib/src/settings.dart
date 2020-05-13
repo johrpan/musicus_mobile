@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:meta/meta.dart';
+import 'package:musicus_client/musicus_client.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Interface for persisting settings.
@@ -38,24 +39,6 @@ class MusicusServerSettings {
   });
 }
 
-/// Settings concerning the Musicus account.
-class MusicusAccountSettings {
-  /// The user name to login as.
-  final String username;
-
-  /// An optional email address.
-  final String email;
-
-  /// The password for authentication.
-  final String password;
-
-  MusicusAccountSettings({
-    this.username,
-    this.email,
-    this.password,
-  });
-}
-
 /// Manager for all settings that are persisted.
 class MusicusSettings {
   static const defaultHost = 'musicus.johrpan.de';
@@ -74,8 +57,8 @@ class MusicusSettings {
   /// Musicus server to connect to.
   final server = BehaviorSubject<MusicusServerSettings>();
 
-  /// Musicus account to login with.
-  final account = BehaviorSubject<MusicusAccountSettings>();
+  /// Credentials for the Musicus account to login as.
+  final account = BehaviorSubject<MusicusAccountCredentials>();
 
   /// Create a settings instance.
   MusicusSettings(this.storage);
@@ -100,13 +83,11 @@ class MusicusSettings {
     ));
 
     final username = await storage.getString('accountUsername');
-    final email = await storage.getString('accountEmail');
     final passwordBase64 = await storage.getString('accountPassword');
 
     if (username != null) {
-      account.add(MusicusAccountSettings(
+      account.add(MusicusAccountCredentials(
         username: username,
-        email: email,
         password: utf8.decode(base64Decode(passwordBase64)),
       ));
     }
@@ -139,28 +120,26 @@ class MusicusSettings {
     ));
   }
 
-  /// Update the account settings.
+  /// Update the account credentials.
   ///
   /// This will persist the new values and update the stream.
-  Future<void> setAccount(MusicusAccountSettings accountSettings) async {
-    await storage.setString('accountUsername', accountSettings.username);
-    await storage.setString('accountEmail', accountSettings.email);
+  Future<void> setAccount(MusicusAccountCredentials credentials) async {
+    await storage.setString('accountUsername', credentials.username);
 
     // IMPORTANT NOTE: We encode the password using Base64 to defend just the
     // simplest of simplest attacks. This provides no additional security
     // besides the fact that the password looks a little bit encrypted.
     await storage.setString(
       'accountPassword',
-      base64Encode(utf8.encode(accountSettings.password)),
+      base64Encode(utf8.encode(credentials.password)),
     );
 
-    account.add(accountSettings);
+    account.add(credentials);
   }
 
-  /// Delete the current account settings.
+  /// Delete the current account credentials.
   Future<void> clearAccount() async {
     await storage.setString('accountUsername', null);
-    await storage.setString('accountEmail', null);
     await storage.setString('accountPassword', null);
 
     account.add(null);
