@@ -118,7 +118,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
             left: 8.0,
           ),
           child: Text(
-            partInfo.work.title,
+            partInfo.part.title,
             style: TextStyle(
               fontStyle: FontStyle.italic,
             ),

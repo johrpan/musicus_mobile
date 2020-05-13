@@ -190,7 +190,7 @@ class _WorkEditorState extends State<WorkEditor> {
 
       for (final partInfo in widget.workInfo.parts) {
         parts.add(PartData(
-          title: partInfo.work.title,
+          title: partInfo.part.title,
           composer: partInfo.composer,
           instruments: List.from(partInfo.instruments),
         ));
@@ -276,7 +276,7 @@ class _WorkEditorState extends State<WorkEditor> {
                     for (var i = 0; i < parts.length; i++) {
                       final part = parts[i];
                       partInfos.add(PartInfo(
-                        work: Work(
+                        part: WorkPart(
                           id: generateId(),
                           title: part.titleController.text,
                           composer: part.composer?.id,

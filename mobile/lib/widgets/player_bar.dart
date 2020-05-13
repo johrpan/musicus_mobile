@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_database/musicus_database.dart';
@@ -6,10 +8,68 @@ import '../screens/program.dart';
 
 import 'play_pause_button.dart';
 
-class PlayerBar extends StatelessWidget {
+class PlayerBar extends StatefulWidget {
+  @override
+  _PlayerBarState createState() => _PlayerBarState();
+}
+
+class _PlayerBarState extends State<PlayerBar> {
+  MusicusBackendState _backend;
+  StreamSubscription<InternalTrack> _currentTrackSubscribtion;
+  WorkInfo _workInfo;
+  List<int> _partIds;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    _backend = MusicusBackend.of(context);
+
+    _currentTrackSubscribtion?.cancel();
+    _currentTrackSubscribtion = _backend.playback.currentTrack.listen((track) {
+      if (track != null) {
+        _setTrack(track.track);
+      }
+    });
+  }
+
+  Future<void> _setTrack(Track track) async {
+    final recording =
+        await _backend.db.recordingById(track.recordingId).getSingle();
+    final workInfo = await _backend.db.getWork(recording.work);
+    final partIds = track.partIds;
+
+    if (mounted) {
+      setState(() {
+        _workInfo = workInfo;
+        _partIds = partIds;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final backend = MusicusBackend.of(context);
+    String title;
+    String subtitle;
+
+    if (_workInfo != null) {
+      title = _workInfo.composers
+          .map((p) => '${p.firstName} ${p.lastName}')
+          .join(', ');
+
+      final subtitleBuffer = StringBuffer(_workInfo.work.title);
+
+      if (_partIds.isNotEmpty) {
+        subtitleBuffer.write(': ');
+        subtitleBuffer.write(
+            _partIds.map((i) => _workInfo.parts[i].part.title).join(', '));
+      }
+
+      subtitle = subtitleBuffer.toString();
+    } else {
+      title = '...';
+      subtitle = '...';
+    }
 
     return BottomAppBar(
       child: InkWell(
@@ -17,7 +77,7 @@ class PlayerBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             StreamBuilder(
-              stream: backend.playback.normalizedPosition,
+              stream: _backend.playback.normalizedPosition,
               builder: (context, snapshot) => LinearProgressIndicator(
                 value: snapshot.data,
               ),
@@ -29,39 +89,15 @@ class PlayerBar extends StatelessWidget {
                   child: Icon(Icons.keyboard_arrow_up),
                 ),
                 Expanded(
-                  child: StreamBuilder<InternalTrack>(
-                    stream: backend.playback.currentTrack,
-                    builder: (context, snapshot) {
-                      if (snapshot.data != null) {
-                        final recordingId = snapshot.data.track.recordingId;
-
-                        return FutureBuilder<Recording>(
-                          future:
-                              backend.db.recordingById(recordingId).getSingle(),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasData) {
-                              final workId = snapshot.data.work;
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: <Widget>[
-                                  DefaultTextStyle.merge(
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                    child: ComposersText(workId),
-                                  ),
-                                  WorkText(workId),
-                                ],
-                              );
-                            } else {
-                              return Container();
-                            }
-                          },
-                        );
-                      } else {
-                        return Container();
-                      }
-                    },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      DefaultTextStyle.merge(
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                        child: Text(title),
+                      ),
+                      Text(subtitle),
+                    ],
                   ),
                 ),
                 PlayPauseButton(),
@@ -77,5 +113,11 @@ class PlayerBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _currentTrackSubscribtion?.cancel();
   }
 }

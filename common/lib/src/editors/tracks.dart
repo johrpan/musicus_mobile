@@ -156,8 +156,8 @@ class _TracksEditorState extends State<TracksEditor> {
           trackModels[i].workPartIndex = null;
           trackModels[i].workPartTitle = null;
         } else {
-          trackModels[i].workPartIndex = workInfo.parts[i].work.partIndex;
-          trackModels[i].workPartTitle = workInfo.parts[i].work.title;
+          trackModels[i].workPartIndex = workInfo.parts[i].part.partIndex;
+          trackModels[i].workPartTitle = workInfo.parts[i].part.title;
         }
       }
     });

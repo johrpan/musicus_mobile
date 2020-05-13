@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import '../backend.dart';
-
 /// A widget showing information on a list of performances.
 class PerformancesText extends StatelessWidget {
   /// The information to show.
@@ -38,36 +36,3 @@ class PerformancesText extends StatelessWidget {
   }
 }
 
-class WorkText extends StatelessWidget {
-  final int workId;
-
-  WorkText(this.workId);
-
-  @override
-  Widget build(BuildContext context) {
-    final backend = MusicusBackend.of(context);
-
-    return StreamBuilder<Work>(
-      stream: backend.db.workById(workId).watchSingle(),
-      builder: (context, snapshot) => Text(snapshot.data?.title ?? '...'),
-    );
-  }
-}
-
-class ComposersText extends StatelessWidget {
-  final int workId;
-
-  ComposersText(this.workId);
-
-  @override
-  Widget build(BuildContext context) {
-    final backend = MusicusBackend.of(context);
-
-    return StreamBuilder<List<Person>>(
-      stream: backend.db.composersByWork(workId).watch(),
-      builder: (context, snapshot) => Text(snapshot.hasData
-          ? snapshot.data.map((p) => '${p.firstName} ${p.lastName}').join(', ')
-          : '...'),
-    );
-  }
-}
