@@ -170,11 +170,20 @@ class AccountDetailsController extends Controller {
               hash: user.hash,
             ),
           )) {
-        final hashResult = await compute(Crypt.hashPassword, newPassword);
+        HashPasswordResult hashResult;
+
+        if (newPassword != null) {
+          hashResult = await compute(Crypt.hashPassword, newPassword);
+        } else {
+          hashResult = HashPasswordResult(
+            hash: user.hash,
+            salt: user.salt,
+          );
+        }
 
         db.updateUser(User(
           name: username,
-          email: newEmail,
+          email: newEmail ?? user.email,
           salt: hashResult.salt,
           hash: hashResult.hash,
           mayUpload: user.mayUpload,
