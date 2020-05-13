@@ -5,28 +5,28 @@ import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-/// A user of the Musicus API.
-class User {
-  /// Username.
-  final String name;
-
-  /// An optional email address.
-  final String email;
+/// Credentials for a Musicus account.
+class MusicusAccountCredentials {
+  /// The user's username.
+  final String username;
 
   /// The user's password.
   final String password;
 
-  User({
-    this.name,
-    this.email,
+  MusicusAccountCredentials({
+    this.username,
     this.password,
   });
+}
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'email': email,
-        'password': password,
-      };
+/// Additional information on a Musicus account.
+class MusicusAccountDetails {
+  /// An optional email address.
+  final String email;
+
+  MusicusAccountDetails({
+    this.email,
+  });
 }
 
 /// A simple http client for the Musicus server.
@@ -47,18 +47,22 @@ class MusicusClient {
   /// Base path to the root location of the Musicus API.
   final String basePath;
 
-  User _user;
+  MusicusAccountCredentials _credentials;
 
-  /// The user to login.
-  User get user => _user;
-  set user(User user) {
-    _user = user;
+  /// Account credentials for login.
+  ///
+  /// If this is null, unauthorized requests will fail.
+  MusicusAccountCredentials get credentials => _credentials;
+  set credentials(MusicusAccountCredentials credentials) {
+    _credentials = credentials;
     _token = null;
   }
 
   final _client = http.Client();
 
   /// The last retrieved access token.
+  ///
+  /// If this is null, a new token should be retrieved using [login] if needed.
   String _token;
 
   MusicusClient({
@@ -66,11 +70,11 @@ class MusicusClient {
     @required this.host,
     this.port = 443,
     this.basePath,
-    User user,
+    MusicusAccountCredentials credentials,
   })  : assert(scheme != null),
         assert(port != null),
         assert(host != null),
-        _user = user;
+        _credentials = credentials;
 
   /// Create an URI using member variables and parameters.
   Uri createUri({
@@ -86,39 +90,126 @@ class MusicusClient {
     );
   }
 
-  /// Register a new user.
-  /// 
-  /// This will return true, if the action was successful. Subsequent requests
-  /// will automatically be made as the new user.
-  Future<bool> register(User newUser) async {
+  /// Create a new Musicus account.
+  ///
+  /// The email address is optional. This will return true, if the action was
+  /// successful. In that case, the new credentials will automatically be
+  /// stored as under [credentials] and used for subsequent requests.
+  Future<bool> registerAccount({
+    @required String username,
+    @required String password,
+    String email,
+  }) async {
     final response = await _client.post(
       createUri(
-        path: '/register',
+        path: '/account/register',
       ),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(newUser.toJson()),
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+        'email': email,
+      }),
     );
 
     if (response.statusCode == HttpStatus.ok) {
-      _user = newUser;
+      _credentials = MusicusAccountCredentials(
+        username: username,
+        password: password,
+      );
+
       _token = null;
+
       return true;
     } else {
       return false;
     }
   }
 
-  /// Retrieve an access token for [user].
+  /// Get the current account details.
+  Future<MusicusAccountDetails> getAccountDetails() async {
+    assert(_credentials != null);
+
+    final response = await _authorized(
+      'GET',
+      createUri(path: '/account/details'),
+    );
+
+    if (response.statusCode == HttpStatus.ok) {
+      final json = jsonDecode(response.body);
+
+      return MusicusAccountDetails(
+        email: json['email'],
+      );
+    } else {
+      return null;
+    }
+  }
+
+  /// Change the account details for the currently used user account.
   ///
-  /// The token will land in [_token]. If the login failed, a
-  /// [MusicusLoginFailedException] will be thrown.
-  Future<void> _login() async {
+  /// This will throw a [MusicusLoginFailedException] if the account doesn't
+  /// exist or the old password was wrong.
+  Future<void> updateAccount(String newEmail, String newPassword) async {
+    assert(_credentials != null);
+
+    final response = await _client.post(
+      createUri(path: '/account/details'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': _credentials.username,
+        'password': _credentials.password,
+        'newEmail': newEmail,
+        'newPassword': newPassword,
+      }),
+    );
+
+    if (response.statusCode != HttpStatus.ok) {
+      throw MusicusLoginFailedException();
+    }
+  }
+
+  /// Delete the currently used Musicus account.
+  ///
+  /// This will throw a [MusicusLoginFailedException] if the user doesn't exist
+  /// or the password was wrong.
+  Future<void> deleteAccount() async {
+    assert(_credentials != null);
+
+    final response = await _client.post(
+      createUri(path: '/account/delete'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': _credentials.username,
+        'password': _credentials.password,
+      }),
+    );
+
+    if (response.statusCode == HttpStatus.ok) {
+      _credentials = null;
+      _token = null;
+    } else {
+      throw MusicusLoginFailedException();
+    }
+  }
+
+  /// Retrieve an access token for the current user.
+  ///
+  /// This will be called automatically, when the client calls a method that
+  /// requires it. If the login failed, a [MusicusLoginFailedException] will be
+  /// thrown.
+  Future<void> login() async {
+    assert(_credentials != null);
+
     final response = await _client.post(
       createUri(
-        path: '/login',
+        path: '/account/login',
       ),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(user.toJson()),
+      body: jsonEncode({
+        'username': _credentials.username,
+        'password': _credentials.password,
+      }),
     );
 
     if (response.statusCode == HttpStatus.ok) {
@@ -138,12 +229,19 @@ class MusicusClient {
   /// a [MusicusNotAuthorizedException].
   Future<http.Response> _authorized(String method, Uri uri,
       {Map<String, String> headers, String body}) async {
-    if (_user != null) {
+    if (_credentials != null) {
       Future<http.Response> _request() async {
         final request = http.Request(method, uri);
-        request.headers.addAll(headers);
+
+        if (headers != null) {
+          request.headers.addAll(headers);
+        }
+
         request.headers['Authorization'] = 'Bearer $_token';
-        request.body = body;
+
+        if (body != null) {
+          request.body = body;
+        }
 
         return await http.Response.fromStream(await _client.send(request));
       }
@@ -153,11 +251,11 @@ class MusicusClient {
       if (_token != null) {
         response = await _request();
         if (response.statusCode == HttpStatus.unauthorized) {
-          await _login();
+          await login();
           response = await _request();
         }
       } else {
-        await _login();
+        await login();
         response = await _request();
       }
 
