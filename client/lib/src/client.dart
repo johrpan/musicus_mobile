@@ -148,9 +148,13 @@ class MusicusClient {
 
   /// Change the account details for the currently used user account.
   ///
-  /// This will throw a [MusicusLoginFailedException] if the account doesn't
-  /// exist or the old password was wrong.
-  Future<void> updateAccount(String newEmail, String newPassword) async {
+  /// If a parameter is null, it will not be changed. This will throw a
+  /// [MusicusLoginFailedException] if the account doesn't exist or the old
+  /// password was wrong.
+  Future<void> updateAccount({
+    String newEmail,
+    String newPassword,
+  }) async {
     assert(_credentials != null);
 
     final response = await _client.post(
