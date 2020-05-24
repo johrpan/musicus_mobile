@@ -12,6 +12,7 @@ dependencies:
   audio_service:
   flutter:
     sdk: flutter
+  flutter_markdown:
   meta:
   moor:
   moor_ffi:
@@ -27,9 +28,12 @@ dependencies:
   path_provider:
   rxdart:
   shared_preferences:
+  url_launcher:
 
 flutter:
   uses-material-design: true
+  assets:
+  - assets/about.md
   fonts:
   - family: Libertinus Sans
     fonts:

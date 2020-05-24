@@ -4,6 +4,7 @@ import 'package:musicus_database/musicus_database.dart';
 
 import '../icons.dart';
 
+import 'about.dart';
 import 'person.dart';
 import 'settings.dart';
 
@@ -48,6 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 value: 2,
                 child: Text('Settings'),
               ),
+              PopupMenuItem(
+                value: 3,
+                child: Text('About'),
+              ),
             ],
             onSelected: (selected) {
               if (selected == 1) {
@@ -63,6 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => SettingsScreen(),
+                  ),
+                );
+              } else if (selected == 3) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AboutScreen(),
                   ),
                 );
               }
