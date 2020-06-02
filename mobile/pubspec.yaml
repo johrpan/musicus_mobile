@@ -20,8 +20,6 @@ dependencies:
     path: ../client
   musicus_common:
     path: ../common
-  musicus_database:
-    path: ../database
   musicus_player:
     path: ../player
   path:

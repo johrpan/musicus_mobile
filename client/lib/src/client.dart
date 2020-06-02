@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
-import 'package:musicus_database/musicus_database.dart';
+
+import 'database.dart';
+import 'info.dart';
 
 /// Credentials for a Musicus account.
 class MusicusAccountCredentials {

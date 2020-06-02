@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      moor_generator:
+        options:
+          generate_connect_constructor: true
+          use_column_name_as_json_key_when_defined_in_moor_file: false

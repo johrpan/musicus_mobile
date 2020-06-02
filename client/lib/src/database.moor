@@ -1,0 +1,149 @@
+CREATE TABLE persons (
+    id INTEGER NOT NULL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    sync BOOLEAN NOT NULL DEFAULT FALSE,
+    synced BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- This represents real instruments as well as other roles that can be played
+-- in a recording.
+CREATE TABLE instruments (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    sync BOOLEAN NOT NULL DEFAULT FALSE,
+    synced BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE works (
+    id INTEGER NOT NULL PRIMARY KEY,
+    composer INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    sync BOOLEAN NOT NULL DEFAULT FALSE,
+    synced BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE instrumentations (
+    work INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE work_parts (
+    id INTEGER NOT NULL PRIMARY KEY,
+    composer INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    part_of INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    part_index INTEGER NOT NULL
+);
+
+CREATE TABLE part_instrumentations (
+    work_part INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    instrument INTEGER NOT NULL REFERENCES instruments(id) ON DELETE CASCADE
+);
+
+CREATE TABLE work_sections (
+    id INTEGER NOT NULL PRIMARY KEY,
+    work INTEGER NOT NULL REFERENCES works(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    before_part_index INTEGER NOT NULL
+);
+
+CREATE TABLE ensembles (
+    id INTEGER NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    sync BOOLEAN NOT NULL DEFAULT FALSE,
+    synced BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE recordings (
+    id INTEGER NOT NULL PRIMARY KEY,
+    work INTEGER REFERENCES works(id) ON DELETE SET NULL,
+    comment TEXT NOT NULL,
+    sync BOOLEAN NOT NULL DEFAULT FALSE,
+    synced BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE performances (
+    recording INTEGER NOT NULL REFERENCES recordings(id) ON DELETE CASCADE,
+    person INTEGER REFERENCES persons(id) ON DELETE CASCADE,
+    ensemble INTEGER REFERENCES ensembles(id) ON DELETE CASCADE,
+    role INTEGER REFERENCES instruments(id) ON DELETE SET NULL
+);
+
+allPersons:
+SELECT * FROM persons ORDER BY last_name, first_name
+    LIMIT :limit OFFSET :offset;
+
+searchPersons:
+SELECT * FROM persons WHERE last_name LIKE :search
+    ORDER BY last_name, first_name LIMIT :limit OFFSET :offset;
+
+personById:
+SELECT * FROM persons WHERE id = :id LIMIT 1;
+
+allInstruments:
+SELECT * FROM instruments ORDER BY name LIMIT :limit OFFSET :offset;
+
+searchInstruments:
+SELECT * FROM instruments WHERE name LIKE :search ORDER BY name
+    LIMIT :limit OFFSET :offset;
+
+instrumentById:
+SELECT * FROM instruments WHERE id = :id LIMIT 1;
+
+workById:
+SELECT * FROM works WHERE id = :id LIMIT 1;
+
+partsByWork:
+SELECT * FROM work_parts WHERE part_of = :id ORDER BY part_index;
+
+sectionsByWork:
+SELECT * FROM work_sections WHERE work = :id ORDER BY before_part_index;
+
+worksByComposer:
+SELECT DISTINCT works.* FROM works
+    JOIN work_parts ON work_parts.part_of = works.id
+    WHERE works.composer = :id OR work_parts.composer = :id
+    ORDER BY works.title LIMIT :limit OFFSET :offset;
+
+searchWorksByComposer:
+SELECT DISTINCT works.* FROM works
+    JOIN work_parts ON work_parts.part_of = works.id
+    WHERE (works.composer = :id OR work_parts.composer = :id)
+    AND works.title LIKE :search
+    ORDER BY works.title LIMIT :limit OFFSET :offset;
+
+partComposersByWork:
+SELECT DISTINCT persons.* FROM persons
+    JOIN work_parts ON work_parts.composer = persons.id
+    WHERE work_parts.part_of = :id;
+
+instrumentsByWork:
+SELECT instruments.* FROM instrumentations
+    JOIN instruments ON instrumentations.instrument = instruments.id
+    WHERE instrumentations.work = :workId;
+
+instrumentsByWorkPart:
+SELECT instruments.* FROM part_instrumentations
+    JOIN instruments ON part_instrumentations.instrument = instruments.id
+    WHERE part_instrumentations.work_part = :id;
+
+allEnsembles:
+SELECT * FROM ensembles ORDER BY name LIMIT :limit OFFSET :offset;
+
+searchEnsembles:
+SELECT * FROM ensembles WHERE name LIKE :search ORDER BY name
+    LIMIT :limit OFFSET :offset;
+
+ensembleById:
+SELECT * FROM ensembles WHERE id = :id LIMIT 1;
+
+recordingById:
+SELECT * FROM recordings WHERE id = :id;
+
+recordingsByWork:
+SELECT * FROM recordings WHERE work = :id ORDER BY id
+    LIMIT :limit OFFSET :offset;
+
+performancesByRecording:
+SELECT * FROM performances WHERE recording = :id;

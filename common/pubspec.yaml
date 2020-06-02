@@ -13,6 +13,4 @@ dependencies:
   moor_ffi:
   musicus_client:
     path: ../client
-  musicus_database:
-    path: ../database
   rxdart:

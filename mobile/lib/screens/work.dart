@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_common/musicus_common.dart';
-import 'package:musicus_database/musicus_database.dart';
 
 class WorkScreen extends StatelessWidget {
   final WorkInfo workInfo;

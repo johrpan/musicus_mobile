@@ -7,7 +7,6 @@ import 'package:moor/isolate.dart';
 import 'package:moor/moor.dart';
 import 'package:moor_ffi/moor_ffi.dart';
 import 'package:musicus_client/musicus_client.dart';
-import 'package:musicus_database/musicus_database.dart';
 
 import 'library.dart';
 import 'platform.dart';
@@ -97,7 +96,7 @@ class MusicusBackendState extends State<MusicusBackend> {
   /// prevent all access to the backend.
   MusicusBackendStatus status = MusicusBackendStatus.loading;
 
-  Database db;
+  MusicusClientDatabase db;
   MusicusPlayback playback;
   MusicusSettings settings;
   MusicusClient client;
@@ -122,7 +121,7 @@ class MusicusBackendState extends State<MusicusBackend> {
     }
 
     final moorIsolate = MoorIsolate.fromConnectPort(moorPort);
-    db = Database.connect(await moorIsolate.connect());
+    db = MusicusClientDatabase.connect(connection: await moorIsolate.connect());
 
     playback = widget.playback;
     await playback.setup();

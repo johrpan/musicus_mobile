@@ -5,7 +5,7 @@ import 'dart:ui';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:moor/isolate.dart';
-import 'package:musicus_database/musicus_database.dart';
+import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_player/musicus_player.dart';
 
@@ -281,7 +281,7 @@ class _PlaybackService extends BackgroundAudioTask {
   final _loading = Completer();
   final List<InternalTrack> _playlist = [];
 
-  Database db;
+  MusicusClientDatabase db;
   MusicusPlayer _player;
   int _currentTrack = 0;
   bool _playing = false;
@@ -306,7 +306,7 @@ class _PlaybackService extends BackgroundAudioTask {
   Future<void> _load() async {
     final moorPort = IsolateNameServer.lookupPortByName('moor');
     final moorIsolate = MoorIsolate.fromConnectPort(moorPort);
-    db = Database.connect(await moorIsolate.connect());
+    db = MusicusClientDatabase.connect(connection: await moorIsolate.connect());
     _loading.complete();
   }
 
