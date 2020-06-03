@@ -72,20 +72,26 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
 
     for (final person in await newSyncPersons().get()) {
       await client.putPerson(person);
+      await updatePerson(person.copyWith(synced: true));
     }
     for (final instrument in await newSyncInstruments().get()) {
       await client.putInstrument(instrument);
+      await updateInstrument(instrument.copyWith(synced: true));
     }
     for (final work in await newSyncWorks().get()) {
       final workInfo = await getWorkInfo(work);
       await client.putWork(workInfo);
+      await into(works).insertOnConflictUpdate(work.copyWith(synced: true));
     }
     for (final ensemble in await newSyncEnsembles().get()) {
       await client.putEnsemble(ensemble);
+      await updateEnsemble(ensemble.copyWith(synced: true));
     }
     for (final recording in await newSyncRecordings().get()) {
       final recordingInfo = await getRecordingInfo(recording);
       await client.putRecording(recordingInfo);
+      await into(recordings)
+          .insertOnConflictUpdate(recording.copyWith(synced: true));
     }
   }
 
@@ -115,7 +121,8 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     );
 
     if (person.sync) {
-      await sync();
+      await client.putPerson(person);
+      await updatePerson(person.copyWith(synced: true));
     }
   }
 
@@ -158,7 +165,8 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     );
 
     if (instrument.sync) {
-      await sync();
+      await client.putInstrument(instrument);
+      await updateInstrument(instrument.copyWith(synced: true));
     }
   }
 
@@ -289,7 +297,9 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     });
 
     if (workInfo.work.sync) {
-      await sync();
+      await client.putWork(workInfo);
+      await into(works)
+          .insertOnConflictUpdate(workInfo.work.copyWith(synced: true));
     }
   }
 
@@ -334,7 +344,8 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     );
 
     if (ensemble.sync) {
-      await sync();
+      await client.putEnsemble(ensemble);
+      await updateEnsemble(ensemble.copyWith(synced: true));
     }
   }
 
@@ -387,7 +398,9 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     });
 
     if (recordingInfo.recording.sync) {
-      await sync();
+      await client.putRecording(recordingInfo);
+      await into(recordings).insertOnConflictUpdate(
+          recordingInfo.recording.copyWith(synced: true));
     }
   }
 
