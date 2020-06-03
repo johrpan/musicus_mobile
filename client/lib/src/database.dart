@@ -23,7 +23,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   /// The client to use for synchronization.
   ///
   /// This may be null indicating that everything should be kept local.
-  final MusicusClient client;
+  MusicusClient client;
 
   @override
   int get schemaVersion => 1;
