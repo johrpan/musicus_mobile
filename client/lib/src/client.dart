@@ -297,7 +297,12 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return json.map<Person>((j) => Person.fromJson(j)).toList();
+    return json
+        .map<Person>((j) => Person.fromJson(j).copyWith(
+              sync: true,
+              synced: true,
+            ))
+        .toList();
   }
 
   /// Get a person by ID.
@@ -307,7 +312,10 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return Person.fromJson(json);
+    return Person.fromJson(json).copyWith(
+      sync: true,
+      synced: true,
+    );
   }
 
   /// Delete a person by ID.
@@ -358,7 +366,12 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return json.map<Instrument>((j) => Instrument.fromJson(j)).toList();
+    return json
+        .map<Instrument>((j) => Instrument.fromJson(j).copyWith(
+              sync: true,
+              synced: true,
+            ))
+        .toList();
   }
 
   /// Get an instrument by ID.
@@ -368,7 +381,10 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return Instrument.fromJson(json);
+    return Instrument.fromJson(json).copyWith(
+      sync: true,
+      synced: true,
+    );
   }
 
   /// Create or update an instrument.
@@ -500,7 +516,12 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return json.map<Ensemble>((j) => Ensemble.fromJson(j)).toList();
+    return json
+        .map<Ensemble>((j) => Ensemble.fromJson(j).copyWith(
+              sync: true,
+              synced: true,
+            ))
+        .toList();
   }
 
   /// Get an ensemble by ID.
@@ -510,7 +531,10 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return Ensemble.fromJson(json);
+    return Ensemble.fromJson(json).copyWith(
+      sync: true,
+      synced: true,
+    );
   }
 
   /// Create or update an ensemble.

@@ -74,6 +74,12 @@ allPersons:
 SELECT * FROM persons ORDER BY last_name, first_name
     LIMIT :limit OFFSET :offset;
 
+newSyncPersons:
+SELECT * FROM persons WHERE sync = TRUE AND synced = FALSE;
+
+oldSyncPersons:
+SELECT * FROM persons WHERE sync = TRUE AND synced = TRUE;
+
 searchPersons:
 SELECT * FROM persons WHERE last_name LIKE :search
     ORDER BY last_name, first_name LIMIT :limit OFFSET :offset;
@@ -84,12 +90,24 @@ SELECT * FROM persons WHERE id = :id LIMIT 1;
 allInstruments:
 SELECT * FROM instruments ORDER BY name LIMIT :limit OFFSET :offset;
 
+newSyncInstruments:
+SELECT * FROM instruments WHERE sync = TRUE AND synced = FALSE;
+
+oldSyncInstruments:
+SELECT * FROM instruments WHERE sync = TRUE AND synced = TRUE;
+
 searchInstruments:
 SELECT * FROM instruments WHERE name LIKE :search ORDER BY name
     LIMIT :limit OFFSET :offset;
 
 instrumentById:
 SELECT * FROM instruments WHERE id = :id LIMIT 1;
+
+newSyncWorks:
+SELECT * FROM works WHERE sync = TRUE AND synced = FALSE;
+
+oldSyncWorks:
+SELECT * FROM works WHERE sync = TRUE AND synced = TRUE;
 
 workById:
 SELECT * FROM works WHERE id = :id LIMIT 1;
@@ -131,12 +149,24 @@ SELECT instruments.* FROM part_instrumentations
 allEnsembles:
 SELECT * FROM ensembles ORDER BY name LIMIT :limit OFFSET :offset;
 
+newSyncEnsembles:
+SELECT * FROM ensembles WHERE sync = TRUE AND synced = FALSE;
+
+oldSyncEnsembles:
+SELECT * FROM ensembles WHERE sync = TRUE AND synced = TRUE;
+
 searchEnsembles:
 SELECT * FROM ensembles WHERE name LIKE :search ORDER BY name
     LIMIT :limit OFFSET :offset;
 
 ensembleById:
 SELECT * FROM ensembles WHERE id = :id LIMIT 1;
+
+newSyncRecordings:
+SELECT * FROM recordings WHERE sync = TRUE AND synced = FALSE;
+
+oldSyncRecordings:
+SELECT * FROM recordings WHERE sync = TRUE AND synced = TRUE;
 
 recordingById:
 SELECT * FROM recordings WHERE id = :id;

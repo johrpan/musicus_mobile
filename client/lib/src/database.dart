@@ -45,6 +45,50 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     this.client,
   }) : super.connect(connection);
 
+  /// Upload all changes to the server.
+  ///
+  /// If [update] is true, this will also update existing items with new data
+  /// from the server.
+  Future<void> sync([bool update = false]) async {
+    if (update) {
+      for (final person in await oldSyncPersons().get()) {
+        await updatePerson(await client.getPerson(person.id));
+      }
+      for (final instrument in await oldSyncInstruments().get()) {
+        await updateInstrument(await client.getInstrument(instrument.id));
+      }
+      for (final work in await oldSyncWorks().get()) {
+        final workInfo = await client.getWork(work.id);
+        await updateWork(workInfo);
+      }
+      for (final ensemble in await oldSyncEnsembles().get()) {
+        await updateEnsemble(await client.getEnsemble(ensemble.id));
+      }
+      for (final recording in await oldSyncRecordings().get()) {
+        final recordingInfo = await client.getRecording(recording.id);
+        await updateRecording(recordingInfo);
+      }
+    }
+
+    for (final person in await newSyncPersons().get()) {
+      await client.putPerson(person);
+    }
+    for (final instrument in await newSyncInstruments().get()) {
+      await client.putInstrument(instrument);
+    }
+    for (final work in await newSyncWorks().get()) {
+      final workInfo = await getWorkInfo(work);
+      await client.putWork(workInfo);
+    }
+    for (final ensemble in await newSyncEnsembles().get()) {
+      await client.putEnsemble(ensemble);
+    }
+    for (final recording in await newSyncRecordings().get()) {
+      final recordingInfo = await getRecordingInfo(recording);
+      await client.putRecording(recordingInfo);
+    }
+  }
+
   /// Get all available persons.
   ///
   /// This will return a list of [pageSize] persons. You can get another page
@@ -69,10 +113,14 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       person,
       mode: InsertMode.insertOrReplace,
     );
+
+    if (person.sync) {
+      await sync();
+    }
   }
 
   /// Delete the person by [id].
-  /// 
+  ///
   /// If [sync] is true, the person will be deleted from the server too. If
   /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
   /// willl be thrown and the person will NOT be deleted.
@@ -108,10 +156,14 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       instrument,
       mode: InsertMode.insertOrReplace,
     );
+
+    if (instrument.sync) {
+      await sync();
+    }
   }
 
   /// Delete the instrument by [id].
-  /// 
+  ///
   /// If [sync] is true, the instrument will be deleted from the server too. If
   /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
   /// willl be thrown and the instrument will NOT be deleted.
@@ -235,10 +287,14 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
         await into(workSections).insert(section);
       }
     });
+
+    if (workInfo.work.sync) {
+      await sync();
+    }
   }
 
   /// Delete the work by [id].
-  /// 
+  ///
   /// If [sync] is true, the work will be deleted from the server too. If
   /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
   /// willl be thrown and the work will NOT be deleted.
@@ -276,10 +332,14 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       ensemble,
       mode: InsertMode.insertOrReplace,
     );
+
+    if (ensemble.sync) {
+      await sync();
+    }
   }
 
   /// Delete the ensemble by [id].
-  /// 
+  ///
   /// If [sync] is true, the ensemble will be deleted from the server too. If
   /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
   /// willl be thrown and the ensemble will NOT be deleted.
@@ -325,6 +385,10 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
         ));
       }
     });
+
+    if (recordingInfo.recording.sync) {
+      await sync();
+    }
   }
 
   /// Retreive more information on an already queried recording.
@@ -359,7 +423,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   }
 
   /// Delete a recording by [id].
-  /// 
+  ///
   /// If [sync] is true, the recording will be deleted from the server too. If
   /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
   /// willl be thrown and the recording will NOT be deleted.
