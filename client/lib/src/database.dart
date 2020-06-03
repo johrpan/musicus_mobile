@@ -72,7 +72,15 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   }
 
   /// Delete the person by [id].
-  Future<void> deletePerson(int id) async {
+  /// 
+  /// If [sync] is true, the person will be deleted from the server too. If
+  /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
+  /// willl be thrown and the person will NOT be deleted.
+  Future<void> deletePerson(int id, [bool sync = false]) async {
+    if (sync) {
+      await client.deletePerson(id);
+    }
+
     await (delete(persons)..where((p) => p.id.equals(id))).go();
   }
 
@@ -103,7 +111,15 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   }
 
   /// Delete the instrument by [id].
-  Future<void> deleteInstrument(int id) async {
+  /// 
+  /// If [sync] is true, the instrument will be deleted from the server too. If
+  /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
+  /// willl be thrown and the instrument will NOT be deleted.
+  Future<void> deleteInstrument(int id, [bool sync = false]) async {
+    if (sync) {
+      await client.deletePerson(id);
+    }
+
     await (delete(instruments)..where((i) => i.id.equals(id))).go();
   }
 
@@ -222,7 +238,15 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   }
 
   /// Delete the work by [id].
-  Future<void> deleteWork(int id) async {
+  /// 
+  /// If [sync] is true, the work will be deleted from the server too. If
+  /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
+  /// willl be thrown and the work will NOT be deleted.
+  Future<void> deleteWork(int id, [bool sync = false]) async {
+    if (sync) {
+      await client.deletePerson(id);
+    }
+
     // The parts and instrumentations will be deleted automatically due to
     // their foreign key constraints.
     await (delete(works)..where((w) => w.id.equals(id))).go();
@@ -255,7 +279,15 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   }
 
   /// Delete the ensemble by [id].
-  Future<void> deleteEnsemble(int id) async {
+  /// 
+  /// If [sync] is true, the ensemble will be deleted from the server too. If
+  /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
+  /// willl be thrown and the ensemble will NOT be deleted.
+  Future<void> deleteEnsemble(int id, [bool sync = false]) async {
+    if (sync) {
+      await client.deletePerson(id);
+    }
+
     await (delete(ensembles)..where((e) => e.id.equals(id))).go();
   }
 
@@ -327,7 +359,15 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   }
 
   /// Delete a recording by [id].
-  Future<void> deleteRecording(int id) async {
+  /// 
+  /// If [sync] is true, the recording will be deleted from the server too. If
+  /// that fails, a MusicusNotAuthorizedException or MusicusNotLoggedInException
+  /// willl be thrown and the recording will NOT be deleted.
+  Future<void> deleteRecording(int id, [bool sync = false]) async {
+    if (sync) {
+      await client.deletePerson(id);
+    }
+
     // This will also delete the performances due to their foreign key
     // constraint.
     await (delete(recordings)..where((r) => r.id.equals(id))).go();
