@@ -436,7 +436,7 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return json.map<WorkInfo>((j) => WorkInfo.fromJson(j)).toList();
+    return json.map<WorkInfo>((j) => WorkInfo.fromJson(j, sync: true)).toList();
   }
 
   /// Get a work by ID.
@@ -446,7 +446,7 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return WorkInfo.fromJson(json);
+    return WorkInfo.fromJson(json, sync: true);
   }
 
   /// Delete a work by ID.
@@ -475,7 +475,9 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return json.map<RecordingInfo>((j) => RecordingInfo.fromJson(j)).toList();
+    return json
+        .map<RecordingInfo>((j) => RecordingInfo.fromJson(j, sync: true))
+        .toList();
   }
 
   /// Create or update a work.
@@ -570,7 +572,7 @@ class MusicusClient {
     ));
 
     final json = jsonDecode(response.body);
-    return RecordingInfo.fromJson(json);
+    return RecordingInfo.fromJson(json, sync: true);
   }
 
   /// Create or update a recording.

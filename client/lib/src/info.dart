@@ -67,13 +67,30 @@ class WorkInfo {
     this.sections,
   });
 
-  factory WorkInfo.fromJson(Map<String, dynamic> json) => WorkInfo(
-        work: Work.fromJson(json['work']),
+  /// Deserialize work info from JSON.
+  ///
+  /// If [sync] is set to true, all contained items will have their sync
+  /// property set to true.
+  // TODO: Local versions should not be overriden, if their sync property is
+  // set to false.
+  factory WorkInfo.fromJson(Map<String, dynamic> json, {bool sync = false}) =>
+      WorkInfo(
+        work: Work.fromJson(json['work']).copyWith(
+          sync: sync,
+          synced: sync,
+        ),
         instruments: json['instruments']
-            .map<Instrument>((j) => Instrument.fromJson(j))
+            .map<Instrument>((j) => Instrument.fromJson(j).copyWith(
+                  sync: sync,
+                  synced: sync,
+                ))
             .toList(),
-        composers:
-            json['composers'].map<Person>((j) => Person.fromJson(j)).toList(),
+        composers: json['composers']
+            .map<Person>((j) => Person.fromJson(j).copyWith(
+                  sync: sync,
+                  synced: sync,
+                ))
+            .toList(),
         parts:
             json['parts'].map<PartInfo>((j) => PartInfo.fromJson(j)).toList(),
         sections: json['sections']
@@ -111,13 +128,27 @@ class PerformanceInfo {
     this.role,
   });
 
-  factory PerformanceInfo.fromJson(Map<String, dynamic> json) =>
+  factory PerformanceInfo.fromJson(Map<String, dynamic> json,
+          {bool sync = false}) =>
       PerformanceInfo(
-        person: json['person'] != null ? Person.fromJson(json['person']) : null,
-        ensemble: json['ensemble'] != null
-            ? Ensemble.fromJson(json['ensemble'])
+        person: json['person'] != null
+            ? Person.fromJson(json['person']).copyWith(
+                sync: sync,
+                synced: sync,
+              )
             : null,
-        role: json['role'] != null ? Instrument.fromJson(json['role']) : null,
+        ensemble: json['ensemble'] != null
+            ? Ensemble.fromJson(json['ensemble']).copyWith(
+                sync: sync,
+                synced: sync,
+              )
+            : null,
+        role: json['role'] != null
+            ? Instrument.fromJson(json['role']).copyWith(
+                sync: sync,
+                synced: sync,
+              )
+            : null,
       );
 
   Map<String, dynamic> toJson() => {
@@ -143,10 +174,22 @@ class RecordingInfo {
     this.performances,
   });
 
-  factory RecordingInfo.fromJson(Map<String, dynamic> json) => RecordingInfo(
-        recording: Recording.fromJson(json['recording']),
+  /// Deserialize recording info from JSON.
+  ///
+  /// If [sync] is set to true, all contained items will have their sync
+  /// property set to true.
+  // TODO: Local versions should not be overriden, if their sync property is
+  // set to false.
+  factory RecordingInfo.fromJson(Map<String, dynamic> json,
+          {bool sync = false}) =>
+      RecordingInfo(
+        recording: Recording.fromJson(json['recording']).copyWith(
+          sync: sync,
+          synced: sync,
+        ),
         performances: json['performances']
-            .map<PerformanceInfo>((j) => PerformanceInfo.fromJson(j))
+            .map<PerformanceInfo>(
+                (j) => PerformanceInfo.fromJson(j, sync: sync))
             .toList(),
       );
 

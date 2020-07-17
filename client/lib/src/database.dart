@@ -120,7 +120,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       mode: InsertMode.insertOrReplace,
     );
 
-    if (person.sync) {
+    if (person.sync && !person.synced) {
       await client.putPerson(person);
       await updatePerson(person.copyWith(synced: true));
     }
@@ -164,7 +164,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       mode: InsertMode.insertOrReplace,
     );
 
-    if (instrument.sync) {
+    if (instrument.sync && !instrument.synced) {
       await client.putInstrument(instrument);
       await updateInstrument(instrument.copyWith(synced: true));
     }
@@ -296,7 +296,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       }
     });
 
-    if (workInfo.work.sync) {
+    if (workInfo.work.sync && !workInfo.work.synced) {
       await client.putWork(workInfo);
       await into(works)
           .insertOnConflictUpdate(workInfo.work.copyWith(synced: true));
@@ -343,7 +343,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       mode: InsertMode.insertOrReplace,
     );
 
-    if (ensemble.sync) {
+    if (ensemble.sync && !ensemble.synced) {
       await client.putEnsemble(ensemble);
       await updateEnsemble(ensemble.copyWith(synced: true));
     }
@@ -397,7 +397,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       }
     });
 
-    if (recordingInfo.recording.sync) {
+    if (recordingInfo.recording.sync && !recordingInfo.recording.synced) {
       await client.putRecording(recordingInfo);
       await into(recordings).insertOnConflictUpdate(
           recordingInfo.recording.copyWith(synced: true));
