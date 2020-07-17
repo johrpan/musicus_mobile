@@ -67,19 +67,13 @@ class _PersonEditorState extends State<PersonEditor> {
                       synced: false,
                     );
 
-                    final success = await backend.client.putPerson(person);
+                    await backend.db.updatePerson(person);
 
                     setState(() {
                       uploading = false;
                     });
 
-                    if (success) {
-                      Navigator.pop(context, person);
-                    } else {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text('Failed to upload'),
-                      ));
-                    }
+                    Navigator.pop(context, person);
                   },
                 ),
         ],

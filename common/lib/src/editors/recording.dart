@@ -144,26 +144,19 @@ class _RecordingEditorState extends State<RecordingEditor> {
                       performances: _performanceInfos,
                     );
 
-                    final success =
-                        await _backend.client.putRecording(recordingInfo);
+                    await _backend.db.updateRecording(recordingInfo);
 
                     setState(() {
                       _uploading = false;
                     });
 
-                    if (success) {
-                      Navigator.pop(
-                        context,
-                        RecordingSelectorResult(
-                          workInfo: _workInfo,
-                          recordingInfo: recordingInfo,
-                        ),
-                      );
-                    } else {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text('Failed to upload'),
-                      ));
-                    }
+                    Navigator.pop(
+                      context,
+                      RecordingSelectorResult(
+                        workInfo: _workInfo,
+                        recordingInfo: recordingInfo,
+                      ),
+                    );
                   },
                 ),
         ],

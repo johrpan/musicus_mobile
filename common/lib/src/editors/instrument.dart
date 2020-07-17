@@ -64,20 +64,13 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
                       synced: false,
                     );
 
-                    final success =
-                        await backend.client.putInstrument(instrument);
+                    await backend.db.updateInstrument(instrument);
 
                     setState(() {
                       uploading = false;
                     });
 
-                    if (success) {
-                      Navigator.pop(context, instrument);
-                    } else {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text('Failed to upload'),
-                      ));
-                    }
+                    Navigator.pop(context, instrument);
                   },
                 ),
         ],

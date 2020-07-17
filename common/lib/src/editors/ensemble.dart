@@ -64,19 +64,13 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
                       synced: false,
                     );
 
-                    final success = await backend.client.putEnsemble(ensemble);
+                    await backend.db.updateEnsemble(ensemble);
 
                     setState(() {
                       uploading = false;
                     });
 
-                    if (success) {
-                      Navigator.pop(context, ensemble);
-                    } else {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text('Failed to upload'),
-                      ));
-                    }
+                    Navigator.pop(context, ensemble);
                   },
                 ),
         ],

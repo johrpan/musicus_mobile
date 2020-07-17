@@ -322,19 +322,13 @@ class _WorkEditorState extends State<WorkEditor> {
                       sections: sections,
                     );
 
-                    final success = await backend.client.putWork(workInfo);
+                    await backend.db.updateWork(workInfo);
 
                     setState(() {
                       uploading = false;
                     });
 
-                    if (success) {
-                      Navigator.pop(context, workInfo);
-                    } else {
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                        content: Text('Failed to upload'),
-                      ));
-                    }
+                    Navigator.pop(context, workInfo);
                   },
                 ),
         ],
