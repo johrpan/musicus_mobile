@@ -38,7 +38,7 @@ class CheckPasswordRequest {
 
 /// Methods for handling passwords.
 class Crypt {
-  static final _crypt = PassCrypt('SHA-512/HMAC/PBKDF2');
+  static final _crypt = PassCrypt.pbkdf2(hmac: HmacHash.Sha_512);
   static final _rand = Random.secure();
 
   /// Compute a hash for a password.
