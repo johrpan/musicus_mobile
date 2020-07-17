@@ -29,6 +29,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
 
   MusicusBackendState _backend;
   bool _uploading = false;
+  bool _sync = true;
   WorkInfo _workInfo;
   List<PerformanceInfo> _performanceInfos = [];
 
@@ -137,6 +138,8 @@ class _RecordingEditorState extends State<RecordingEditor> {
                             generateId(),
                         work: _workInfo.work.id,
                         comment: _commentController.text,
+                        sync: _sync,
+                        synced: false,
                       ),
                       performances: _performanceInfos,
                     );
@@ -167,6 +170,18 @@ class _RecordingEditorState extends State<RecordingEditor> {
       ),
       body: ListView(
         children: <Widget>[
+          SwitchListTile(
+            title: Text('Synchronize changes'),
+            subtitle: Text(_sync
+                ? 'Publish changes on the server'
+                : 'Keep changes private'),
+            value: _sync,
+            onChanged: (value) {
+              setState(() {
+                _sync = value;
+              });
+            },
+          ),
           _workInfo != null
               ? ListTile(
                   title: Text(_workInfo.work.title),

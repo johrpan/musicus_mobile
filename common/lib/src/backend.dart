@@ -181,6 +181,9 @@ class MusicusBackendState extends State<MusicusBackend> {
       basePath: serverSettings.apiPath,
       credentials: settings.account.value,
     );
+
+    // TODO: Maybe don't change the client in the middle of synchronization.
+    db.client = client;
   }
 
   @override

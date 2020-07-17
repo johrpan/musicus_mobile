@@ -19,6 +19,7 @@ class _PersonEditorState extends State<PersonEditor> {
   final lastNameController = TextEditingController();
 
   bool uploading = false;
+  bool _sync = true;
 
   @override
   void initState() {
@@ -62,6 +63,8 @@ class _PersonEditorState extends State<PersonEditor> {
                       id: widget.person?.id ?? generateId(),
                       firstName: firstNameController.text,
                       lastName: lastNameController.text,
+                      sync: _sync,
+                      synced: false,
                     );
 
                     final success = await backend.client.putPerson(person);
@@ -83,6 +86,18 @@ class _PersonEditorState extends State<PersonEditor> {
       ),
       body: ListView(
         children: <Widget>[
+          SwitchListTile(
+            title: Text('Synchronize changes'),
+            subtitle: Text(_sync
+                ? 'Publish changes on the server'
+                : 'Keep changes private'),
+            value: _sync,
+            onChanged: (value) {
+              setState(() {
+                _sync = value;
+              });
+            },
+          ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(

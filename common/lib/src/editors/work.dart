@@ -179,6 +179,7 @@ class _WorkEditorState extends State<WorkEditor> {
   final titleController = TextEditingController();
 
   bool uploading = false;
+  bool _sync = true;
   Person composer;
   List<Instrument> instruments = [];
   List<PartData> parts = [];
@@ -310,6 +311,8 @@ class _WorkEditorState extends State<WorkEditor> {
                         id: workId,
                         title: titleController.text,
                         composer: composer?.id,
+                        sync: _sync,
+                        synced: false,
                       ),
                       instruments: instruments,
                       // TODO: Theoretically, this should include all composers
@@ -340,6 +343,18 @@ class _WorkEditorState extends State<WorkEditor> {
         header: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            SwitchListTile(
+              title: Text('Synchronize changes'),
+              subtitle: Text(_sync
+                  ? 'Publish changes on the server'
+                  : 'Keep changes private'),
+              value: _sync,
+              onChanged: (value) {
+                setState(() {
+                  _sync = value;
+                });
+              },
+            ),
             WorkProperties(
               titleController: titleController,
               composer: composer,

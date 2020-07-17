@@ -18,6 +18,7 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
   final nameController = TextEditingController();
 
   bool uploading = false;
+  bool _sync = true;
 
   @override
   void initState() {
@@ -59,6 +60,8 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
                     final ensemble = Ensemble(
                       id: widget.ensemble?.id ?? generateId(),
                       name: nameController.text,
+                      sync: _sync,
+                      synced: false,
                     );
 
                     final success = await backend.client.putEnsemble(ensemble);
@@ -80,6 +83,18 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
       ),
       body: ListView(
         children: <Widget>[
+          SwitchListTile(
+            title: Text('Synchronize changes'),
+            subtitle: Text(_sync
+                ? 'Publish changes on the server'
+                : 'Keep changes private'),
+            value: _sync,
+            onChanged: (value) {
+              setState(() {
+                _sync = value;
+              });
+            },
+          ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
