@@ -26,6 +26,7 @@ class _InstrumentEditorState extends State<InstrumentEditor> {
 
     if (widget.instrument != null) {
       nameController.text = widget.instrument.name;
+      _sync = widget.instrument.sync;
     }
   }
 

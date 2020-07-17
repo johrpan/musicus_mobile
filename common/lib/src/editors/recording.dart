@@ -52,6 +52,7 @@ class _RecordingEditorState extends State<RecordingEditor> {
     setState(() {
       this._workInfo = _workInfo;
       this._performanceInfos = _performanceInfos;
+      _sync = widget.recordingInfo.recording.sync;
     });
   }
 

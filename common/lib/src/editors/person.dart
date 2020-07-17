@@ -28,6 +28,7 @@ class _PersonEditorState extends State<PersonEditor> {
     if (widget.person != null) {
       firstNameController.text = widget.person.firstName;
       lastNameController.text = widget.person.lastName;
+      _sync = widget.person.sync;
     }
   }
 

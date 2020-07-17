@@ -26,6 +26,7 @@ class _EnsembleEditorState extends State<EnsembleEditor> {
 
     if (widget.ensemble != null) {
       nameController.text = widget.ensemble.name;
+      _sync = widget.ensemble.sync;
     }
   }
 

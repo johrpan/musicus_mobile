@@ -201,6 +201,8 @@ class _WorkEditorState extends State<WorkEditor> {
           instruments: List.from(partInfo.instruments),
         ));
       }
+
+      _sync = widget.workInfo.work.sync;
     }
   }
 
