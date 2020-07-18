@@ -1,6 +1,7 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#include <glib-object.h>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -29,7 +30,14 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
+static void my_application_startup(GApplication* application) {
+  G_APPLICATION_CLASS(my_application_parent_class)->startup(application);
+  g_object_set(gtk_settings_get_default(),
+      "gtk-application-prefer-dark-theme", TRUE, NULL);
+}
+
 static void my_application_class_init(MyApplicationClass* klass) {
+  G_APPLICATION_CLASS(klass)->startup = my_application_startup;
   G_APPLICATION_CLASS(klass)->activate = my_application_activate;
 }
 
