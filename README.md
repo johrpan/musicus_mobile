@@ -18,13 +18,16 @@ developed using the [Aqueduct framework](https://aqueduct.io).
 `client` – A client library for the Musicus server.
 
 `common` – Common building blocks for Musicus client apps. This includes shared
-UI and backend code for the mobile app and the (future) desktop app.
+UI and backend code for the mobile and desktop app.
 
 `mobile` – The Musicus mobile app. It is being developed using
 [Flutter toolkit](https://flutter.dev) and only runs on Android for now.
 
 `player` – The simplest possible audio player plugin. This is used by the
 mobile app for playback.
+
+`desktop` – A simple Musicus desktop app. At the moment this is basically the
+mobile app with some adaptions in the background.
 
 ## Hacking
 
