@@ -4,7 +4,6 @@ import 'package:musicus_common/musicus_common.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as pp;
 
-import 'app.dart';
 import 'settings.dart';
 import 'platform.dart';
 import 'playback.dart';
@@ -16,12 +15,11 @@ Future<void> main() async {
   final dbPath = p.join(dir.path, 'db.sqlite');
 
   runApp(AudioServiceWidget(
-    child: MusicusBackend(
+    child: MusicusApp(
       dbPath: dbPath,
       settingsStorage: SettingsStorage(),
       platform: MusicusAndroidPlatform(),
       playback: Playback(),
-      child: App(),
     ),
   ));
 }

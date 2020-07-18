@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:musicus_common/musicus_common.dart';
+
+import '../backend.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   @override

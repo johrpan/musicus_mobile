@@ -46,6 +46,12 @@ abstract class MusicusPlatform {
     basePath = path;
   }
 
+  /// Choose a root level directory for the music library.
+  /// 
+  /// This should return a string representation of the chosen directory
+  /// suitable for storage as [basePath].
+  Future<String> chooseBasePath();
+
   /// Get all documents in a directory.
   ///
   /// [parentId] will be the ID of the directory document. If [parentId] is

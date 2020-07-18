@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_common/musicus_common.dart';
 
+import '../backend.dart';
+
 import 'account_settings.dart';
 import 'server_settings.dart';
 
@@ -28,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text(snapshot.data ?? 'Choose folder'),
                 isThreeLine: snapshot.hasData,
                 onTap: () async {
-                  final uri = await _platform.invokeMethod<String>('openTree');
+                  final uri = await backend.platform.chooseBasePath();
 
                   if (uri != null) {
                     settings.setMusicLibraryPath(uri);

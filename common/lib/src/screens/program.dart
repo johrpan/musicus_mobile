@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:musicus_client/musicus_client.dart';
-import 'package:musicus_common/musicus_common.dart';
 
+import '../backend.dart';
+import '../library.dart';
 import '../widgets/play_pause_button.dart';
+import '../widgets/recording_tile.dart';
 
 class ProgramScreen extends StatefulWidget {
   @override

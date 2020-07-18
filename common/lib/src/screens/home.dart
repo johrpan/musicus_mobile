@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:musicus_client/musicus_client.dart';
-import 'package:musicus_common/musicus_common.dart';
 
+import '../backend.dart';
+import '../editors/person.dart';
+import '../editors/tracks.dart';
 import '../icons.dart';
+import '../widgets/lists.dart';
 
 import 'about.dart';
 import 'person.dart';

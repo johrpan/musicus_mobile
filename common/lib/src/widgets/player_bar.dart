@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:musicus_client/musicus_client.dart';
-import 'package:musicus_common/musicus_common.dart';
 
+import '../backend.dart';
+import '../library.dart';
 import '../screens/program.dart';
 
 import 'play_pause_button.dart';

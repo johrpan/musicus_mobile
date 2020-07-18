@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:musicus_common/musicus_common.dart';
 
+import '../backend.dart';
+
 class ServerSettingsScreen extends StatefulWidget {
   @override
   _ServerSettingsScreenState createState() => _ServerSettingsScreenState();

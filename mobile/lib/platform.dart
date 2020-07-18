@@ -5,6 +5,11 @@ class MusicusAndroidPlatform extends MusicusPlatform {
   static const _platform = MethodChannel('de.johrpan.musicus/platform');
 
   @override
+  Future<String> chooseBasePath() async {
+    return await _platform.invokeMethod<String>('openTree');
+  }
+
+  @override
   Future<List<Document>> getChildren(String parentId) async {
     final List<Map<dynamic, dynamic>> childrenJson =
         await _platform.invokeListMethod(

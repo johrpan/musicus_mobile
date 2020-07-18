@@ -14,7 +14,8 @@ class AboutScreen extends StatelessWidget {
         title: Text('About'),
       ),
       body: FutureBuilder<String>(
-        future: rootBundle.loadString('assets/about.md'),
+        future:
+            rootBundle.loadString('packages/musicus_common/assets/about.md'),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return Markdown(

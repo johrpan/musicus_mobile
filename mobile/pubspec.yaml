@@ -12,34 +12,13 @@ dependencies:
   audio_service:
   flutter:
     sdk: flutter
-  flutter_markdown:
-  meta:
-  moor:
-  moor_ffi:
-  musicus_client:
-    path: ../client
   musicus_common:
     path: ../common
   musicus_player:
     path: ../player
   path:
   path_provider:
-  rxdart:
   shared_preferences:
-  url_launcher:
 
 flutter:
   uses-material-design: true
-  assets:
-  - assets/about.md
-  fonts:
-  - family: Libertinus Sans
-    fonts:
-    - asset: fonts/libertinussans_regular.otf
-    - asset: fonts/libertinussans_bold.otf
-      weight: 700
-    - asset: fonts/libertinussans_italic.otf
-      style: italic
-  - family: Musicus Icons
-    fonts:
-    - asset: fonts/musicus_icons.ttf

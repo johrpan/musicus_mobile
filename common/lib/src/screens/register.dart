@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:musicus_client/musicus_client.dart';
-import 'package:musicus_common/musicus_common.dart';
+
+import '../backend.dart';
 
 /// A screen for creating a new Musicus account.
 class RegisterScreen extends StatefulWidget {
