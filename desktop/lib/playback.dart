@@ -2,42 +2,54 @@ import 'package:musicus_common/musicus_common.dart';
 
 class MusicusDesktopPlayback extends MusicusPlayback {
   @override
+  Future<void> setup() async {}
+
+  @override
   Future<void> addTracks(List<InternalTrack> tracks) async {
-    // TODO: implement addTracks
+    final List<InternalTrack> newPlaylist = List.from(playlist.value);
+    newPlaylist.addAll(tracks);
+    playlist.add(newPlaylist);
+    active.add(true);
   }
 
   @override
   Future<void> playPause() async {
-    // TODO: implement playPause
+    playing.add(!playing.value);
   }
 
   @override
   Future<void> removeTrack(int index) async {
-    // TODO: implement removeTrack
+    final List<InternalTrack> tracks = List.from(playlist.value);
+    tracks.removeAt(index);
+    playlist.add(tracks);
   }
 
   @override
   Future<void> seekTo(double pos) async {
-    // TODO: implement seekTo
-  }
-
-  @override
-  Future<void> setup() async {
-    // TODO: implement setup
+    if (active.value && pos >= 0.0 && pos <= 1.0) {
+      final durationMs = duration.value.inMilliseconds;
+      updatePosition((pos * durationMs).floor());
+    }
   }
 
   @override
   Future<void> skipTo(int index) async {
-    // TODO: implement skipTo
+    updateCurrentTrack(index);
   }
 
   @override
   Future<void> skipToNext() async {
-    // TODO: implement skipToNext
+    final index = currentIndex.value;
+    if (playlist.value.length > index + 1) {
+      updateCurrentTrack(index + 1);
+    }
   }
 
   @override
   Future<void> skipToPrevious() async {
-    // TODO: implement skipToPrevious
+    final index = currentIndex.value;
+    if (index > 0) {
+      updateCurrentTrack(index - 1);
+    }
   }
 }
