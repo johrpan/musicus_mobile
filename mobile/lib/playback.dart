@@ -34,40 +34,6 @@ class Playback extends MusicusPlayback {
     }
   }
 
-  /// Update [position] and [normalizedPosition].
-  ///
-  /// Requires [duration] to be up to date
-  void _updatePosition(int positionMs) {
-    position.add(Duration(milliseconds: positionMs));
-    _setNormalizedPosition(positionMs / duration.value.inMilliseconds);
-  }
-
-  /// Update [position], [duration] and [normalizedPosition].
-  void _updateDuration(int positionMs, int durationMs) {
-    position.add(Duration(milliseconds: positionMs));
-    duration.add(Duration(milliseconds: durationMs));
-    _setNormalizedPosition(positionMs / durationMs);
-  }
-
-  /// Update [normalizedPosition] ensuring its value is between 0.0 and 1.0.
-  void _setNormalizedPosition(double value) {
-    if (value <= 0.0) {
-      normalizedPosition.add(0.0);
-    } else if (value >= 1.0) {
-      normalizedPosition.add(1.0);
-    } else {
-      normalizedPosition.add(value);
-    }
-  }
-
-  /// Update [currentIndex] and [currentTrack].
-  ///
-  /// Requires [playlist] to be up to date.
-  void _updateCurrentTrack(int index) {
-    currentIndex.add(index);
-    currentTrack.add(playlist.value[index]);
-  }
-
   @override
   Future<void> setup() async {
     if (_playbackServiceStateSubscription != null) {
@@ -93,14 +59,14 @@ class Playback extends MusicusPlayback {
         if (msg is _StatusMessage) {
           playing.add(msg.playing);
         } else if (msg is _PositionMessage) {
-          _updatePosition(msg.positionMs);
+          updatePosition(msg.positionMs);
         } else if (msg is _TrackMessage) {
-          _updateCurrentTrack(msg.currentTrack);
-          _updateDuration(msg.positionMs, msg.durationMs);
+          updateCurrentTrack(msg.currentTrack);
+          updateDuration(msg.positionMs, msg.durationMs);
         } else if (msg is _PlaylistMessage) {
           playlist.add(msg.playlist);
-          _updateCurrentTrack(msg.currentTrack);
-          _updateDuration(msg.positionMs, msg.durationMs);
+          updateCurrentTrack(msg.currentTrack);
+          updateDuration(msg.positionMs, msg.durationMs);
         }
       }
     });

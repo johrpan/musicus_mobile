@@ -45,7 +45,7 @@ abstract class MusicusPlayback {
   final normalizedPosition = BehaviorSubject.seeded(0.0);
 
   /// Initialize the player.
-  /// 
+  ///
   /// This will be called after the database was initialized.
   Future<void> setup();
 
@@ -92,5 +92,39 @@ abstract class MusicusPlayback {
     position.close();
     duration.close();
     normalizedPosition.close();
+  }
+
+  /// Update [position] and [normalizedPosition].
+  ///
+  /// Requires [duration] to be up to date
+  void updatePosition(int positionMs) {
+    position.add(Duration(milliseconds: positionMs));
+    _setNormalizedPosition(positionMs / duration.value.inMilliseconds);
+  }
+
+  /// Update [position], [duration] and [normalizedPosition].
+  void updateDuration(int positionMs, int durationMs) {
+    position.add(Duration(milliseconds: positionMs));
+    duration.add(Duration(milliseconds: durationMs));
+    _setNormalizedPosition(positionMs / durationMs);
+  }
+
+  /// Update [normalizedPosition] ensuring its value is between 0.0 and 1.0.
+  void _setNormalizedPosition(double value) {
+    if (value <= 0.0) {
+      normalizedPosition.add(0.0);
+    } else if (value >= 1.0) {
+      normalizedPosition.add(1.0);
+    } else {
+      normalizedPosition.add(value);
+    }
+  }
+
+  /// Update [currentIndex] and [currentTrack].
+  ///
+  /// Requires [playlist] to be up to date.
+  void updateCurrentTrack(int index) {
+    currentIndex.add(index);
+    currentTrack.add(playlist.value[index]);
   }
 }
