@@ -256,16 +256,20 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
     await transaction(() async {
       final workId = workInfo.work.id;
 
-      // Delete old work data first. The parts, sections and instrumentations
-      // will be deleted automatically due to their foreign key constraints.
-      await deleteWork(workId);
+      // Delete data associated rows in other tables first. We can't just
+      // delete the work itself, because that would violate the foreign key
+      // constraints.
+      await (delete(instrumentations)..where((i) => i.work.equals(workId)))
+          .go();
+      await (delete(workParts)..where((p) => p.partOf.equals(workId))).go();
+      await (delete(workSections)..where((s) => s.work.equals(workId))).go();
 
       // This will also include the composers of the work's parts.
       for (final person in workInfo.composers) {
         await updatePerson(person);
       }
 
-      await into(works).insert(workInfo.work);
+      await into(works).insert(workInfo.work, mode: InsertMode.insertOrReplace);
 
       // At the moment, this will also update all provided instruments, even if
       // they were already there previously.
