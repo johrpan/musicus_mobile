@@ -31,7 +31,8 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   @override
   MigrationStrategy get migration => MigrationStrategy(
         beforeOpen: (details) async {
-          await customStatement('PRAGMA foreign_keys = ON');
+          await customStatement(
+              'PRAGMA foreign_keys = ON; PRAGMA defer_foreign_keys = ON;');
         },
       );
 
