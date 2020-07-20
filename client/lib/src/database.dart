@@ -178,7 +178,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   /// willl be thrown and the instrument will NOT be deleted.
   Future<void> deleteInstrument(int id, [bool sync = false]) async {
     if (sync) {
-      await client.deletePerson(id);
+      await client.deleteInstrument(id);
     }
 
     await (delete(instruments)..where((i) => i.id.equals(id))).go();
@@ -311,7 +311,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   /// willl be thrown and the work will NOT be deleted.
   Future<void> deleteWork(int id, [bool sync = false]) async {
     if (sync) {
-      await client.deletePerson(id);
+      await client.deleteWork(id);
     }
 
     // The parts and instrumentations will be deleted automatically due to
@@ -357,7 +357,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   /// willl be thrown and the ensemble will NOT be deleted.
   Future<void> deleteEnsemble(int id, [bool sync = false]) async {
     if (sync) {
-      await client.deletePerson(id);
+      await client.deleteEnsemble(id);
     }
 
     await (delete(ensembles)..where((e) => e.id.equals(id))).go();
@@ -443,7 +443,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
   /// willl be thrown and the recording will NOT be deleted.
   Future<void> deleteRecording(int id, [bool sync = false]) async {
     if (sync) {
-      await client.deletePerson(id);
+      await client.deleteRecording(id);
     }
 
     // This will also delete the performances due to their foreign key
