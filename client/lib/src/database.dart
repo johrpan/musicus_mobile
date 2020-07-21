@@ -119,12 +119,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       person,
       mode: InsertMode.insertOrReplace,
     );
-
-    if (person.sync && !person.synced) {
-      await client.putPerson(person);
-      await updatePerson(person.copyWith(synced: true));
     }
-  }
 
   /// Delete the person by [id].
   ///
@@ -163,12 +158,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       instrument,
       mode: InsertMode.insertOrReplace,
     );
-
-    if (instrument.sync && !instrument.synced) {
-      await client.putInstrument(instrument);
-      await updateInstrument(instrument.copyWith(synced: true));
     }
-  }
 
   /// Delete the instrument by [id].
   ///
@@ -299,13 +289,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
         await into(workSections).insert(section);
       }
     });
-
-    if (workInfo.work.sync && !workInfo.work.synced) {
-      await client.putWork(workInfo);
-      await into(works)
-          .insertOnConflictUpdate(workInfo.work.copyWith(synced: true));
     }
-  }
 
   /// Delete the work by [id].
   ///
@@ -346,12 +330,7 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
       ensemble,
       mode: InsertMode.insertOrReplace,
     );
-
-    if (ensemble.sync && !ensemble.synced) {
-      await client.putEnsemble(ensemble);
-      await updateEnsemble(ensemble.copyWith(synced: true));
     }
-  }
 
   /// Delete the ensemble by [id].
   ///
@@ -400,12 +379,6 @@ class MusicusClientDatabase extends _$MusicusClientDatabase {
         ));
       }
     });
-
-    if (recordingInfo.recording.sync && !recordingInfo.recording.synced) {
-      await client.putRecording(recordingInfo);
-      await into(recordings).insertOnConflictUpdate(
-          recordingInfo.recording.copyWith(synced: true));
-    }
   }
 
   /// Retreive more information on an already queried recording.
