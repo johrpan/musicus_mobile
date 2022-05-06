@@ -1,21 +1,13 @@
 import 'dart:io';
 
-import 'package:file_chooser/file_chooser.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:musicus_common/musicus_common.dart';
 import 'package:path/path.dart' as p;
 
 class MusicusDesktopPlatform extends MusicusPlatform {
   @override
   Future<String> chooseBasePath() async {
-    final result = await showOpenPanel(
-      canSelectDirectories: true,
-    );
-
-    if (result != null && !result.canceled) {
-      return result.paths.first;
-    } else {
-      return null;
-    }
+    return await FilePicker.platform.getDirectoryPath();
   }
 
   @override
