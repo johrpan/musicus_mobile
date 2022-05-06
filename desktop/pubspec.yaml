@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   musicus_common:
     path: ../common
+  musicus_database:
+    path: ../database
   path:
   path_provider:
   shared_preferences:
