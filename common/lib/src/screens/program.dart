@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../library.dart';
 import '../widgets/play_pause_button.dart';
 import '../widgets/recording_tile.dart';
 
@@ -18,7 +17,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
 
   StreamSubscription<bool> playerActiveSubscription;
 
-  StreamSubscription<List<InternalTrack>> playlistSubscription;
+  StreamSubscription<List<Track>> playlistSubscription;
   List<Widget> widgets = [];
 
   StreamSubscription<double> positionSubscription;
@@ -64,7 +63,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
   }
 
   /// Go through the tracks of [playlist] and preprocess them for displaying.
-  Future<void> updateProgram(List<InternalTrack> playlist) async {
+  Future<void> updateProgram(List<Track> playlist) async {
     List<Widget> newWidgets = [];
 
     // The following variables exist to adapt the resulting ProgramItem to its
@@ -72,25 +71,22 @@ class _ProgramScreenState extends State<ProgramScreen> {
 
     // If the previous recording was the same, we won't need to include the
     // recording data again.
-    int lastRecordingId;
+    String lastRecordingId;
 
     // If the previous work was the same, we won't need to retrieve its parts
     // from the database again.
-    int lastWorkId;
+    String lastWorkId;
 
     // This will contain information on the last new work.
     WorkInfo workInfo;
-
-    // The index of the last displayed section.
-    int lastSectionIndex;
 
     for (var i = 0; i < playlist.length; i++) {
       // The widgets displayed for this track.
       List<Widget> children = [];
 
       final track = playlist[i];
-      final recordingId = track.track.recordingId;
-      final partIds = track.track.partIds;
+      final recordingId = track.recording;
+      final partIds = track.workParts;
 
       // If the recording is the same, the work will also be the same, so
       // workInfo doesn't have to be updated either.
@@ -102,7 +98,6 @@ class _ProgramScreenState extends State<ProgramScreen> {
         if (recordingInfo.recording.work != lastWorkId) {
           lastWorkId = recordingInfo.recording.work;
           workInfo = await backend.db.getWork(lastWorkId);
-          lastSectionIndex = null;
         }
 
         children.addAll([
@@ -116,27 +111,20 @@ class _ProgramScreenState extends State<ProgramScreen> {
         ]);
       }
 
-      for (final partId in partIds) {
-        final partInfo = workInfo.parts[partId];
-
-        final sectionIndex = workInfo.sections
-            .lastIndexWhere((s) => s.beforePartIndex <= partId);
-        if (sectionIndex != lastSectionIndex && sectionIndex >= 0) {
-          lastSectionIndex = sectionIndex;
-          children.add(Padding(
-            padding: const EdgeInsets.only(
-              bottom: 8.0,
-            ),
-            child: Text(workInfo.sections[sectionIndex].title),
-          ));
+      for (final part_id_unparsed in partIds.split(',')) {
+        if (part_id_unparsed.isEmpty) {
+          continue;
         }
+
+        final partId = int.parse(part_id_unparsed);
+        final partInfo = workInfo.parts[partId];
 
         children.add(Padding(
           padding: const EdgeInsets.only(
             left: 8.0,
           ),
           child: Text(
-            partInfo.part.title,
+            partInfo.title,
             style: TextStyle(
               fontStyle: FontStyle.italic,
             ),

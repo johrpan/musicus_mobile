@@ -31,9 +31,8 @@ class WorkScreen extends StatelessWidget {
             title: PerformancesText(
               performanceInfos: recordingInfo.performances,
             ),
-            onTap: () {
-              final tracks = backend.library.tracks[recordingId];
-              tracks.sort((t1, t2) => t1.track.index.compareTo(t2.track.index));
+            onTap: () async {
+              final tracks = await backend.db.tracksByRecording(recordingId).get();
               backend.playback.addTracks(tracks);
             },
           );

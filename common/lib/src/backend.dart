@@ -1,10 +1,3 @@
-import 'dart:io';
-import 'dart:isolate';
-import 'dart:ui';
-
-import 'package:drift/drift.dart';
-import 'package:drift/isolate.dart';
-import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:musicus_database/musicus_database.dart';
 
@@ -44,9 +37,6 @@ enum MusicusBackendStatus {
 /// The backend maintains a Musicus database within a Moor isolate. The connect
 /// port will be registered as 'moor' in the [IsolateNameServer].
 class MusicusBackend extends StatefulWidget {
-  /// Path to the database file.
-  final String dbPath;
-
   /// An object to persist the settings.
   final MusicusSettingsStorage settingsStorage;
 
@@ -64,7 +54,6 @@ class MusicusBackend extends StatefulWidget {
   final Widget child;
 
   MusicusBackend({
-    @required this.dbPath,
     @required this.settingsStorage,
     @required this.playback,
     @required this.platform,
@@ -79,30 +68,18 @@ class MusicusBackend extends StatefulWidget {
 }
 
 class MusicusBackendState extends State<MusicusBackend> {
-  /// Starts the database isolate.
-  ///
-  /// It will create a database connection for [request.path] and will send the
-  /// drift send port through [request.sendPort].
-  static void _dbIsolateEntrypoint(_IsolateStartRequest request) {
-    final executor = NativeDatabase(File(request.path));
-
-    final driftIsolate =
-        DriftIsolate.inCurrent(() => DatabaseConnection.fromExecutor(executor));
-
-    request.sendPort.send(driftIsolate.connectPort);
-  }
-
   /// The current backend status.
   ///
   /// If this is not [MusicusBackendStatus.ready], the [child] widget should
   /// prevent all access to the backend.
   MusicusBackendStatus status = MusicusBackendStatus.loading;
 
-  MusicusClientDatabase db;
   MusicusPlayback playback;
   MusicusSettings settings;
   MusicusPlatform platform;
   MusicusLibrary library;
+
+  MusicusClientDatabase get db => library.db;
 
   @override
   void initState() {
@@ -112,23 +89,6 @@ class MusicusBackendState extends State<MusicusBackend> {
 
   /// Initialize resources.
   Future<void> _load() async {
-    SendPort driftPort = IsolateNameServer.lookupPortByName('moor');
-
-    if (driftPort == null) {
-      final receivePort = ReceivePort();
-
-      await Isolate.spawn(_dbIsolateEntrypoint,
-          _IsolateStartRequest(receivePort.sendPort, widget.dbPath));
-
-      driftPort = await receivePort.first;
-      IsolateNameServer.registerPortWithName(driftPort, 'drift');
-    }
-
-    final driftIsolate = DriftIsolate.fromConnectPort(driftPort);
-    db = MusicusClientDatabase.connect(
-      connection: await driftIsolate.connect(),
-    );
-
     playback = widget.playback;
     await playback.setup();
 
@@ -184,14 +144,6 @@ class MusicusBackendState extends State<MusicusBackend> {
     /// We don't stop the Moor isolate, because it can be used elsewhere.
     db.close();
   }
-}
-
-/// Bundles arguments for the database isolate.
-class _IsolateStartRequest {
-  final SendPort sendPort;
-  final String path;
-
-  _IsolateStartRequest(this.sendPort, this.path);
 }
 
 /// Helper widget passing the current backend state down the widget tree.

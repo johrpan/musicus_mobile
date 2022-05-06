@@ -1,122 +1,38 @@
-import 'dart:convert';
+import 'dart:io';
+import 'dart:isolate';
+import 'dart:ui';
+
+import 'package:path/path.dart' as p;
+import 'package:drift/drift.dart';
+import 'package:drift/isolate.dart';
+import 'package:drift/native.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import 'platform.dart';
 
-/// Bundles a [Track] with information on how to find the corresponding file.
-class InternalTrack {
-  /// The represented track.
-  final Track track;
-
-  /// A string identifying the track for playback.
-  ///
-  /// This will be the result of calling the platform objects getIdentifier()
-  /// function with the file name of the track.
-  final String identifier;
-
-  InternalTrack({
-    this.track,
-    this.identifier,
-  });
-
-  factory InternalTrack.fromJson(Map<String, dynamic> json) => InternalTrack(
-        track: Track.fromJson(json['track']),
-        identifier: json['identifier'],
-      );
-
-  Map<String, dynamic> toJson() => {
-        'track': track.toJson(),
-        'identifier': identifier,
-      };
-}
-
-/// Description of a concrete audio file.
-///
-/// This gets stored in the folder of the audio file and links the audio file
-/// to a recording in the database.
-class Track {
-  /// The name of the file that contains the track's audio.
-  ///
-  /// This corresponds to a document ID in terms of the Android Storage Access
-  /// Framework.
-  final String fileName;
-
-  /// Index within the list of tracks for the corresponding recording.
-  final int index;
-
-  /// Of which recording this track is a part of.
-  final int recordingId;
-
-  /// Which work parts of the recorded work are contained in this track.
-  final List<int> partIds;
-
-  Track({
-    this.fileName,
-    this.index,
-    this.recordingId,
-    this.partIds,
-  });
-
-  factory Track.fromJson(Map<String, dynamic> json) => Track(
-        fileName: json['fileName'],
-        index: json['index'],
-        recordingId: json['recording'],
-        partIds: List.from(json['parts']),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'fileName': fileName,
-        'index': index,
-        'recording': recordingId,
-        'parts': partIds,
-      };
-}
-
-/// Representation of all tracked audio files in one folder.
-class MusicusFile {
-  /// Current version of the Musicus file format.
-  ///
-  /// If incompatible changes are made, this will be increased by one.
-  static const currentVersion = 0;
-
-  /// Musicus file format version in use.
-  ///
-  /// This will be used in the future, if incompatible changes are made.
-  final int version;
-
-  /// List of [Track] objects.
-  final List<Track> tracks;
-
-  MusicusFile({
-    this.version = currentVersion,
-    List<Track> tracks,
-  }) : tracks = tracks ?? [];
-
-  factory MusicusFile.fromJson(Map<String, dynamic> json) => MusicusFile(
-        version: json['version'],
-        tracks: json['tracks']
-            .map<Track>((trackJson) => Track.fromJson(trackJson))
-            .toList(growable: true),
-      );
-
-  Map<String, dynamic> toJson() => {
-        'version': version,
-        'tracks': tracks.map((t) => t.toJson()).toList(),
-      };
-}
-
 /// Manager for all available tracks and their representation on disk.
 class MusicusLibrary {
+  /// Starts the database isolate.
+  ///
+  /// It will create a database connection for [request.path] and will send the
+  /// drift send port through [request.sendPort].
+  static void _dbIsolateEntrypoint(_IsolateStartRequest request) {
+    final executor = NativeDatabase(File(request.path));
+
+    final driftIsolate =
+        DriftIsolate.inCurrent(() => DatabaseConnection.fromExecutor(executor));
+
+    request.sendPort.send(driftIsolate.connectPort);
+  }
+
   /// String representing the music library base path.
   final String basePath;
 
+  /// The actual music library database.
+  MusicusClientDatabase db;
+
   /// Access to platform dependent functionality.
   final MusicusPlatform platform;
-
-  /// Map of all available tracks by recording ID.
-  ///
-  /// These are [InternalTrack] objects to store the URI of the corresponding
-  /// audio file alongside the real [Track] object.
-  final Map<int, List<InternalTrack>> tracks = {};
 
   MusicusLibrary(this.basePath, this.platform);
 
@@ -126,62 +42,32 @@ class MusicusLibrary {
   /// content of all files called musicus.json and stores all track information
   /// that it found.
   Future<void> load() async {
-    // TODO: Consider capping the recursion somewhere.
-    Future<void> recurse([String parentId]) async {
-      final children = await platform.getChildren(parentId);
+    SendPort driftPort = IsolateNameServer.lookupPortByName('drift');
 
-      for (final child in children) {
-        if (child.isDirectory) {
-          recurse(child.id);
-        } else if (child.name == 'musicus.json') {
-          final content = await platform.readDocument(child.id);
-          final musicusFile = MusicusFile.fromJson(jsonDecode(content));
-          for (final track in musicusFile.tracks) {
-            _indexTrack(parentId, track);
-          }
-        }
-      }
+    if (driftPort == null) {
+      final receivePort = ReceivePort();
+
+      await Isolate.spawn(
+        _dbIsolateEntrypoint,
+        _IsolateStartRequest(
+            receivePort.sendPort, p.join(basePath, 'musicus.db')),
+      );
+
+      driftPort = await receivePort.first;
+      IsolateNameServer.registerPortWithName(driftPort, 'drift');
     }
 
-    await recurse();
-  }
-
-  /// Add a list of new tracks to the music library.
-  ///
-  /// They are stored in this instance and on disk in the directory denoted by
-  /// [parentId].
-  Future<void> addTracks(String parentId, List<Track> newTracks) async {
-    MusicusFile musicusFile;
-
-    final oldContent =
-        await platform.readDocumentByName(parentId, 'musicus.json');
-
-    if (oldContent != null) {
-      musicusFile = MusicusFile.fromJson(jsonDecode(oldContent));
-    } else {
-      musicusFile = MusicusFile();
-    }
-
-    for (final track in newTracks) {
-      _indexTrack(parentId, track);
-      musicusFile.tracks.add(track);
-    }
-
-    await platform.writeDocumentByName(
-        parentId, 'musicus.json', jsonEncode(musicusFile.toJson()));
-  }
-
-  /// Add a track to the map of available tracks.
-  Future<void> _indexTrack(String parentId, Track track) async {
-    final iTrack = InternalTrack(
-      track: track,
-      identifier: await platform.getIdentifier(parentId, track.fileName),
+    final driftIsolate = DriftIsolate.fromConnectPort(driftPort);
+    db = MusicusClientDatabase.connect(
+      connection: await driftIsolate.connect(),
     );
-
-    if (tracks.containsKey(track.recordingId)) {
-      tracks[track.recordingId].add(iTrack);
-    } else {
-      tracks[track.recordingId] = [iTrack];
-    }
   }
+}
+
+/// Bundles arguments for the database isolate.
+class _IsolateStartRequest {
+  final SendPort sendPort;
+  final String path;
+
+  _IsolateStartRequest(this.sendPort, this.path);
 }

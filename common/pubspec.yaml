@@ -13,6 +13,7 @@ dependencies:
   meta:
   musicus_database:
     path: ../database
+  path: ^1.8.1
   rxdart:
   url_launcher: ^6.1.0
 

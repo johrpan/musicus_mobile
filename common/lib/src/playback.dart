@@ -1,7 +1,6 @@
 import 'package:meta/meta.dart';
+import 'package:musicus_database/musicus_database.dart';
 import 'package:rxdart/rxdart.dart';
-
-import 'library.dart';
 
 /// Base class for Musicus playback.
 abstract class MusicusPlayback {
@@ -14,7 +13,7 @@ abstract class MusicusPlayback {
   /// The current playlist.
   ///
   /// If the player is not active, this will be an empty list.
-  final playlist = BehaviorSubject.seeded(<InternalTrack>[]);
+  final playlist = BehaviorSubject.seeded(<Track>[]);
 
   /// Index of the currently played (or paused) track within the playlist.
   ///
@@ -24,7 +23,7 @@ abstract class MusicusPlayback {
   /// The currently played track.
   ///
   /// This will be null, if there is no  current track.
-  final currentTrack = BehaviorSubject<InternalTrack>.seeded(null);
+  final currentTrack = BehaviorSubject<Track>.seeded(null);
 
   /// Whether we are currently playing or not.
   ///
@@ -50,7 +49,7 @@ abstract class MusicusPlayback {
   Future<void> setup();
 
   /// Add a list of tracks to the players playlist.
-  Future<void> addTracks(List<InternalTrack> tracks);
+  Future<void> addTracks(List<Track> tracks);
 
   /// Remove the track at [index] from the playlist.
   Future<void> removeTrack(int index);

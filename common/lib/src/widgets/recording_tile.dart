@@ -25,9 +25,8 @@ class RecordingTile extends StatelessWidget {
         children: <Widget>[
           DefaultTextStyle(
             style: textTheme.subtitle1,
-            child: Text(workInfo.composers
-                .map((p) => '${p.firstName} ${p.lastName}')
-                .join(', ')),
+            child: Text(
+                '${workInfo.composer.firstName} ${workInfo.composer.lastName}'),
           ),
           DefaultTextStyle(
             style: textTheme.headline6,

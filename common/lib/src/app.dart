@@ -37,7 +37,6 @@ class MusicusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MusicusBackend(
-      dbPath: dbPath,
       settingsStorage: settingsStorage,
       playback: playback,
       platform: platform,
