@@ -1,5 +1,5 @@
-name: musicus_client
-description: Client library for the Musicus server.
+name: musicus_database
+description: Musicus database library.
 version: 0.0.1
 
 environment:
