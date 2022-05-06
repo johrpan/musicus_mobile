@@ -1,5 +1,0 @@
-host: localhost
-port: 1833
-secret: vulnerable
-dbPath: db.sqlite
-serverDbPath: server.sqlite
