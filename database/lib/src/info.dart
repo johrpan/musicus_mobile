@@ -1,27 +1,5 @@
 import 'database.dart';
 
-/// A bundle of all available information on a work part.
-class PartInfo {
-  /// The work part itself.
-  final WorkPart part;
-
-  /// A list of instruments.
-  ///
-  /// This will include the instruments, that are specific to this part.
-  final List<Instrument> instruments;
-
-  /// The composer of this part.
-  ///
-  /// This is null, if this part doesn't have a specific composer.
-  final Person composer;
-
-  PartInfo({
-    this.part,
-    this.instruments,
-    this.composer,
-  });
-}
-
 /// A bundle information on a work.
 ///
 /// This includes all available information except for recordings of this work.
@@ -35,11 +13,11 @@ class WorkInfo {
   /// parts.
   final List<Instrument> instruments;
 
-  /// A list of persons, which will include all part composers.
-  final List<Person> composers;
+  /// The work's composer.
+  final Person composer;
 
   /// All available information on the work parts.
-  final List<PartInfo> parts;
+  final List<WorkPart> parts;
 
   /// The sections of this work.
   final List<WorkSection> sections;
@@ -47,7 +25,7 @@ class WorkInfo {
   WorkInfo({
     this.work,
     this.instruments,
-    this.composers,
+    this.composer,
     this.parts,
     this.sections,
   });
