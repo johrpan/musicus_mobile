@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:musicus_client/musicus_client.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../editors/work.dart';
 import '../widgets/lists.dart';
 
 import 'work.dart';
@@ -55,31 +54,6 @@ class _PersonScreenState extends State<PersonScreen> {
               ),
             ),
           ),
-          onLongPress: () {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return SimpleDialog(
-                  children: <Widget>[
-                    ListTile(
-                      title: Text('Edit work'),
-                      onTap: () async {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => WorkEditor(
-                              workInfo: workInfo,
-                            ),
-                            fullscreenDialog: true,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
-          },
         ),
       ),
     );

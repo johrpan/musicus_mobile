@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:musicus_client/musicus_client.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../editors/person.dart';
-import '../editors/tracks.dart';
 import '../icons.dart';
 import '../widgets/lists.dart';
 
@@ -46,14 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 1,
-                child: Text('Add tracks'),
-              ),
-              PopupMenuItem(
-                value: 2,
                 child: Text('Settings'),
               ),
               PopupMenuItem(
-                value: 3,
+                value: 2,
                 child: Text('About'),
               ),
             ],
@@ -62,18 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => TracksEditor(),
-                    fullscreenDialog: true,
-                  ),
-                );
-              } else if (selected == 2) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
                     builder: (context) => SettingsScreen(),
                   ),
                 );
-              } else if (selected == 3) {
+              } else if (selected == 2) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -100,31 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          onLongPress: () {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return SimpleDialog(
-                  children: <Widget>[
-                    ListTile(
-                      title: Text('Edit person'),
-                      onTap: () async {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PersonEditor(
-                              person: person,
-                            ),
-                            fullscreenDialog: true,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
-          },
         ),
       ),
     );

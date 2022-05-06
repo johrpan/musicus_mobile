@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:musicus_client/musicus_client.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import '../backend.dart';
-import '../editors/recording.dart';
 import '../widgets/lists.dart';
 import '../widgets/texts.dart';
 
@@ -36,31 +35,6 @@ class WorkScreen extends StatelessWidget {
               final tracks = backend.library.tracks[recordingId];
               tracks.sort((t1, t2) => t1.track.index.compareTo(t2.track.index));
               backend.playback.addTracks(tracks);
-            },
-            onLongPress: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return SimpleDialog(
-                    children: <Widget>[
-                      ListTile(
-                        title: Text('Edit recording'),
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RecordingEditor(
-                                recordingInfo: recordingInfo,
-                              ),
-                              fullscreenDialog: true,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  );
-                },
-              );
             },
           );
         },

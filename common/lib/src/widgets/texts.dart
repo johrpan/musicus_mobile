@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:musicus_client/musicus_client.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 /// A widget showing information on a list of performances.
 class PerformancesText extends StatelessWidget {
@@ -34,7 +34,7 @@ class PerformancesText extends StatelessWidget {
 
         performanceTexts.add(buffer.toString());
       }
-      
+
       return Text(performanceTexts.join(', '));
     }
   }

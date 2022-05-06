@@ -6,16 +6,15 @@ environment:
   sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
+  drift: ^1.0.0
   flutter:
     sdk: flutter
   flutter_markdown:
   meta:
-  moor:
-  moor_ffi:
-  musicus_client:
-    path: ../client
+  musicus_database:
+    path: ../database
   rxdart:
-  url_launcher:
+  url_launcher: ^6.1.0
 
 flutter:
   uses-material-design: true

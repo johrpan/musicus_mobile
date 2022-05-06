@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:meta/meta.dart';
-import 'package:musicus_client/musicus_client.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Interface for persisting settings.
@@ -54,12 +51,6 @@ class MusicusSettings {
   /// Android storage access framework.
   final musicLibraryPath = BehaviorSubject<String>();
 
-  /// Musicus server to connect to.
-  final server = BehaviorSubject<MusicusServerSettings>();
-
-  /// Credentials for the Musicus account to login as.
-  final account = BehaviorSubject<MusicusAccountCredentials>();
-
   /// Create a settings instance.
   MusicusSettings(this.storage);
 
@@ -71,26 +62,6 @@ class MusicusSettings {
     if (path != null) {
       musicLibraryPath.add(path);
     }
-
-    final host = await storage.getString('serverHost') ?? defaultHost;
-    final port = await storage.getInt('serverPort') ?? defaultPort;
-    final apiPath = await storage.getString('serverApiPath') ?? defaultApiPath;
-
-    server.add(MusicusServerSettings(
-      host: host,
-      port: port,
-      apiPath: apiPath,
-    ));
-
-    final username = await storage.getString('accountUsername');
-    final passwordBase64 = await storage.getString('accountPassword');
-
-    if (username != null) {
-      account.add(MusicusAccountCredentials(
-        username: username,
-        password: utf8.decode(base64Decode(passwordBase64)),
-      ));
-    }
   }
 
   /// Set a new music library path.
@@ -101,54 +72,8 @@ class MusicusSettings {
     musicLibraryPath.add(path);
   }
 
-  /// Update the server settings.
-  ///
-  /// This will persist the new values and update the stream.
-  Future<void> setServer(MusicusServerSettings serverSettings) async {
-    await storage.setString('serverHost', serverSettings.host);
-    await storage.setInt('serverPort', serverSettings.port);
-    await storage.setString('severApiPath', serverSettings.apiPath);
-    server.add(serverSettings);
-  }
-
-  /// Reset the server settings to their defaults.
-  Future<void> resetServer() async {
-    await setServer(MusicusServerSettings(
-      host: defaultHost,
-      port: defaultPort,
-      apiPath: defaultApiPath,
-    ));
-  }
-
-  /// Update the account credentials.
-  ///
-  /// This will persist the new values and update the stream.
-  Future<void> setAccount(MusicusAccountCredentials credentials) async {
-    await storage.setString('accountUsername', credentials.username);
-
-    // IMPORTANT NOTE: We encode the password using Base64 to defend just the
-    // simplest of simplest attacks. This provides no additional security
-    // besides the fact that the password looks a little bit encrypted.
-    await storage.setString(
-      'accountPassword',
-      base64Encode(utf8.encode(credentials.password)),
-    );
-
-    account.add(credentials);
-  }
-
-  /// Delete the current account credentials.
-  Future<void> clearAccount() async {
-    await storage.setString('accountUsername', null);
-    await storage.setString('accountPassword', null);
-
-    account.add(null);
-  }
-
   /// Tidy up.
   void dispose() {
     musicLibraryPath.close();
-    server.close();
-    account.close();
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:url_launcher/url_launcher.dart' as url;
+import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
   @override
@@ -29,7 +29,7 @@ class AboutScreen extends StatelessWidget {
                   decoration: TextDecoration.underline,
                 ),
               ),
-              onTapLink: (link) => url.launch(link),
+              onTapLink: (text, href, title) => launchUrl(Uri.parse(href)),
             );
           } else {
             return Container();

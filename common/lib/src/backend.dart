@@ -2,11 +2,11 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:drift/drift.dart';
+import 'package:drift/isolate.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
-import 'package:moor/isolate.dart';
-import 'package:moor/moor.dart';
-import 'package:moor_ffi/moor_ffi.dart';
-import 'package:musicus_client/musicus_client.dart';
+import 'package:musicus_database/musicus_database.dart';
 
 import 'library.dart';
 import 'platform.dart';
@@ -79,15 +79,17 @@ class MusicusBackend extends StatefulWidget {
 }
 
 class MusicusBackendState extends State<MusicusBackend> {
-  /// Starts the Moor isolate.
+  /// Starts the database isolate.
   ///
   /// It will create a database connection for [request.path] and will send the
-  /// Moor send port through [request.sendPort].
-  static void _moorIsolateEntrypoint(_IsolateStartRequest request) {
-    final executor = VmDatabase(File(request.path));
-    final moorIsolate =
-        MoorIsolate.inCurrent(() => DatabaseConnection.fromExecutor(executor));
-    request.sendPort.send(moorIsolate.connectPort);
+  /// drift send port through [request.sendPort].
+  static void _dbIsolateEntrypoint(_IsolateStartRequest request) {
+    final executor = NativeDatabase(File(request.path));
+
+    final driftIsolate =
+        DriftIsolate.inCurrent(() => DatabaseConnection.fromExecutor(executor));
+
+    request.sendPort.send(driftIsolate.connectPort);
   }
 
   /// The current backend status.
@@ -99,7 +101,6 @@ class MusicusBackendState extends State<MusicusBackend> {
   MusicusClientDatabase db;
   MusicusPlayback playback;
   MusicusSettings settings;
-  MusicusClient client;
   MusicusPlatform platform;
   MusicusLibrary library;
 
@@ -111,17 +112,22 @@ class MusicusBackendState extends State<MusicusBackend> {
 
   /// Initialize resources.
   Future<void> _load() async {
-    SendPort moorPort = IsolateNameServer.lookupPortByName('moor');
-    if (moorPort == null) {
+    SendPort driftPort = IsolateNameServer.lookupPortByName('moor');
+
+    if (driftPort == null) {
       final receivePort = ReceivePort();
-      await Isolate.spawn(_moorIsolateEntrypoint,
+
+      await Isolate.spawn(_dbIsolateEntrypoint,
           _IsolateStartRequest(receivePort.sendPort, widget.dbPath));
-      moorPort = await receivePort.first;
-      IsolateNameServer.registerPortWithName(moorPort, 'moor');
+
+      driftPort = await receivePort.first;
+      IsolateNameServer.registerPortWithName(driftPort, 'drift');
     }
 
-    final moorIsolate = MoorIsolate.fromConnectPort(moorPort);
-    db = MusicusClientDatabase.connect(connection: await moorIsolate.connect());
+    final driftIsolate = DriftIsolate.fromConnectPort(driftPort);
+    db = MusicusClientDatabase.connect(
+      connection: await driftIsolate.connect(),
+    );
 
     playback = widget.playback;
     await playback.setup();
@@ -136,18 +142,7 @@ class MusicusBackendState extends State<MusicusBackend> {
       _updateMusicLibrary(path);
     });
 
-    settings.server.listen((serverSettings) {
-      _updateClient(serverSettings);
-    });
-
-    settings.account.listen((credentials) {
-      client.credentials = credentials;
-    });
-
-    // This will also check for existing account settings.
-    _updateClient(settings.server.value);
-
-    final path = settings.musicLibraryPath.value;
+    final path = settings.musicLibraryPath.valueOrNull;
 
     platform = widget.platform;
     platform.setBasePath(path);
@@ -172,20 +167,6 @@ class MusicusBackendState extends State<MusicusBackend> {
     }
   }
 
-  /// Create a new client based on [serverSettings].
-  void _updateClient(MusicusServerSettings serverSettings) {
-    client?.dispose();
-    client = MusicusClient(
-      host: serverSettings.host,
-      port: serverSettings.port,
-      basePath: serverSettings.apiPath,
-      credentials: settings.account.value,
-    );
-
-    // TODO: Maybe don't change the client in the middle of synchronization.
-    db.client = client;
-  }
-
   @override
   Widget build(BuildContext context) {
     return _InheritedBackend(
@@ -202,11 +183,10 @@ class MusicusBackendState extends State<MusicusBackend> {
 
     /// We don't stop the Moor isolate, because it can be used elsewhere.
     db.close();
-    client.dispose();
   }
 }
 
-/// Bundles arguments for the moor isolate.
+/// Bundles arguments for the database isolate.
 class _IsolateStartRequest {
   final SendPort sendPort;
   final String path;
