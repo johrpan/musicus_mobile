@@ -198,3 +198,8 @@ SELECT *
 FROM tracks
 WHERE recording = :id
 ORDER BY "index";
+
+tracksById:
+SELECT *
+FROM tracks
+WHERE id = :id;

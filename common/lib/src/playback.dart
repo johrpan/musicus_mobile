@@ -122,10 +122,12 @@ abstract class MusicusPlayback {
   ///
   /// Requires [playlist] to be up to date.
   void updateCurrentTrack(int index) {
-    currentIndex.add(index);
+    if (index != null) {
+      currentIndex.add(index);
 
-    if (playlist.value != null && index >= 0 && index < playlist.value.length) {
-      currentTrack.add(playlist.value[index]);
+      if (playlist.value != null && index >= 0 && index < playlist.value.length) {
+        currentTrack.add(playlist.value[index]);
+      }
     }
   }
 }

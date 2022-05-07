@@ -1,24 +1,28 @@
 name: musicus
 version: 0.1.0
 description: The classical music player and organizer.
-author: Elias Projahn <johrpan@gmail.com>
 homepage: https://musicus.org
 repository: https://github.com/johrpan/musicus
+publish_to: none
 
 environment:
   sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
-  audio_service:
+  audio_service: ^0.18.4
+  drift: ^1.0.0
   flutter:
     sdk: flutter
   musicus_common:
     path: ../common
+  musicus_database:
+    path: ../database
   musicus_player:
     path: ../player
   path:
   path_provider:
   shared_preferences:
+  sqlite3_flutter_libs: ^0.5.0
 
 flutter:
   uses-material-design: true

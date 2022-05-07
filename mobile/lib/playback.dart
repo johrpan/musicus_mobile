@@ -1,535 +1,317 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:isolate';
-import 'dart:ui';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:moor/isolate.dart';
-import 'package:musicus_client/musicus_client.dart';
 import 'package:musicus_common/musicus_common.dart';
 import 'package:musicus_player/musicus_player.dart';
+import 'package:path/path.dart' as p;
 
-const _portName = 'playbackService';
+class MusicusMobilePlayback extends MusicusPlayback {
+  AudioHandler audioHandler;
+  MusicusLibrary library;
 
-/// Entrypoint for the playback service.
-void _playbackServiceEntrypoint() {
-  AudioServiceBackground.run(() => _PlaybackService());
-}
+  @override
+  Future<void> setup(MusicusLibrary musicusLibrary) async {
+    library = musicusLibrary;
 
-class Playback extends MusicusPlayback {
-  StreamSubscription _playbackServiceStateSubscription;
-
-  /// Start playback service.
-  Future<void> _start() async {
-    if (!AudioService.running) {
-      await AudioService.start(
-        backgroundTaskEntrypoint: _playbackServiceEntrypoint,
+    audioHandler = await AudioService.init(
+      builder: () => MusicusAudioHandler(musicusLibrary),
+      config: AudioServiceConfig(
+        androidNotificationChannelId: 'de.johrpan.musicus.channel.audio',
         androidNotificationChannelName: 'Musicus playback',
         androidNotificationChannelDescription:
             'Keeps Musicus playing in the background',
         androidNotificationIcon: 'drawable/ic_notification',
-      );
+      ),
+    );
 
-      active.add(true);
-    }
+    listen();
   }
 
-  @override
-  Future<void> setup() async {
-    if (_playbackServiceStateSubscription != null) {
-      _playbackServiceStateSubscription.cancel();
-    }
-
-    // We will receive updated state information from the playback service,
-    // which runs in its own isolate, through this port.
-    final receivePort = ReceivePort();
-    receivePort.asBroadcastStream(
-      onListen: (subscription) {
-        _playbackServiceStateSubscription = subscription;
-      },
-    ).listen((msg) {
-      // If state is null, the background audio service has stopped.
-      if (msg == null) {
-        dispose();
-      } else {
-        if (!active.value) {
-          active.add(true);
-        }
-
-        if (msg is _StatusMessage) {
-          playing.add(msg.playing);
-        } else if (msg is _PositionMessage) {
-          updatePosition(msg.positionMs);
-        } else if (msg is _TrackMessage) {
-          updateCurrentTrack(msg.currentTrack);
-          updateDuration(msg.positionMs, msg.durationMs);
-        } else if (msg is _PlaylistMessage) {
-          playlist.add(msg.playlist);
-          updateCurrentTrack(msg.currentTrack);
-          updateDuration(msg.positionMs, msg.durationMs);
-        }
+  Future<void> listen() async {
+    audioHandler.customEvent.listen((event) {
+      if (event != null && event is PlaylistEvent) {
+        playlist.add(event.playlist);
       }
     });
 
-    IsolateNameServer.removePortNameMapping(_portName);
-    IsolateNameServer.registerPortWithName(receivePort.sendPort, _portName);
+    audioHandler.playbackState.listen((event) {
+      if (event != null) {
+        playing.add(event.playing);
+        updatePosition(event.position);
+        updateCurrentTrack(event.queueIndex);
+      }
+    });
 
-    if (AudioService.running) {
-      active.add(true);
+    audioHandler.mediaItem.listen((event) {
+      if (event != null) {
+        updateDuration(event.duration);
+      }
+    });
 
-      // Instruct the background service to send its current state. This will
-      // by handled in the listeners, that were already set in the constructor.
-      AudioService.customAction('sendState');
-    }
+    await audioHandler.customAction('sendState');
   }
 
   @override
-  Future<void> addTracks(List<InternalTrack> tracks) async {
-    if (!AudioService.running) {
-      await _start();
-    }
-
-    await AudioService.customAction('addTracks', jsonEncode(tracks));
-  }
-
-  @override
-  Future<void> removeTrack(int index) async {
-    if (AudioService.running) {
-      await AudioService.customAction('removeTrack', index);
-    }
+  Future<void> addTracks(List<String> tracks) async {
+    await audioHandler.customAction('addTracks', {'tracks': tracks});
+    active.add(true);
   }
 
   @override
   Future<void> playPause() async {
-    if (active.value) {
-      if (playing.value) {
-        await AudioService.pause();
-      } else {
-        await AudioService.play();
-      }
+    if (playing.value) {
+      await audioHandler.pause();
+    } else {
+      await audioHandler.play();
     }
+  }
+
+  @override
+  Future<void> removeTrack(int index) async {
+    await audioHandler.customAction('removeTrack', {'index': index});
   }
 
   @override
   Future<void> seekTo(double pos) async {
-    if (active.value && pos >= 0.0 && pos <= 1.0) {
-      final durationMs = duration.value.inMilliseconds;
-      await AudioService.seekTo((pos * durationMs).floor());
-    }
-  }
-
-  @override
-  Future<void> skipToPrevious() async {
-    if (AudioService.running) {
-      await AudioService.skipToPrevious();
-    }
-  }
-
-  @override
-  Future<void> skipToNext() async {
-    if (AudioService.running) {
-      await AudioService.skipToNext();
+    if (pos >= 0.0 && pos <= 1.0) {
+      final durationMs = audioHandler.mediaItem.value.duration.inMilliseconds;
+      await audioHandler
+          .seek(Duration(milliseconds: (pos * durationMs).floor()));
     }
   }
 
   @override
   Future<void> skipTo(int index) async {
-    if (AudioService.running) {
-      await AudioService.customAction('skipTo', index);
+    await audioHandler.skipToQueueItem(index);
+  }
+
+  @override
+  Future<void> skipToNext() async {
+    await audioHandler.skipToNext();
+  }
+
+  @override
+  Future<void> skipToPrevious() async {
+    await audioHandler.skipToPrevious();
+  }
+}
+
+class MusicusAudioHandler extends BaseAudioHandler {
+  final MusicusLibrary library;
+
+  MusicusPlayer player;
+
+  List<String> playlist = [];
+  int currentTrack = -1;
+  int durationMs = 1000;
+  bool playing = false;
+
+  MusicusAudioHandler(this.library) {
+    player = MusicusPlayer(onComplete: () async {
+      if (currentTrack < playlist.length - 1) {
+        await skipToNext();
+      } else {
+        playing = false;
+        await sendState();
+      }
+    });
+  }
+
+  @override
+  Future<void> play() async {
+    await player.play();
+    playing = true;
+    await sendState();
+    keepSendingPosition();
+  }
+
+  Future<void> pause() async {
+    await player.pause();
+    playing = false;
+    await sendState();
+  }
+
+  Future<void> stop() async {
+    playlist.clear();
+    await player.stop();
+
+    super.stop();
+  }
+
+  Future<void> seek(Duration position) async {
+    await player.seekTo(position.inMilliseconds);
+    await sendState();
+  }
+
+  @override
+  Future<void> skipToPrevious() async {
+    if (currentTrack > 0 && currentTrack < playlist.length) {
+      await skipToQueueItem(currentTrack - 1);
     }
   }
 
   @override
-  void dispose() {
-    super.dispose();
-    _playbackServiceStateSubscription.cancel();
+  Future<void> skipToNext() async {
+    if (currentTrack >= 0 && currentTrack < playlist.length - 1) {
+      await skipToQueueItem(currentTrack + 1);
+    }
   }
-}
 
-/// A message from the playback service to the UI.
-abstract class _Message {}
+  @override
+  Future<void> skipToQueueItem(int index) async {
+    if (index >= 0 && index < playlist.length) {
+      currentTrack = index;
+      final track = await library.db.tracksById(playlist[index]).getSingle();
+      durationMs = await player.setUri(p.join(library.basePath, track.path));
 
-/// Playback status update.
-class _StatusMessage extends _Message {
-  /// Whether the player is playing (or paused).
-  final bool playing;
+      await sendState();
+      await sendMediaItem();
+    }
+  }
 
-  /// Playback position in milliseconds.
-  final int positionMs;
+  @override
+  Future<void> customAction(String name, [Map<String, dynamic> extras]) async {
+    if (name == 'sendState') {
+      await sendPlaylist();
+      await sendMediaItem();
+      await sendState();
+    } else if (name == 'addTracks') {
+      await addTracks(extras['tracks']);
+    } else if (name == 'removeTrack') {
+      await removeTrack(extras['index']);
+    }
+  }
 
-  _StatusMessage({
-    this.playing,
-    this.positionMs,
-  });
-}
+  Future<void> addTracks(List<String> tracks) async {
+    if (tracks != null && tracks.isNotEmpty) {
+      final wasEmpty = playlist.isEmpty;
 
-/// The playback position has changed.
-///
-/// This could be due to seeking or because time progressed.
-class _PositionMessage extends _Message {
-  /// Playback position in milliseconds.
-  final int positionMs;
+      playlist.addAll(tracks);
+      await sendPlaylist();
 
-  _PositionMessage({
-    this.positionMs,
-  });
-}
-
-/// The current track has changed.
-///
-/// This also notifies about the playback position, as the old position could be
-/// behind the new duration.
-class _TrackMessage extends _Message {
-  /// Index of the new track within the playlist.
-  final int currentTrack;
-
-  /// Duration of the new track in milliseconds.
-  final int durationMs;
-
-  /// Playback position in milliseconds.
-  final int positionMs;
-
-  _TrackMessage({
-    this.currentTrack,
-    this.durationMs,
-    this.positionMs,
-  });
-}
-
-/// The playlist was changed.
-///
-/// This also notifies about the current track, as the old index could be out of
-/// range in the new playlist.
-class _PlaylistMessage extends _Message {
-  /// The new playlist.
-  final List<InternalTrack> playlist;
-
-  /// The current track.
-  final int currentTrack;
-
-  /// Duration of the current track in milliseconds.
-  final int durationMs;
-
-  /// Playback position in milliseconds.
-  final int positionMs;
-
-  _PlaylistMessage({
-    this.playlist,
-    this.currentTrack,
-    this.durationMs,
-    this.positionMs,
-  });
-}
-
-class _PlaybackService extends BackgroundAudioTask {
-  /// The interval between playback position updates in milliseconds.
-  static const positionUpdateInterval = 250;
-
-  static const playControl = MediaControl(
-    androidIcon: 'drawable/ic_play',
-    label: 'Play',
-    action: MediaAction.play,
-  );
-
-  static const pauseControl = MediaControl(
-    androidIcon: 'drawable/ic_pause',
-    label: 'Pause',
-    action: MediaAction.pause,
-  );
-
-  static const stopControl = MediaControl(
-    androidIcon: 'drawable/ic_stop',
-    label: 'Stop',
-    action: MediaAction.stop,
-  );
-
-  final _completer = Completer();
-  final _loading = Completer();
-  final List<InternalTrack> _playlist = [];
-
-  MusicusClientDatabase db;
-  MusicusPlayer _player;
-  int _currentTrack = 0;
-  bool _playing = false;
-  int _durationMs = 1000;
-
-  _PlaybackService() {
-    _player = MusicusPlayer(onComplete: () async {
-      if (_currentTrack < _playlist.length - 1) {
-        await _setCurrentTrack(_currentTrack + 1);
-        _sendTrack();
+      if (wasEmpty) {
+        await skipToQueueItem(0);
+        await play();
       } else {
-        _playing = false;
-        _sendStatus();
-        _setState();
+        await sendState();
       }
-    });
-
-    _load();
+    }
   }
 
-  /// Initialize database.
-  Future<void> _load() async {
-    final moorPort = IsolateNameServer.lookupPortByName('moor');
-    final moorIsolate = MoorIsolate.fromConnectPort(moorPort);
-    db = MusicusClientDatabase.connect(connection: await moorIsolate.connect());
-    _loading.complete();
+  Future<void> removeTrack(int index) async {
+    if (index >= 0 && index < playlist.length) {
+      playlist.removeAt(index);
+
+      if (playlist.isNotEmpty) {
+        if (currentTrack == index) {
+          await skipToQueueItem(index);
+        } else if (currentTrack > index) {
+          currentTrack--;
+        }
+      }
+
+      await sendPlaylist();
+      await sendState();
+    }
   }
 
-  /// Update the audio service status for the system.
-  Future<void> _setState() async {
-    final positionMs = await _player.getPosition() ?? 0;
-    final updateTime = DateTime.now().millisecondsSinceEpoch;
+  Future<void> sendPlaylist() async {
+    customEvent.add(PlaylistEvent(playlist));
+  }
 
-    AudioServiceBackground.setState(
-      controls:
-          _playing ? [pauseControl, stopControl] : [playControl, stopControl],
-      basicState:
-          _playing ? BasicPlaybackState.playing : BasicPlaybackState.paused,
-      position: positionMs,
-      updateTime: updateTime,
-    );
+  Future<void> sendState() async {
+    List<MediaControl> controls = [];
+    Set<MediaAction> actions = {};
 
-    if (_playlist.isNotEmpty) {
-      await _loading.future;
+    if (playlist.isNotEmpty) {
+      if (currentTrack < 0 || currentTrack >= playlist.length) {
+        currentTrack = 0;
+      }
 
-      final track = _playlist[_currentTrack];
-      final recordingInfo = await db.getRecording(track.track.recordingId);
-      final workInfo = await db.getWork(recordingInfo.recording.work);
+      if (currentTrack > 0) {
+        controls.add(MediaControl.skipToPrevious);
+      }
 
-      final title = workInfo.composers
-          .map((p) => '${p.firstName} ${p.lastName}')
-          .join(', ');
+      if (playing) {
+        controls.add(MediaControl.pause);
+      } else {
+        controls.add(MediaControl.play);
+      }
 
-      final subtitleBuffer = StringBuffer(workInfo.work.title);
+      if (currentTrack < playlist.length - 1) {
+        controls.add(MediaControl.skipToNext);
+      }
 
-      final partIds = track.track.partIds;
-      if (partIds.isNotEmpty) {
-        subtitleBuffer.write(': ');
+      actions.add(MediaAction.seek);
+    } else {
+      currentTrack = -1;
+    }
 
-        final section = workInfo.sections.lastWhere(
-          (s) => s.beforePartIndex <= partIds[0],
-          orElse: () => null,
-        );
+    playbackState.add(PlaybackState(
+      processingState: AudioProcessingState.ready,
+      playing: playing,
+      controls: controls,
+      systemActions: actions,
+      updatePosition: Duration(milliseconds: await player.getPosition()),
+      queueIndex: currentTrack,
+    ));
+  }
 
-        if (section != null) {
-          subtitleBuffer.write(section.title);
+  Future<void> sendMediaItem() async {
+    if (currentTrack >= 0 && currentTrack < playlist.length) {
+      final track =
+          await library.db.tracksById(playlist[currentTrack]).getSingle();
+
+      final recording =
+          await library.db.recordingById(track.recording).getSingle();
+
+      final workInfo = await library.db.getWork(recording.work);
+
+      final partIds = track.workParts
+          .split(',')
+          .where((p) => p.isNotEmpty)
+          .map((p) => int.parse(p))
+          .toList();
+
+      String title;
+      String subtitle;
+
+      if (workInfo != null) {
+        title = '${workInfo.composer.firstName} ${workInfo.composer.lastName}';
+
+        final subtitleBuffer = StringBuffer(workInfo.work.title);
+
+        if (partIds.isNotEmpty) {
           subtitleBuffer.write(': ');
+          subtitleBuffer
+              .write(partIds.map((i) => workInfo.parts[i].title).join(', '));
         }
 
-        subtitleBuffer
-            .write(partIds.map((i) => workInfo.parts[i].part.title).join(', '));
+        subtitle = subtitleBuffer.toString();
+      } else {
+        title = '...';
+        subtitle = '...';
       }
 
-      final subtitle = subtitleBuffer.toString();
-
-      AudioServiceBackground.setMediaItem(MediaItem(
-        id: track.identifier,
-        album: subtitle,
-        title: title,
-        displayTitle: title,
-        displaySubtitle: subtitle,
+      mediaItem.add(MediaItem(
+        id: track.id,
+        title: subtitle,
+        album: title,
+        duration: Duration(milliseconds: durationMs),
       ));
     }
   }
 
-  /// Send a message to the UI.
-  void _sendMsg(_Message msg) {
-    final sendPort = IsolateNameServer.lookupPortByName(_portName);
-    sendPort?.send(msg);
-  }
-
-  /// Notify the UI about the current playback status.
-  Future<void> _sendStatus() async {
-    _sendMsg(_StatusMessage(
-      playing: _playing,
-      positionMs: await _player.getPosition(),
-    ));
-  }
-
-  /// Notify the UI about the current playback position.
-  Future<void> _sendPosition() async {
-    _sendMsg(_PositionMessage(
-      positionMs: await _player.getPosition(),
-    ));
-  }
-
-  /// Notify the UI about the current track.
-  Future<void> _sendTrack() async {
-    _sendMsg(_TrackMessage(
-      currentTrack: _currentTrack,
-      durationMs: _durationMs,
-      positionMs: await _player.getPosition(),
-    ));
-  }
-
-  /// Notify the UI about the current playlist.
-  Future<void> _sendPlaylist() async {
-    _sendMsg(_PlaylistMessage(
-      playlist: _playlist,
-      currentTrack: _currentTrack,
-      durationMs: _durationMs,
-      positionMs: await _player.getPosition(),
-    ));
-  }
-
   /// Notify the UI of the new playback position periodically.
-  Future<void> _updatePosition() async {
-    while (_playing) {
-      _sendPosition();
-      await Future.delayed(
-          const Duration(milliseconds: positionUpdateInterval));
+  Future<void> keepSendingPosition() async {
+    while (playing) {
+      sendState();
+      await Future.delayed(const Duration(seconds: 1));
     }
   }
+}
 
-  /// Set the current track, update the player and notify the system.
-  Future<void> _setCurrentTrack(int index) async {
-    _currentTrack = index;
-    _durationMs = await _player.setUri(_playlist[_currentTrack].identifier);
-    _setState();
-  }
-
-  /// Add [tracks] to the playlist.
-  Future<void> _addTracks(List<InternalTrack> tracks) async {
-    final play = _playlist.isEmpty;
-
-    _playlist.addAll(tracks);
-    if (play) {
-      await _setCurrentTrack(0);
-    }
-
-    _sendPlaylist();
-  }
-
-  /// Remove the track at [index] from the playlist.
-  ///
-  /// If it was the current track, the next track will be played.
-  Future<void> _removeTrack(int index) async {
-    if (index >= 0 && index < _playlist.length) {
-      _playlist.removeAt(index);
-
-      if (_playlist.isEmpty) {
-        onStop();
-      } else {
-        if (_currentTrack == index) {
-          await _setCurrentTrack(index);
-        } else if (_currentTrack > index) {
-          _currentTrack--;
-        }
-
-        _sendPlaylist();
-      }
-    }
-  }
-
-  /// Jump to the beginning of the track with the index [index].
-  Future<void> _skipTo(int index) async {
-    if (index >= 0 && index < _playlist.length) {
-      await _setCurrentTrack(index);
-      _sendTrack();
-    }
-  }
-
-  @override
-  Future<void> onStart() async {
-    _setState();
-    await _completer.future;
-  }
-
-  @override
-  Future<void> onCustomAction(String name, dynamic arguments) async {
-    super.onCustomAction(name, arguments);
-
-    // addTracks expects a List<Map<String, dynamic>> as its argument.
-    // skipTo and removeTrack expect an integer as their argument.
-    if (name == 'addTracks') {
-      final tracksJson = jsonDecode(arguments);
-      final List<InternalTrack> tracks = List.castFrom(
-          tracksJson.map((j) => InternalTrack.fromJson(j)).toList());
-
-      _addTracks(tracks);
-    } else if (name == 'removeTrack') {
-      final index = arguments as int;
-      _removeTrack(index);
-    } else if (name == 'skipTo') {
-      final index = arguments as int;
-      _skipTo(index);
-    } else if (name == 'sendState') {
-      _sendPlaylist();
-      _sendStatus();
-    }
-  }
-
-  @override
-  void onPlay() {
-    super.onPlay();
-
-    _player.play();
-    _playing = true;
-
-    _sendStatus();
-    _updatePosition();
-    _setState();
-  }
-
-  @override
-  void onPause() {
-    super.onPause();
-
-    _player.pause();
-    _playing = false;
-
-    _sendStatus();
-    _setState();
-  }
-
-  @override
-  Future<void> onSeekTo(int position) async {
-    super.onSeekTo(position);
-
-    await _player.seekTo(position);
-
-    _sendPosition();
-    _setState();
-  }
-
-  @override
-  Future<void> onSkipToNext() async {
-    super.onSkipToNext();
-
-    if (_playlist.length > 1 && _currentTrack < _playlist.length - 1) {
-      await _setCurrentTrack(_currentTrack + 1);
-      _sendTrack();
-    }
-  }
-
-  @override
-  Future<void> onSkipToPrevious() async {
-    super.onSkipToPrevious();
-
-    // If more than five seconds of the current track have been played, go back
-    // to its beginning, else, switch to the previous track.
-    if (await _player.getPosition() > 5000) {
-      await _setCurrentTrack(_currentTrack);
-      _sendTrack();
-    } else if (_playlist.length > 1 && _currentTrack > 0) {
-      await _setCurrentTrack(_currentTrack - 1);
-      _sendTrack();
-    }
-  }
-
-  @override
-  void onStop() {
-    _player.stop();
-
-    AudioServiceBackground.setState(
-      controls: [],
-      basicState: BasicPlaybackState.stopped,
-    );
-
-    _sendMsg(null);
-
-    // This will end onStart.
-    _completer.complete();
-  }
+class PlaylistEvent {
+  final List<String> playlist;
+  PlaylistEvent(this.playlist);
 }
