@@ -17,7 +17,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
 
   StreamSubscription<bool> playerActiveSubscription;
 
-  StreamSubscription<List<Track>> playlistSubscription;
+  StreamSubscription<List<String>> playlistSubscription;
   List<Widget> widgets = [];
 
   StreamSubscription<double> positionSubscription;
@@ -63,7 +63,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
   }
 
   /// Go through the tracks of [playlist] and preprocess them for displaying.
-  Future<void> updateProgram(List<Track> playlist) async {
+  Future<void> updateProgram(List<String> playlist) async {
     List<Widget> newWidgets = [];
 
     // The following variables exist to adapt the resulting ProgramItem to its
@@ -84,7 +84,7 @@ class _ProgramScreenState extends State<ProgramScreen> {
       // The widgets displayed for this track.
       List<Widget> children = [];
 
-      final track = playlist[i];
+      final track = await backend.db.tracksById(playlist[i]).getSingle();
       final recordingId = track.recording;
       final partIds = track.workParts;
 

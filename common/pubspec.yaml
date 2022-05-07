@@ -1,12 +1,14 @@
 name: musicus_common
 version: 0.1.0
 description: Common building blocks for Musicus client apps.
+publish_to: none
 
 environment:
   sdk: ">=2.3.0 <3.0.0"
 
 dependencies:
   drift: ^1.0.0
+  file_picker: ^4.5.1
   flutter:
     sdk: flutter
   flutter_markdown:

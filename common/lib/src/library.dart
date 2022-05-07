@@ -8,8 +8,6 @@ import 'package:drift/isolate.dart';
 import 'package:drift/native.dart';
 import 'package:musicus_database/musicus_database.dart';
 
-import 'platform.dart';
-
 /// Manager for all available tracks and their representation on disk.
 class MusicusLibrary {
   /// Starts the database isolate.
@@ -18,6 +16,7 @@ class MusicusLibrary {
   /// drift send port through [request.sendPort].
   static void _dbIsolateEntrypoint(_IsolateStartRequest request) {
     final executor = NativeDatabase(File(request.path));
+
 
     final driftIsolate =
         DriftIsolate.inCurrent(() => DatabaseConnection.fromExecutor(executor));
@@ -31,10 +30,7 @@ class MusicusLibrary {
   /// The actual music library database.
   MusicusClientDatabase db;
 
-  /// Access to platform dependent functionality.
-  final MusicusPlatform platform;
-
-  MusicusLibrary(this.basePath, this.platform);
+  MusicusLibrary(this.basePath);
 
   /// Load all available tracks.
   ///

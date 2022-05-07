@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:musicus_database/musicus_database.dart';
 
 import 'library.dart';
-import 'platform.dart';
 import 'playback.dart';
 import 'settings.dart';
 
@@ -43,9 +42,6 @@ class MusicusBackend extends StatefulWidget {
   /// An object handling playback.
   final MusicusPlayback playback;
 
-  /// An object handling platform dependent functionality.
-  final MusicusPlatform platform;
-
   /// The first child below the backend widget.
   ///
   /// This widget should keep track of the current backend status and block
@@ -56,7 +52,6 @@ class MusicusBackend extends StatefulWidget {
   MusicusBackend({
     @required this.settingsStorage,
     @required this.playback,
-    @required this.platform,
     @required this.child,
   });
 
@@ -76,7 +71,6 @@ class MusicusBackendState extends State<MusicusBackend> {
 
   MusicusPlayback playback;
   MusicusSettings settings;
-  MusicusPlatform platform;
   MusicusLibrary library;
 
   MusicusClientDatabase get db => library.db;
@@ -90,7 +84,6 @@ class MusicusBackendState extends State<MusicusBackend> {
   /// Initialize resources.
   Future<void> _load() async {
     playback = widget.playback;
-    await playback.setup();
 
     settings = MusicusSettings(widget.settingsStorage);
     await settings.load();
@@ -104,9 +97,6 @@ class MusicusBackendState extends State<MusicusBackend> {
 
     final path = settings.musicLibraryPath.valueOrNull;
 
-    platform = widget.platform;
-    platform.setBasePath(path);
-
     // This will change the status for us.
     _updateMusicLibrary(path);
   }
@@ -118,9 +108,11 @@ class MusicusBackendState extends State<MusicusBackend> {
         status = MusicusBackendStatus.setup;
       });
     } else {
-      platform.setBasePath(path);
-      library = MusicusLibrary(path, platform);
+      library = MusicusLibrary(path);
+
       await library.load();
+      await playback.setup(library);
+
       setState(() {
         status = MusicusBackendStatus.ready;
       });

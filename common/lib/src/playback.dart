@@ -1,5 +1,5 @@
 import 'package:meta/meta.dart';
-import 'package:musicus_database/musicus_database.dart';
+import 'package:musicus_common/musicus_common.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Base class for Musicus playback.
@@ -13,7 +13,7 @@ abstract class MusicusPlayback {
   /// The current playlist.
   ///
   /// If the player is not active, this will be an empty list.
-  final playlist = BehaviorSubject.seeded(<Track>[]);
+  final playlist = BehaviorSubject.seeded(<String>[]);
 
   /// Index of the currently played (or paused) track within the playlist.
   ///
@@ -23,7 +23,7 @@ abstract class MusicusPlayback {
   /// The currently played track.
   ///
   /// This will be null, if there is no  current track.
-  final currentTrack = BehaviorSubject<Track>.seeded(null);
+  final currentTrack = BehaviorSubject<String>.seeded(null);
 
   /// Whether we are currently playing or not.
   ///
@@ -46,10 +46,10 @@ abstract class MusicusPlayback {
   /// Initialize the player.
   ///
   /// This will be called after the database was initialized.
-  Future<void> setup();
+  Future<void> setup(MusicusLibrary library);
 
   /// Add a list of tracks to the players playlist.
-  Future<void> addTracks(List<Track> tracks);
+  Future<void> addTracks(List<String> tracks);
 
   /// Remove the track at [index] from the playlist.
   Future<void> removeTrack(int index);
@@ -96,16 +96,15 @@ abstract class MusicusPlayback {
   /// Update [position] and [normalizedPosition].
   ///
   /// Requires [duration] to be up to date
-  void updatePosition(int positionMs) {
-    position.add(Duration(milliseconds: positionMs));
-    _setNormalizedPosition(positionMs / duration.value.inMilliseconds);
+  void updatePosition(Duration pos) {
+    position.add(pos);
+    _setNormalizedPosition(pos.inMilliseconds / duration.value.inMilliseconds);
   }
 
   /// Update [position], [duration] and [normalizedPosition].
-  void updateDuration(int positionMs, int durationMs) {
-    position.add(Duration(milliseconds: positionMs));
-    duration.add(Duration(milliseconds: durationMs));
-    _setNormalizedPosition(positionMs / durationMs);
+  void updateDuration(Duration dur) {
+    duration.add(dur);
+    _setNormalizedPosition(position.value.inMilliseconds / dur.inMilliseconds);
   }
 
   /// Update [normalizedPosition] ensuring its value is between 0.0 and 1.0.
@@ -124,6 +123,9 @@ abstract class MusicusPlayback {
   /// Requires [playlist] to be up to date.
   void updateCurrentTrack(int index) {
     currentIndex.add(index);
-    currentTrack.add(playlist.value[index]);
+
+    if (playlist.value != null && index >= 0 && index < playlist.value.length) {
+      currentTrack.add(playlist.value[index]);
+    }
   }
 }

@@ -2,9 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../backend.dart';
-import '../widgets/texts.dart';
-
 /// A list view supporting pagination and searching.
 ///
 /// The [fetch] function will be called, when the user has scrolled to the end

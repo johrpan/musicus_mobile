@@ -15,7 +15,7 @@ class PlayerBar extends StatefulWidget {
 
 class _PlayerBarState extends State<PlayerBar> {
   MusicusBackendState _backend;
-  StreamSubscription<Track> _currentTrackSubscribtion;
+  StreamSubscription<String> _currentTrackSubscribtion;
   WorkInfo _workInfo;
   List<int> _partIds;
 
@@ -26,9 +26,10 @@ class _PlayerBarState extends State<PlayerBar> {
     _backend = MusicusBackend.of(context);
 
     _currentTrackSubscribtion?.cancel();
-    _currentTrackSubscribtion = _backend.playback.currentTrack.listen((track) {
+    _currentTrackSubscribtion =
+        _backend.playback.currentTrack.listen((track) async {
       if (track != null) {
-        _setTrack(track);
+        _setTrack(await _backend.db.tracksById(track).getSingle());
       }
     });
   }

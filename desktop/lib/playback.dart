@@ -1,13 +1,12 @@
 import 'package:musicus_common/musicus_common.dart';
-import 'package:musicus_database/musicus_database.dart';
 
 class MusicusDesktopPlayback extends MusicusPlayback {
   @override
-  Future<void> setup() async {}
+  Future<void> setup(MusicusLibrary library) async {}
 
   @override
-  Future<void> addTracks(List<Track> tracks) async {
-    final List<Track> newPlaylist = List.from(playlist.value);
+  Future<void> addTracks(List<String> tracks) async {
+    final List<String> newPlaylist = List.from(playlist.value);
     newPlaylist.addAll(tracks);
     playlist.add(newPlaylist);
     active.add(true);
@@ -20,7 +19,7 @@ class MusicusDesktopPlayback extends MusicusPlayback {
 
   @override
   Future<void> removeTrack(int index) async {
-    final List<Track> tracks = List.from(playlist.value);
+    final List<String> tracks = List.from(playlist.value);
     tracks.removeAt(index);
     playlist.add(tracks);
   }
@@ -29,7 +28,7 @@ class MusicusDesktopPlayback extends MusicusPlayback {
   Future<void> seekTo(double pos) async {
     if (active.value && pos >= 0.0 && pos <= 1.0) {
       final durationMs = duration.value.inMilliseconds;
-      updatePosition((pos * durationMs).floor());
+      updatePosition(Duration(milliseconds: (pos * durationMs).floor()));
     }
   }
 

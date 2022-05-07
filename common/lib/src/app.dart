@@ -1,12 +1,11 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'backend.dart';
 import 'screens/home.dart';
 import 'settings.dart';
-import 'platform.dart';
 import 'playback.dart';
 import 'widgets/player_bar.dart';
 
@@ -24,14 +23,10 @@ class MusicusApp extends StatelessWidget {
   /// An object handling playback.
   final MusicusPlayback playback;
 
-  /// An object handling platform dependent functionality.
-  final MusicusPlatform platform;
-
   MusicusApp({
     @required this.dbPath,
     @required this.settingsStorage,
     @required this.playback,
-    @required this.platform,
   });
 
   @override
@@ -39,7 +34,6 @@ class MusicusApp extends StatelessWidget {
     return MusicusBackend(
       settingsStorage: settingsStorage,
       playback: playback,
-      platform: platform,
       child: Builder(
         builder: (context) {
           final backend = MusicusBackend.of(context);
@@ -91,7 +85,7 @@ class MusicusApp extends StatelessWidget {
                           leading: const Icon(Icons.folder_open),
                           title: Text('Choose path'),
                           onTap: () async {
-                            final uri = await platform.chooseBasePath();
+                            final uri = await FilePicker.platform.getDirectoryPath();
                             if (uri != null) {
                               backend.settings.setMusicLibraryPath(uri);
                             }

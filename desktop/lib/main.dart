@@ -4,7 +4,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as pp;
 
 import 'settings.dart';
-import 'platform.dart';
 import 'playback.dart';
 
 Future<void> main() async {
@@ -16,7 +15,6 @@ Future<void> main() async {
   runApp(MusicusApp(
     dbPath: dbPath,
     settingsStorage: SettingsStorage(),
-    platform: MusicusDesktopPlatform(),
     playback: MusicusDesktopPlayback(),
   ));
 }

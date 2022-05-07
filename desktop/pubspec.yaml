@@ -1,6 +1,7 @@
 name: musicus_desktop
 version: 0.1.0
 description: Desktop version of the classical music player and organizer.
+publish_to: none
 
 environment:
   sdk: ">=2.3.0 <3.0.0"
